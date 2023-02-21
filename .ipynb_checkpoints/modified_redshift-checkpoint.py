@@ -25,25 +25,13 @@ class redshift_distribution(container):
         self._gals_per_arcmin2 = gals_per_arcmin2
         super(redshift_distribution, self).__init__(*args, zmax=zmax, **kwargs)
         
-        self.u_4pca_components = np.load("4pca_components_u.npy")
-        self.g_4pca_components = np.load("4pca_components_g.npy")
-        self.r_4pca_components = np.load("4pca_components_r.npy")
+        self.u_4pca_components = np.load("4pca_data/4pca_components_u.npy")
+        self.g_4pca_components = np.load("4pca_data/4pca_components_g.npy")
+        self.r_4pca_components = np.load("4pca_data/4pca_components_r.npy")
         
-        self.u_4pca_mean = np.load("4pca_mean_u.npy")
-        self.g_4pca_mean = np.load("4pca_mean_g.npy")
-        self.r_4pca_mean = np.load("4pca_mean_r.npy")
-        
-        self.u_pca = np.load("nzus_pca.npy")
-        self.g_pca = np.load("nzgs_pca.npy")
-        self.r_pca = np.load("nzrs_pca.npy")
-        
-        self.u_pca_lbg = np.load("nzus_pca_lbg.npy")
-        self.g_pca_lbg = np.load("nzgs_pca_lbg.npy")
-        self.r_pca_lbg = np.load("nzrs_pca_lbg.npy")
-        
-        self.u_pca_int = np.load("nzgs_pca_int.npy")
-        self.g_pca_int = np.load("nzgs_pca_int.npy")
-        self.r_pca_int = np.load("nzgs_pca_int.npy")
+        self.u_4pca_mean = np.load("4pca_data/4pca_mean_u.npy")
+        self.g_4pca_mean = np.load("4pca_data/4pca_mean_g.npy")
+        self.r_4pca_mean = np.load("4pca_data/4pca_mean_r.npy")
 
     @abstractmethod
     def pz_fn(self, z):
@@ -101,27 +89,6 @@ class smail_nz(redshift_distribution):
     def pz_fn(self, z):
         a, b, z0 = self.params
         return z**a * np.exp(-((z / z0) ** b))
-
-    
-@register_pytree_node_class
-class custom_nz(redshift_distribution):
-    """
-    Defines a custom nz (lbg + interloper components) imported from file
-    -------------------------------------------------------------------
-
-    """
-
-    def pz_fn(self, z):
-    
-        file, nz = self.params
-        
-        udropout = self.u_pca[nz]
-        gdropout = self.g_pca[nz]
-        rdropout = self.r_pca[nz]
-        
-        dropouts = np.array([udropout, gdropout, rdropout])
-        
-        return dropouts[file][(z*100).astype(int)]
     
     
 @register_pytree_node_class
@@ -214,49 +181,6 @@ class nz_hat(redshift_distribution):
             value+=step1*step2*bin_heights[i]
         
         return value
-    
-
-    
-@register_pytree_node_class
-class custom_nz_lbg(redshift_distribution):
-    """
-    Defines a custom nz (lbg component only) imported from file
-    ----------------------------------------
-
-    """ 
-
-    def pz_fn(self, z):
-    
-        file, nz = self.params
-        
-        udropout = self.u_pca_lbg[nz]
-        gdropout = self.g_pca_lbg[nz]
-        rdropout = self.r_pca_lbg[nz]
-        
-        dropouts = np.array([udropout, gdropout, rdropout])
-        
-        return dropouts[file][(z*100).astype(int)]
-    
-    
-@register_pytree_node_class
-class custom_nz_int(redshift_distribution):
-    """
-    Defines a custom nz (interloper component only) imported from file
-    ----------------------------------------
-
-    """ 
-
-    def pz_fn(self, z):
-    
-        file, nz = self.params
-        
-        udropout = self.u_pca_int[nz]
-        gdropout = self.g_pca_int[nz]
-        rdropout = self.r_pca_int[nz]
-        
-        dropouts = np.array([udropout, gdropout, rdropout])
-        
-        return dropouts[file][(z*100).astype(int)]
 
 @register_pytree_node_class
 class delta_nz(redshift_distribution):
