@@ -12,14 +12,14 @@ from jax_cosmo.angular_cl import angular_cl
 from jax_cosmo.angular_cl import noise_cl
 from jax_cosmo.angular_cl import gaussian_cl_covariance_and_mean
 
-from modified_bias import custom_bias
+from lbg_forecast.modified_bias import custom_bias
 
-from modified_redshift import u_dropout
-from modified_redshift import g_dropout
-from modified_redshift import r_dropout
+from lbg_forecast.modified_redshift import u_dropout
+from lbg_forecast.modified_redshift import g_dropout
+from lbg_forecast.modified_redshift import r_dropout
 
-from modified_redshift import nz_hat
-from modified_redshift import delta_nz
+from lbg_forecast.modified_redshift import nz_hat
+from lbg_forecast.modified_redshift import delta_nz
 
 from functools import partial
 

@@ -15,16 +15,18 @@ from jax_cosmo.angular_cl import gaussian_cl_covariance
 from jax_cosmo.angular_cl import gaussian_cl_covariance_and_mean
 from jax import jacfwd, jacrev
 
-from modified_redshift import u_dropout
-from modified_redshift import g_dropout
-from modified_redshift import r_dropout
+from lbg_forecast.modified_redshift import u_dropout
+from lbg_forecast.modified_redshift import g_dropout
+from lbg_forecast.modified_redshift import r_dropout
 
-from modified_bias import custom_bias
+from lbg_forecast.modified_bias import custom_bias
 
-from angular_power import cl_theory
-from angular_power import cl_data
-from angular_power import compare_cls
-from angular_power import define_cosmo
+from lbg_forecast.angular_power import cl_theory
+from lbg_forecast.angular_power import cl_data
+from lbg_forecast.angular_power import compare_cls
+from lbg_forecast.angular_power import define_cosmo
+
+import pkgutil
 
 def get_cosmo_params(cosmo): 
     return jnp.array([cosmo.sigma8, cosmo.Omega_c, cosmo.Omega_b, cosmo.h, cosmo.n_s, cosmo.w0])
@@ -59,13 +61,13 @@ class Likelihood():
         """
         print("Initialising likelihood")
         
-        self._mean_vec_u = jnp.load("4pca_data/4pca_means_u.npy")
-        self._mean_vec_g = jnp.load("4pca_data/4pca_means_g.npy")
-        self._mean_vec_r = jnp.load("4pca_data/4pca_means_r.npy")
+        self._mean_vec_u = jnp.load("lbg_forecast/4pca_data/4pca_means_u.npy")
+        self._mean_vec_g = jnp.load("lbg_forecast/4pca_data/4pca_means_g.npy")
+        self._mean_vec_r = jnp.load("lbg_forecast/4pca_data/4pca_means_r.npy")
         
-        self._cov_u = jnp.load("4pca_data/4pca_cov_u.npy")
-        self._cov_g = jnp.load("4pca_data/4pca_cov_g.npy")
-        self._cov_r = jnp.load("4pca_data/4pca_cov_r.npy")
+        self._cov_u = jnp.load("lbg_forecast/4pca_data/4pca_cov_u.npy")
+        self._cov_g = jnp.load("lbg_forecast/4pca_data/4pca_cov_g.npy")
+        self._cov_r = jnp.load("lbg_forecast/4pca_data/4pca_cov_r.npy")
         
         self._npca = len(self._mean_vec_u)
         

@@ -8,8 +8,6 @@ from jax.tree_util import register_pytree_node_class
 from jax_cosmo.jax_utils import container
 from jax_cosmo.scipy.integrate import simps
 
-from nz_model import NzModel
-
 import jax
 from jax import jit
 from functools import partial
@@ -25,13 +23,13 @@ class redshift_distribution(container):
         self._gals_per_arcmin2 = gals_per_arcmin2
         super(redshift_distribution, self).__init__(*args, zmax=zmax, **kwargs)
         
-        self.u_4pca_components = np.load("4pca_data/4pca_components_u.npy")
-        self.g_4pca_components = np.load("4pca_data/4pca_components_g.npy")
-        self.r_4pca_components = np.load("4pca_data/4pca_components_r.npy")
+        self.u_4pca_components = np.load("lbg_forecast/4pca_data/4pca_components_u.npy")
+        self.g_4pca_components = np.load("lbg_forecast/4pca_data/4pca_components_g.npy")
+        self.r_4pca_components = np.load("lbg_forecast/4pca_data/4pca_components_r.npy")
         
-        self.u_4pca_mean = np.load("4pca_data/4pca_mean_u.npy")
-        self.g_4pca_mean = np.load("4pca_data/4pca_mean_g.npy")
-        self.r_4pca_mean = np.load("4pca_data/4pca_mean_r.npy")
+        self.u_4pca_mean = np.load("lbg_forecast/4pca_data/4pca_mean_u.npy")
+        self.g_4pca_mean = np.load("lbg_forecast/4pca_data/4pca_mean_g.npy")
+        self.r_4pca_mean = np.load("lbg_forecast/4pca_data/4pca_mean_r.npy")
 
     @abstractmethod
     def pz_fn(self, z):

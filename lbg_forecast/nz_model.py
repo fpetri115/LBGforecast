@@ -12,9 +12,9 @@ def load_redshift_distributions():
 
     """
     
-    nzus = np.load("nzus.npy")
-    nzgs = np.load("nzgs.npy")
-    nzrs = np.load("nzrs.npy")
+    nzus = np.load("lbg_forecast/nzus.npy")
+    nzgs = np.load("lbg_forecast/nzgs.npy")
+    nzrs = np.load("lbg_forecast/nzrs.npy")
     
     return [nzus, nzgs, nzrs]
 
@@ -497,18 +497,18 @@ class NzModel:
         g_pca_means, g_pca_cov = pca_mean_cov(g_pca_data)
         r_pca_means, r_pca_cov = pca_mean_cov(r_pca_data)
         
-        np.save("4pca_data/4pca_components_u.npy", u_pca_data[1])
-        np.save("4pca_data/4pca_components_g.npy", g_pca_data[1])
-        np.save("4pca_data/4pca_components_r.npy", r_pca_data[1])
+        np.save("lbg_forecast/4pca_data/4pca_components_u.npy", u_pca_data[1])
+        np.save("lbg_forecast/4pca_data/4pca_components_g.npy", g_pca_data[1])
+        np.save("lbg_forecast/4pca_data/4pca_components_r.npy", r_pca_data[1])
         
-        np.save("4pca_data/4pca_mean_u.npy", u_pca_data[2])
-        np.save("4pca_data/4pca_mean_g.npy", g_pca_data[2])
-        np.save("4pca_data/4pca_mean_r.npy", r_pca_data[2])
+        np.save("lbg_forecast/4pca_data/4pca_mean_u.npy", u_pca_data[2])
+        np.save("lbg_forecast/4pca_data/4pca_mean_g.npy", g_pca_data[2])
+        np.save("lbg_forecast/4pca_data/4pca_mean_r.npy", r_pca_data[2])
         
-        np.save("4pca_data/4pca_means_u.npy", u_pca_means)
-        np.save("4pca_data/4pca_means_g.npy", g_pca_means)
-        np.save("4pca_data/4pca_means_r.npy", r_pca_means)
+        np.save("lbg_forecast/4pca_data/4pca_means_u.npy", u_pca_means)
+        np.save("lbg_forecast/4pca_data/4pca_means_g.npy", g_pca_means)
+        np.save("lbg_forecast/4pca_data/4pca_means_r.npy", r_pca_means)
         
-        np.save("4pca_data/4pca_cov_u.npy", u_pca_cov)
-        np.save("4pca_data/4pca_cov_g.npy", g_pca_cov)
-        np.save("4pca_data/4pca_cov_r.npy", r_pca_cov)
+        np.save("lbg_forecast/4pca_data/4pca_cov_u.npy", u_pca_cov)
+        np.save("lbg_forecast/4pca_data/4pca_cov_g.npy", g_pca_cov)
+        np.save("lbg_forecast/4pca_data/4pca_cov_r.npy", r_pca_cov)
