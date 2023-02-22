@@ -153,11 +153,12 @@ class r_dropout(redshift_distribution):
     
     
 @register_pytree_node_class    
-class nz_hat(redshift_distribution):
+class histogram_nz(redshift_distribution):
     """
     Histogram
     -------------------------------
     bin_edges must be monotonically increasing
+    check bin_heights = edges-1
     """  
     
     def pz_fn(self, z):
