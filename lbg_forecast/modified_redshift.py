@@ -8,10 +8,6 @@ from jax.tree_util import register_pytree_node_class
 from jax_cosmo.jax_utils import container
 from jax_cosmo.scipy.integrate import simps
 
-import jax
-from jax import jit
-from functools import partial
-
 steradian_to_arcmin2 = 11818102.86004228
 
 __all__ = ["smail_nz", "kde_nz", "delta_nz"]
@@ -172,12 +168,20 @@ class nz_hat(redshift_distribution):
         zmins = bin_edges[:-1]
         zmaxs = bin_edges[1:]
 
-        step1 = np.where(zmins <= z, 1.0, 0.0)
-        step2 = np.where(zmaxs > z, 1.0, 0.0)
+        n_edges = len(bin_heights)
+        zgrid_size = len(z)
 
-        value = np.dot(np.multiply(step1, step2), bin_heights)
+        bin_heights_T = bin_heights.reshape(1, len(bin_heights)).T
+        zmin_mat = np.repeat(zmins.reshape(1, n_edges), zgrid_size, axis=0)
+        zmax_mat = np.repeat(zmaxs.reshape(1, n_edges), zgrid_size, axis=0)
+        z_T = z.reshape(1, zgrid_size).T
 
-        return value
+        step_n = np.where(zmin_mat <= z_T, 1.0, 0.0)
+        step_p = np.where(zmax_mat > z_T, 1.0, 0.0)
+
+        comparison_mat = np.where(step_n == step_p, 1.0, 0.0)
+
+        return np.dot(comparison_mat, bin_heights_T).flatten()
 
 @register_pytree_node_class
 class delta_nz(redshift_distribution):

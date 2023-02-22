@@ -13,13 +13,14 @@ from jax_cosmo.angular_cl import noise_cl
 from jax_cosmo.angular_cl import gaussian_cl_covariance_and_mean
 
 from lbg_forecast.modified_bias import custom_bias
+from lbg_forecast.modified_bias import constant_linear_bias
 
 from lbg_forecast.modified_redshift import u_dropout
 from lbg_forecast.modified_redshift import g_dropout
 from lbg_forecast.modified_redshift import r_dropout
 
 from lbg_forecast.modified_redshift import nz_hat
-from lbg_forecast.modified_redshift import delta_nz
+from lbg_forecast.modified_redshift import smail_nz
 
 from functools import partial
 
@@ -246,23 +247,11 @@ def compare_cls(cl1, cl2, ell, figure_size, fontsize):
         j+=1
 
 @jit
-def cl_delta(cosmo, z0, ell):
-    """function to test delta nz"""
+def cl_hat(cosmo, bin_heights, bin_edges, ell):
+    """function to test hist nz"""
     
-    nz = [delta_nz(z0)]
-    bias = custom_bias(1, 2, 1.5)
-    tracers = [probes.NumberCounts(nz, bias)]
-    
-    signal = angular_cl(cosmo, ell, tracers)
-    
-    return signal.flatten()
-
-@jit
-def cl_hat(cosmo, bin_heights, zmins, zmaxs, ell):
-    """function to test delta nz"""
-    
-    nz = [nz_hat(bin_heights, zmins, zmaxs)]
-    bias = custom_bias(1, 2, 1.5)
+    nz = [nz_hat(bin_heights, bin_edges)]
+    bias = constant_linear_bias(1.0)
     tracers = [probes.NumberCounts(nz, bias)]
     
     signal = angular_cl(cosmo, ell, tracers)
