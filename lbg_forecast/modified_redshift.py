@@ -160,6 +160,13 @@ class histogram_nz(redshift_distribution):
     bin_edges must be monotonically increasing
     check bin_heights = edges-1
     """  
+
+    def __init__(self, *args, **kwargs):
+        """Initialize the parameters of the redshift distribution"""
+        super(histogram_nz, self).__init__(*args, **kwargs)
+
+        self._norm = np.sum(self.params[0]*np.diff(self.params[1]))
+
     
     def pz_fn(self, z):
         

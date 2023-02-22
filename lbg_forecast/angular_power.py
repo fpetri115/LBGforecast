@@ -19,8 +19,9 @@ from lbg_forecast.modified_redshift import u_dropout
 from lbg_forecast.modified_redshift import g_dropout
 from lbg_forecast.modified_redshift import r_dropout
 
-from lbg_forecast.modified_redshift import nz_hat
-from lbg_forecast.modified_redshift import smail_nz
+from lbg_forecast.modified_redshift import histogram_nz
+from lbg_forecast.modified_angular_cl import angular_cl as new_cl
+
 
 from functools import partial
 
@@ -39,7 +40,7 @@ def z_space():
     Redshift space grid for redshift distributions
     
     """
-    return np.arange(0, 7, 0.01)
+    return jnp.arange(0, 7, 0.01)
     
 @jit
 def cl_theory(cosmo, nz_params, b_lbg, b_int, ell):
@@ -250,10 +251,10 @@ def compare_cls(cl1, cl2, ell, figure_size, fontsize):
 def cl_hat(cosmo, bin_heights, bin_edges, ell):
     """function to test hist nz"""
     
-    nz = [nz_hat(bin_heights, bin_edges)]
+    nz = [histogram_nz(bin_heights, bin_edges)]
     bias = constant_linear_bias(1.0)
     tracers = [probes.NumberCounts(nz, bias)]
     
-    signal = angular_cl(cosmo, ell, tracers)
+    signal = new_cl(cosmo, ell, tracers)
     
     return signal.flatten()
