@@ -161,23 +161,22 @@ class nz_hat(redshift_distribution):
     """
     Histogram
     -------------------------------
-    
+    bin_edges must be monotonically increasing
     """  
     
     def pz_fn(self, z):
         
         bin_heights = self.params[0]
-        zmins = self.params[1]
-        zmaxs = self.params[2]
-        
-        bins = len(zmins)
-        
-        value = 0
-        for i in range(bins):
-            step1 = np.where(z>=zmins[i], 1.0, 0.0)
-            step2 = np.where(z<zmaxs[i], 1.0, 0.0)
-            value+=step1*step2*bin_heights[i]
-        
+        bin_edges = self.params[1]
+
+        zmins = bin_edges[:-1]
+        zmaxs = bin_edges[1:]
+
+        step1 = np.where(zmins <= z, 1.0, 0.0)
+        step2 = np.where(zmaxs > z, 1.0, 0.0)
+
+        value = np.dot(np.multiply(step1, step2), bin_heights)
+
         return value
 
 @register_pytree_node_class
