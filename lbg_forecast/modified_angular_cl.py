@@ -14,8 +14,6 @@ from jax_cosmo.scipy.integrate import simps
 from jax_cosmo.utils import a2z
 from jax_cosmo.utils import z2a
 
-from lbg_forecast.integrate import modified_simps
-
 
 def _get_cl_ordering(probes):
     """
