@@ -14,6 +14,7 @@ from jax_cosmo.scipy.integrate import simps
 from jax_cosmo.utils import a2z
 from jax_cosmo.utils import z2a
 
+from lbg_forecast.integrate import modified_simps
 
 def _get_cl_ordering(probes):
     """
@@ -50,8 +51,7 @@ def _get_cov_blocks_ordering(probes):
 
 
 def angular_cl(
-    cosmo, ell, probes, transfer_fn=tklib.Eisenstein_Hu, nonlinear_fn=power.halofit
-):
+    cosmo, ell, probes, transfer_fn=tklib.Eisenstein_Hu, nonlinear_fn=power.halofit):
     """
     Computes angular Cls for the provided probes
 
@@ -96,7 +96,7 @@ def angular_cl(
             # We transpose the result just to make sure that na is first
             return result.T
 
-        return simps(integrand, z2a(zmax), 1.0, 512) / const.c**2
+        return simps(integrand, z2a(zmax), 1.0, 2048) / const.c**2
 
     return cl(ell)
 
