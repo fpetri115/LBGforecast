@@ -16,6 +16,7 @@ from jax_cosmo.utils import z2a
 
 from lbg_forecast.integrate import modified_simps
 
+
 def _get_cl_ordering(probes):
     """
     Utility function to get the indices for Cls from a list of probes
@@ -51,7 +52,8 @@ def _get_cov_blocks_ordering(probes):
 
 
 def angular_cl(
-    cosmo, ell, probes, transfer_fn=tklib.Eisenstein_Hu, nonlinear_fn=power.halofit):
+    cosmo, ell, probes, transfer_fn=tklib.Eisenstein_Hu, nonlinear_fn=power.halofit
+):
     """
     Computes angular Cls for the provided probes
 

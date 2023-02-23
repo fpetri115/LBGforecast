@@ -12,17 +12,18 @@ steradian_to_arcmin2 = 11818102.86004228
 
 __all__ = ["smail_nz", "kde_nz", "delta_nz"]
 
+
 class redshift_distribution(container):
     def __init__(self, *args, gals_per_arcmin2=1.0, zmax=10.0, **kwargs):
         """Initialize the parameters of the redshift distribution"""
         self._norm = None
         self._gals_per_arcmin2 = gals_per_arcmin2
         super(redshift_distribution, self).__init__(*args, zmax=zmax, **kwargs)
-        
+
         self.u_4pca_components = np.load("lbg_forecast/4pca_data/4pca_components_u.npy")
         self.g_4pca_components = np.load("lbg_forecast/4pca_data/4pca_components_g.npy")
         self.r_4pca_components = np.load("lbg_forecast/4pca_data/4pca_components_r.npy")
-        
+
         self.u_4pca_mean = np.load("lbg_forecast/4pca_data/4pca_mean_u.npy")
         self.g_4pca_mean = np.load("lbg_forecast/4pca_data/4pca_mean_g.npy")
         self.r_4pca_mean = np.load("lbg_forecast/4pca_data/4pca_mean_r.npy")
@@ -83,93 +84,105 @@ class smail_nz(redshift_distribution):
     def pz_fn(self, z):
         a, b, z0 = self.params
         return z**a * np.exp(-((z / z0) ** b))
-    
-    
+
+
 @register_pytree_node_class
 class u_dropout(redshift_distribution):
     """
-    4-component PCA redshift distribution for u dropouts 
+    4-component PCA redshift distribution for u dropouts
     -------------------------------------------------------------------
 
     """
 
     def pz_fn(self, z):
-        
         pca_components, pca_mean = self.u_4pca_components, self.u_4pca_mean
-        v1, v2, v3, v4 = pca_components[0], pca_components[1], pca_components[2], pca_components[3]
-        
+        v1, v2, v3, v4 = (
+            pca_components[0],
+            pca_components[1],
+            pca_components[2],
+            pca_components[3],
+        )
+
         nz_params = self.params[0]
         a, b, c, d = nz_params
-        
-        i = (z*100).astype(int)
-        
-        func = (a*v1[i] + b*v2[i] + c*v3[i] + d*v4[i] + pca_mean[i])**2
-        
+
+        i = (z * 100).astype(int)
+
+        func = (a * v1[i] + b * v2[i] + c * v3[i] + d * v4[i] + pca_mean[i]) ** 2
+
         return func
-    
+
+
 @register_pytree_node_class
 class g_dropout(redshift_distribution):
     """
-    4-component PCA redshift distribution for g dropouts 
+    4-component PCA redshift distribution for g dropouts
     -------------------------------------------------------------------
 
     """
 
     def pz_fn(self, z):
-        
         pca_components, pca_mean = self.g_4pca_components, self.g_4pca_mean
-        v1, v2, v3, v4 = pca_components[0], pca_components[1], pca_components[2], pca_components[3]
-        
+        v1, v2, v3, v4 = (
+            pca_components[0],
+            pca_components[1],
+            pca_components[2],
+            pca_components[3],
+        )
+
         nz_params = self.params[0]
         a, b, c, d = nz_params
-        
-        i = (z*100).astype(int)
-        
-        func = (a*v1[i] + b*v2[i] + c*v3[i] + d*v4[i] + pca_mean[i])**2
-        
+
+        i = (z * 100).astype(int)
+
+        func = (a * v1[i] + b * v2[i] + c * v3[i] + d * v4[i] + pca_mean[i]) ** 2
+
         return func
-    
+
+
 @register_pytree_node_class
 class r_dropout(redshift_distribution):
     """
-    4-component PCA redshift distribution for r dropouts 
+    4-component PCA redshift distribution for r dropouts
     -------------------------------------------------------------------
 
     """
 
     def pz_fn(self, z):
-        
         pca_components, pca_mean = self.r_4pca_components, self.r_4pca_mean
-        v1, v2, v3, v4 = pca_components[0], pca_components[1], pca_components[2], pca_components[3]
-        
+        v1, v2, v3, v4 = (
+            pca_components[0],
+            pca_components[1],
+            pca_components[2],
+            pca_components[3],
+        )
+
         nz_params = self.params[0]
         a, b, c, d = nz_params
-        
-        i = (z*100).astype(int)
-        
-        func = (a*v1[i] + b*v2[i] + c*v3[i] + d*v4[i] + pca_mean[i])**2
-        
+
+        i = (z * 100).astype(int)
+
+        func = (a * v1[i] + b * v2[i] + c * v3[i] + d * v4[i] + pca_mean[i]) ** 2
+
         return func
-    
-    
-@register_pytree_node_class    
+
+
+@register_pytree_node_class
 class histogram_nz(redshift_distribution):
     """
     Histogram
     -------------------------------
     bin_edges must be monotonically increasing
     check bin_heights = edges-1
-    """  
+    """
 
     def __init__(self, *args, **kwargs):
         """Initialize the parameters of the redshift distribution"""
         super(histogram_nz, self).__init__(*args, **kwargs)
 
-        self._norm = np.sum(self.params[0]*np.diff(self.params[1]))
+        self._norm = np.sum(self.params[0] * np.diff(self.params[1]))
 
-    
     def pz_fn(self, z):
-        
         bin_heights = self.params[0]
         bin_edges = self.params[1]
 
@@ -191,6 +204,7 @@ class histogram_nz(redshift_distribution):
 
         return np.dot(comparison_mat, bin_heights_T).flatten()
 
+
 @register_pytree_node_class
 class delta_nz(redshift_distribution):
     """Defines a single plane redshift distribution with these arguments
@@ -205,7 +219,7 @@ class delta_nz(redshift_distribution):
         self._norm = 1.0
 
     def pz_fn(self, z):
-        z0 = self.params[0] #editted here
+        z0 = self.params[0]  # editted here
         return np.where(z == z0, 1.0, 0)
 
 

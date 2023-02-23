@@ -7,29 +7,20 @@ from jax_cosmo.angular_cl import gaussian_cl_covariance
 
 
 def marginalised_log_likelihood(data, mu, Cc, P, T):
-    """
-    
-    
-    
-    
-    """
+    """ """
     # Computes residuals
     r = mu - data
-    
+
     Ttrans = np.transpose(T)
-    #Cc_inv = np.linalg.inv(Cc)
-    #P_inv = np.linalg.inv(P)
-    
-    Cm = Cc + T@P@Ttrans
+    # Cc_inv = np.linalg.inv(Cc)
+    # P_inv = np.linalg.inv(P)
+
+    Cm = Cc + T @ P @ Ttrans
     Cm_inv = np.linalg.inv(Cm)
-    
-    #prefactor =  1/np.sqrt(np.linalg.det(Ttrans@Cc_inv@T + P_inv))
 
+    # prefactor =  1/np.sqrt(np.linalg.det(Ttrans@Cc_inv@T + P_inv))
 
-    return -0.5*r.T@Cm_inv@r #np.log(prefactor) - 0.5*r.T@Cm_inv@r
-
-
-
+    return -0.5 * r.T @ Cm_inv @ r  # np.log(prefactor) - 0.5*r.T@Cm_inv@r
 
 
 def gaussian_log_likelihood(data, mu, C, include_logdet=True, inverse_method="inverse"):

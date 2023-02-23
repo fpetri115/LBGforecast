@@ -8,7 +8,6 @@ from jax_cosmo.utils import a2z
 from jax_cosmo.utils import z2a
 
 
-
 @register_pytree_node_class
 class custom_bias(container):
     """
@@ -20,12 +19,11 @@ class custom_bias(container):
     """
 
     def __call__(self, cosmo, z):
-        
         b_int = self.params[0]
         b_lbg = self.params[1]
         z_cut = self.params[2]
-        
-        return np.where(z < z_cut,  np.ones_like(z)*b_int, np.ones_like(z)*b_lbg)
+
+        return np.where(z < z_cut, np.ones_like(z) * b_int, np.ones_like(z) * b_lbg)
 
 
 @register_pytree_node_class
