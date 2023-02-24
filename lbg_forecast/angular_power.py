@@ -264,3 +264,43 @@ def cl_hat(cosmo, bin_heights, bin_edges, ell):
     signal = new_cl(cosmo, ell, tracers)
 
     return signal.flatten()
+
+
+@jit
+def cl_model(cosmo, nz_params, b_lbg, b_int, ell):
+    """
+    Calculates theory vector for Likelihood. Computes angular cls
+    and cross correlations of u, g, r dropouts with two component bias.
+    --------------------------------------------------------------------
+    Parameters:
+    cosmo - JAX-COSMO cosmology object containing cosmological parameters
+    nz_params -
+    b_int - Interloper bias (linear)
+    b_lbg - LBG bias (linear)
+    ell - Spherical harmonic scale list. Gives range of ells to plot cls over
+    ----------------------------------------------------------------------
+    Returns:
+    Concatenated angular power spectra of length 6*len(ell) giving auto+cross
+    spectra, with poisson noise
+
+    """
+    n = 4
+    z_cut = 1.5
+
+
+    
+    nz_u = u_dropout(nz_params[:n], gals_per_arcmin2=1)
+    nz_g = g_dropout(nz_params[n : 2 * n], gals_per_arcmin2=1)
+    nz_r = r_dropout(nz_params[2 * n : 3 * n], gals_per_arcmin2=0.1)
+
+    redshift_distributions = [nz_u, nz_g, nz_r]
+
+    bias = custom_bias(b_int, b_lbg, z_cut)
+
+    tracers = [probes.NumberCounts(redshift_distributions, bias)]
+
+    signal = angular_cl(cosmo, ell, tracers)
+    noise = noise_cl(ell, tracers)
+    total_cl = signal + noise
+
+    return jnp.hstack(total_cl)
