@@ -1,34 +1,18 @@
 import jax
 from jax.config import config
-
 config.update("jax_enable_x64", True)
-from jax import jit
 
 import jax.numpy as jnp
-import jax.scipy as jsci
-
-import jax_cosmo as jc
 from jax_cosmo import Cosmology
-from jax_cosmo import probes
-from jax_cosmo.angular_cl import angular_cl
-from jax_cosmo.angular_cl import noise_cl
-from jax_cosmo.angular_cl import gaussian_cl_covariance
-from jax_cosmo.angular_cl import gaussian_cl_covariance_and_mean
-from jax import jacfwd, jacrev
-
-from lbg_forecast.modified_redshift import u_dropout
-from lbg_forecast.modified_redshift import g_dropout
-from lbg_forecast.modified_redshift import r_dropout
-
-from lbg_forecast.modified_bias import custom_bias
+from jax import jacfwd
 
 from lbg_forecast.angular_power import cl_theory
 from lbg_forecast.angular_power import cl_data
 from lbg_forecast.angular_power import compare_cls
 from lbg_forecast.angular_power import define_cosmo
 
-import pkgutil
-
+from lbg_forecast.modified_likelihood import gaussian_log_likelihood
+from lbg_forecast.modified_likelihood import marginalised_log_likelihood
 
 def get_cosmo_params(cosmo):
     return jnp.array(
@@ -49,7 +33,6 @@ def cosmo_params_to_obj(params):
     )
 
     return cosmo
-
 
 def pack_params(cosmo_params, b_lbg, b_int):
     return jnp.hstack((cosmo_params, b_lbg, b_int))
@@ -99,8 +82,8 @@ class Likelihood:
         self._ell = jnp.arange(200, 1000, 1)
         self._fsky = 0.4
 
-        self._b_lbg = 2
-        self._b_int = 1
+        self._b_lbg = 2.0
+        self._b_int = 1.0
         seed = 100
 
         self.nz_params_mean = jnp.hstack(
@@ -126,8 +109,32 @@ class Likelihood:
 
         # jacobian
         self._jacobian = jax.jit(jacfwd(cl_theory, argnums=1))
+        self.T = self._jacobian(self._cosmo_fid, self.nz_params_mean,
+                                 self._b_lbg, self._b_int, self._ell)
+        
+        self.Cm = self.C + self.T @ self.P @ self.T.T
 
         print("Initialisation Complete")
+
+
+    def _mu_vec(self, params):
+        """Reduced theory vector for fisher forecast"""
+
+        cosmo_params, blbg, bint = get_cosmo_params(self._cosmo_fid), self._b_lbg, self._b_int
+        cosmo_params = cosmo_params.at[0].set(params[0]) #set sigma8
+        cosmo_params = cosmo_params.at[1].set(params[1]) 
+        cosmo_params = cosmo_params.at[2].set(params[2]) 
+        cosmo_params = cosmo_params.at[3].set(params[3])
+        cosmo_params = cosmo_params.at[4].set(params[4]) 
+        #cosmo_params = cosmo_params.at[5].set(params[5])  
+        cosmo = cosmo_params_to_obj(cosmo_params)
+
+        #blbg = params[1]
+        #bint = params[2]
+        nz_params = self.nz_params_mean
+    
+        return cl_theory(cosmo, nz_params, blbg, bint, self._ell)
+
 
     def logL(self, params):
         """marginalised likelihood"""
@@ -137,24 +144,14 @@ class Likelihood:
 
         nz_params = self.nz_params_mean
 
-        T = self._jacobian(cosmo, nz_params, blbg, bint, self._ell)
-        Tt = jnp.transpose(T)
-        Cinv = self._inv_C
-        Pinv = self._inv_P
+        T = self.T
+        C = self.C
         P = self.P
-        CM = self.C + T @ P @ Tt
-        CMinv = jnp.linalg.inv(CM)
 
         t = cl_theory(cosmo, nz_params, blbg, bint, self._ell)
         c = self.cl_mean
 
-        dt = c - t
-        dt_T = jnp.transpose(dt)
-
-        prefactor = 1 / jnp.sqrt(jnp.linalg.det(Tt @ Cinv @ T + Pinv))
-        X = -0.5 * dt_T @ CMinv @ dt
-
-        return jnp.log(prefactor) + X
+        return marginalised_log_likelihood(c, t, C, P, T)
 
     def logLgauss(self, params):
         """Gaussian likelihood for n(z) fixed at mean value"""
@@ -164,17 +161,34 @@ class Likelihood:
 
         nz_params = self.nz_params_mean
 
-        Cinv = self._inv_C
+        cov = self.C
 
         t = cl_theory(cosmo, nz_params, blbg, bint, self._ell)
         c = self.cl_mean
 
-        dt = c - t
-        dt_T = jnp.transpose(dt)
+        return gaussian_log_likelihood(c, t, cov, include_logdet=False)
+    
+    def fisher(self, params):
 
-        X = -0.5 * dt_T @ Cinv @ dt
+        inv_cov = jnp.linalg.inv(self.C)
+        jac_at_mean = jax.jit(jax.jacfwd(self._mu_vec))
 
-        return X
+        dmudp = jac_at_mean(params)
+
+        F = dmudp.T@inv_cov@dmudp
+
+        return F
+    
+    def fisher_marg(self, params):
+
+        inv_cov = jnp.linalg.inv(self.Cm)
+        jac_at_mean = jax.jit(jax.jacfwd(self._mu_vec))
+
+        dmudp = jac_at_mean(params)
+
+        F = dmudp.T@inv_cov@dmudp
+
+        return F
 
     def plot_data_cls(self):
         """Plot mock data used for inference that was initalised with class"""

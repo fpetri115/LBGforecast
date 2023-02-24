@@ -9,9 +9,9 @@ import jax_cosmo as jc
 from jax_cosmo import Cosmology
 from jax_cosmo import probes
 
-from jax_cosmo.angular_cl import angular_cl
-from jax_cosmo.angular_cl import noise_cl
-from jax_cosmo.angular_cl import gaussian_cl_covariance_and_mean
+from lbg_forecast.modified_angular_cl import angular_cl
+from lbg_forecast.modified_angular_cl import noise_cl
+from lbg_forecast.modified_angular_cl import gaussian_cl_covariance_and_mean
 
 from lbg_forecast.modified_bias import custom_bias
 from lbg_forecast.modified_bias import constant_linear_bias
@@ -66,9 +66,9 @@ def cl_theory(cosmo, nz_params, b_lbg, b_int, ell):
     n = 4
     z_cut = 1.5
 
-    nz_u = u_dropout(nz_params[:n], gals_per_arcmin2=1)
-    nz_g = g_dropout(nz_params[n : 2 * n], gals_per_arcmin2=1)
-    nz_r = r_dropout(nz_params[2 * n : 3 * n], gals_per_arcmin2=0.1)
+    nz_u = u_dropout(nz_params[:n], gals_per_arcmin2=1)#1
+    nz_g = g_dropout(nz_params[n : 2 * n], gals_per_arcmin2=1)#1
+    nz_r = r_dropout(nz_params[2 * n : 3 * n], gals_per_arcmin2=0.1)#0.1
 
     redshift_distributions = [nz_u, nz_g, nz_r]
 
