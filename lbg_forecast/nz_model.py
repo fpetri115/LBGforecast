@@ -269,7 +269,7 @@ class NzModel:
 
         return self.normalise_nzs(r_pca)
 
-    def plot_nzs(self, nzs, alpha=0.05):
+    def plot_nzs(self, nzs, alpha=0.025):
         """
         plots nzs overlaid on one graph
         ---------------------------------------
@@ -288,6 +288,29 @@ class NzModel:
             plt.plot(self._z_space, nzs[i], c="k", alpha=alpha)
             i += 1
 
+    def plot_all_data(self, alpha = 0.1):
+        
+        fig = plt.subplots(1, 1, figsize=(15, 10))
+
+        no_u = len(self.u_data())
+        no_g = len(self.g_data())
+        no_r = len(self.r_data())
+
+        i = 0
+        while i < no_u:
+            plt.plot(self._z_space, self.u_data()[i], c="b", alpha=alpha)
+            i += 1
+
+        i = 0
+        while i < no_g:
+            plt.plot(self._z_space, self.g_data()[i], c="g", alpha=alpha)
+            i += 1
+
+        i = 0
+        while i < no_r:
+            plt.plot(self._z_space, self.r_data()[i], c="r", alpha=alpha)
+            i += 1
+
     def plot_all_pca(self, n, n_s):
         """
         Plots all u, g, r, pca nzs
@@ -300,7 +323,7 @@ class NzModel:
 
         """
 
-        fig = plt.subplots(1, 1, figsize=(20, 10))
+        fig = plt.subplots(1, 1, figsize=(15, 10))
 
         unzs = self.u_pca(n, n_s)
         gnzs = self.g_pca(n, n_s)
