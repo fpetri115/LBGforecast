@@ -290,7 +290,7 @@ class NzModel:
 
     def plot_all_data(self, alpha = 0.1):
         
-        fig = plt.subplots(1, 1, figsize=(15, 10))
+        fig = plt.subplots(1, 1, figsize=(20, 10))
 
         no_u = len(self.u_data())
         no_g = len(self.g_data())
@@ -298,20 +298,46 @@ class NzModel:
 
         i = 0
         while i < no_u:
-            plt.plot(self._z_space, self.u_data()[i], c="b", alpha=alpha)
+            plt.plot(self._z_space, self.u_data()[i], c="b", alpha=alpha, lw=2)
             i += 1
 
         i = 0
         while i < no_g:
-            plt.plot(self._z_space, self.g_data()[i], c="g", alpha=alpha)
+            plt.plot(self._z_space, self.g_data()[i], c="g", alpha=alpha, lw=2)
             i += 1
 
         i = 0
         while i < no_r:
-            plt.plot(self._z_space, self.r_data()[i], c="r", alpha=alpha)
+            plt.plot(self._z_space, self.r_data()[i], c="r", alpha=alpha, lw=2)
             i += 1
 
-    def plot_all_pca(self, n, n_s):
+        plt.xlabel("$z$", fontsize=22)
+        plt.xticks(fontsize=22)
+
+        plt.ylabel("$p(z)$", fontsize=22)
+        plt.yticks(fontsize=22)
+
+        ax = plt.gca()
+        plt.setp(ax.spines.values(), linewidth=3)
+        ax.xaxis.set_tick_params(width=3)
+        ax.yaxis.set_tick_params(width=3)
+
+        ax.tick_params(direction='in', length=8)
+
+        ax2 = ax.secondary_yaxis("right")
+        ax2.tick_params(axis="y", direction="in", length=8, labelright=False)
+        plt.setp(ax2.spines.values(), linewidth=3)
+        ax2.yaxis.set_tick_params(width=3)
+
+        ax3 = ax.secondary_xaxis("top")
+        ax3.tick_params(axis="x", direction="in", length=8, labeltop=False)
+        plt.setp(ax3.spines.values(), linewidth=3)
+        ax3.xaxis.set_tick_params(width=3)   
+
+
+
+
+    def plot_all_pca(self, n, n_s, alpha=0.01):
         """
         Plots all u, g, r, pca nzs
         ----------------------------------------
@@ -323,7 +349,7 @@ class NzModel:
 
         """
 
-        fig = plt.subplots(1, 1, figsize=(15, 10))
+        fig = plt.subplots(1, 1, figsize=(20, 10))
 
         unzs = self.u_pca(n, n_s)
         gnzs = self.g_pca(n, n_s)
@@ -332,20 +358,44 @@ class NzModel:
         # u
         i = 0
         while i < n_s:
-            plt.plot(self._z_space, unzs[i], c="b", alpha=0.05)
+            plt.plot(self._z_space, unzs[i], c="b", alpha=alpha)
             i += 1
 
         # g
         i = 0
         while i < n_s:
-            plt.plot(self._z_space, gnzs[i], c="g", alpha=0.05)
+            plt.plot(self._z_space, gnzs[i], c="g", alpha=alpha)
             i += 1
 
         # r
         i = 0
         while i < n_s:
-            plt.plot(self._z_space, rnzs[i], c="r", alpha=0.05)
+            plt.plot(self._z_space, rnzs[i], c="r", alpha=alpha)
             i += 1
+
+
+        plt.xlabel("$z$", fontsize=22)
+        plt.xticks(fontsize=22)
+
+        plt.ylabel("$p(z)$", fontsize=22)
+        plt.yticks(fontsize=22)
+
+        ax = plt.gca()
+        plt.setp(ax.spines.values(), linewidth=3)
+        ax.xaxis.set_tick_params(width=3)
+        ax.yaxis.set_tick_params(width=3)
+
+        ax.tick_params(direction='in', length=8)
+
+        ax2 = ax.secondary_yaxis("right")
+        ax2.tick_params(axis="y", direction="in", length=8, labelright=False)
+        plt.setp(ax2.spines.values(), linewidth=3)
+        ax2.yaxis.set_tick_params(width=3)
+
+        ax3 = ax.secondary_xaxis("top")
+        ax3.tick_params(axis="x", direction="in", length=8, labeltop=False)
+        plt.setp(ax3.spines.values(), linewidth=3)
+        ax3.xaxis.set_tick_params(width=3)   
 
     def export_nzs(self, n, n_s):
         """
