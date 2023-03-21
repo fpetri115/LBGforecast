@@ -14,7 +14,7 @@ __all__ = ["smail_nz", "kde_nz", "delta_nz"]
 
 
 class redshift_distribution(container):
-    def __init__(self, *args, gals_per_arcmin2=1.0, zmax=10.0, **kwargs):
+    def __init__(self, *args, gals_per_arcmin2=1.0, zmax=1100.0, **kwargs):
         """Initialize the parameters of the redshift distribution"""
         self._norm = None
         self._gals_per_arcmin2 = gals_per_arcmin2
