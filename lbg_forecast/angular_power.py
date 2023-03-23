@@ -7,9 +7,12 @@ import jax.numpy as jnp
 
 import jax_cosmo as jc
 from jax_cosmo import Cosmology
-from jax_cosmo import probes
 
-from lbg_forecast.modified_angular_cl import angular_cl
+from jax_cosmo.redshift import delta_nz
+
+from lbg_forecast import modified_probes
+from jax_cosmo import probes
+from jax_cosmo.angular_cl import angular_cl
 from lbg_forecast.modified_angular_cl import noise_cl
 from lbg_forecast.modified_angular_cl import gaussian_cl_covariance_and_mean
 
@@ -76,12 +79,51 @@ def cl_theory(cosmo, nz_params, b_lbg, b_int, ell):
 
     tracers = [probes.NumberCounts(redshift_distributions, bias)]
 
-    signal = angular_cl(cosmo, ell, tracers)
+    signal = new_cl(cosmo, ell, tracers)
     noise = noise_cl(ell, tracers)
     total_cl = signal + noise
 
     return jnp.hstack(total_cl)
 
+@jit
+def cl_theory_CMB(cosmo, nz_params, b_lbg, b_int, ell):
+    """
+    Calculates theory vector for Likelihood. Computes angular cls
+    and cross correlations of u, g, r dropouts with two component bias.
+    --------------------------------------------------------------------
+    Parameters:
+    cosmo - JAX-COSMO cosmology object containing cosmological parameters
+    nz_params -
+    b_int - Interloper bias (linear)
+    b_lbg - LBG bias (linear)
+    ell - Spherical harmonic scale list. Gives range of ells to plot cls over
+    ----------------------------------------------------------------------
+    Returns:
+    Concatenated angular power spectra of length 6*len(ell) giving auto+cross
+    spectra, with poisson noise
+
+    """
+    n = 4
+    z_cut = 1.5
+
+    surface_of_last_scattering = delta_nz(1100.) 
+
+    nz_u = u_dropout(nz_params[:n], gals_per_arcmin2=1)#1
+    nz_g = g_dropout(nz_params[n : 2 * n], gals_per_arcmin2=1)#1
+    nz_r = r_dropout(nz_params[2 * n : 3 * n], gals_per_arcmin2=0.1)#0.1
+
+    redshift_distributions = [nz_u, nz_g, nz_r]
+
+    bias = custom_bias(b_int, b_lbg, z_cut)
+
+    cosmo_probes = [probes.NumberCounts(redshift_distributions, bias),
+                    modified_probes.WeakLensing([surface_of_last_scattering])]
+
+    signal = angular_cl(cosmo, ell, cosmo_probes)
+    noise = noise_cl(ell, cosmo_probes)
+    total_cl = signal + noise
+
+    return jnp.hstack(total_cl)
 
 @jit
 def cl_data(cosmo, nz_params, b_lbg, b_int, ell, f_sky, seed):
@@ -207,6 +249,46 @@ def plot_cls(cls_theory, ell, figure_size, fontsize):
 
         j += 1
 
+def plot_ncls(cls_theory, ell, figure_size, fontsize, ncls):
+    """
+    Plots auto and cross power spectra in a triangle plot.
+    ----------------------------------------------------------
+    Parameters:
+    cls_theory - Concatenated theory vector from cl_theory()
+    ell - Spherical harmonic scale list. Gives range of ells to plot cls over
+    figure_size, fontsize - plotting
+
+    """
+    tot_plots = ncls*ncls - sum(jnp.arange(0, ncls, 1))
+
+    fig, axes = plt.subplots(ncls, ncls, figsize=figure_size)
+    cl_list = jnp.split(cls_theory, tot_plots)
+
+    i = 0
+    j = 0
+    k = 0
+    while j < ncls:
+        i = 0
+        while i < ncls:
+            ax = axes[i][j]
+            if i >= j:
+                ax.plot(ell, cl_list[k])
+                # ax.set_xscale("log")
+                ax.set_yscale("log")
+                k += 1
+            else:
+                ax.set_visible(False)
+
+            # plotting labels
+            if i == 2 and j == 0:
+                ax.set_ylabel("$C_{\ell}$", fontsize=fontsize)
+            if i == 2 and j == 1:
+                ax.set_xlabel("$\ell$", fontsize=fontsize)
+
+            i += 1
+
+        j += 1
+
 
 def compare_cls(cl1, cl2, ell, figure_size, fontsize):
     """
@@ -259,7 +341,7 @@ def cl_hat(cosmo, bin_heights, bin_edges, ell):
 
     nz = [histogram_nz(bin_heights, bin_edges)]
     bias = constant_linear_bias(1.0)
-    tracers = [probes.NumberCounts(nz, bias)]
+    tracers = [modified_probes.NumberCounts(nz, bias)]
 
     signal = new_cl(cosmo, ell, tracers)
 

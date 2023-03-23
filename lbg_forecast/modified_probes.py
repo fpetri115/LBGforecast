@@ -63,7 +63,7 @@ def weak_lensing_kernel(cosmo, pzs, z, ell):
             integrand_single(np.array([pzs[i].params[0] for i in pzs_delta_idx]))
             * (1.0 + z)
             * chi
-            *1/(bkgrd.H(cosmo, z2a(z)))
+            #*1/(bkgrd.H(cosmo, z2a(z)))
         )
     # Fusing the results together
     radial_kernel = np.concatenate(radial_kernels, axis=0)
