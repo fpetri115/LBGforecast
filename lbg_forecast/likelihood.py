@@ -7,7 +7,9 @@ from jax_cosmo import Cosmology
 from jax import jacfwd
 
 from lbg_forecast.angular_power import cl_theory
+from lbg_forecast.angular_power import cl_theory_CMB
 from lbg_forecast.angular_power import cl_data
+from lbg_forecast.angular_power import cl_data_CMB
 from lbg_forecast.angular_power import compare_cls
 from lbg_forecast.angular_power import define_cosmo
 
@@ -92,7 +94,7 @@ class Likelihood:
         self._cosmo_fid = define_cosmo()
 
         # Generate mock data
-        mean_cl, covmat = cl_data(
+        mean_cl, covmat = cl_data_CMB(
             self._cosmo_fid,
             self.nz_params_mean,
             self._b_lbg,
@@ -100,6 +102,7 @@ class Likelihood:
             self._ell,
             self._fsky,
             seed,
+            ncls = 4,
         )
         self.cl_mean = mean_cl
 
@@ -108,7 +111,7 @@ class Likelihood:
         self._inv_C = jnp.linalg.inv(self.C)
 
         # jacobian
-        self._jacobian = jax.jit(jacfwd(cl_theory, argnums=1))
+        self._jacobian = jax.jit(jacfwd(cl_theory_CMB, argnums=1))
         self.T = self._jacobian(self._cosmo_fid, self.nz_params_mean,
                                  self._b_lbg, self._b_int, self._ell)
         
@@ -122,19 +125,18 @@ class Likelihood:
 
         cosmo_params, blbg, bint = get_cosmo_params(self._cosmo_fid), self._b_lbg, self._b_int
         cosmo_params = cosmo_params.at[0].set(params[0]) #set sigma8
-        cosmo_params = cosmo_params.at[1].set(params[1]) 
-        cosmo_params = cosmo_params.at[2].set(params[2]) 
-        cosmo_params = cosmo_params.at[3].set(params[3])
-        cosmo_params = cosmo_params.at[4].set(params[4]) 
+        #cosmo_params = cosmo_params.at[1].set(params[1]) 
+        #cosmo_params = cosmo_params.at[2].set(params[2]) 
+        #cosmo_params = cosmo_params.at[3].set(params[3])
+        #cosmo_params = cosmo_params.at[4].set(params[4]) 
         #cosmo_params = cosmo_params.at[5].set(params[5])  
         cosmo = cosmo_params_to_obj(cosmo_params)
 
-        #blbg = params[1]
+        blbg = params[1]
         #bint = params[2]
         nz_params = self.nz_params_mean
     
-        return cl_theory(cosmo, nz_params, blbg, bint, self._ell)
-
+        return cl_theory_CMB(cosmo, nz_params, blbg, bint, self._ell)
 
     def logL(self, params):
         """marginalised likelihood"""
@@ -148,7 +150,7 @@ class Likelihood:
         C = self.C
         P = self.P
 
-        t = cl_theory(cosmo, nz_params, blbg, bint, self._ell)
+        t = cl_theory_CMB(cosmo, nz_params, blbg, bint, self._ell)
         c = self.cl_mean
 
         return marginalised_log_likelihood(c, t, C, P, T)
@@ -163,7 +165,7 @@ class Likelihood:
 
         cov = self.C
 
-        t = cl_theory(cosmo, nz_params, blbg, bint, self._ell)
+        t = cl_theory_CMB(cosmo, nz_params, blbg, bint, self._ell)
         c = self.cl_mean
 
         return gaussian_log_likelihood(c, t, cov, include_logdet=False)
@@ -201,7 +203,7 @@ class Likelihood:
         cosmo = self._cosmo_fid
         blbg = self._b_lbg
         bint = self._b_int
-        theory_cl = cl_theory(cosmo, nz_params, blbg, bint, self._ell)
+        theory_cl = cl_theory_CMB(cosmo, nz_params, blbg, bint, self._ell)
 
         # plot together
         compare_cls(data_cl, theory_cl, self._ell, figure_size=(15, 10), fontsize=18)
