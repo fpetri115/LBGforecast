@@ -84,8 +84,8 @@ class Likelihood:
         self._ell = jnp.arange(200, 1000, 1)
         self._fsky = 0.4
 
-        self._b_lbg = 2.0
-        self._b_int = 1.0
+        self._b_lbg = 3.585
+        self._b_int = 3.585
         seed = 100
 
         self.nz_params_mean = jnp.hstack(
