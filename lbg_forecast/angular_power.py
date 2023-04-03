@@ -9,6 +9,8 @@ import jax_cosmo as jc
 from jax_cosmo import Cosmology
 
 from jax_cosmo.redshift import delta_nz
+from jax_cosmo.power import sigmasqr
+import jax_cosmo.transfer as tklib
 
 from lbg_forecast import modified_probes
 from jax_cosmo import probes
@@ -356,3 +358,6 @@ def cl_hat(cosmo, bin_heights, bin_edges, ell):
     signal = new_cl(cosmo, ell, tracers)
 
     return signal.flatten()
+
+def sigma_8(cosmo):
+    return jnp.sqrt(sigmasqr(cosmo, 8.0, transfer_fn=tklib.Eisenstein_Hu))
