@@ -12,6 +12,7 @@ from lbg_forecast.angular_power import cl_data
 from lbg_forecast.angular_power import cl_data_CMB
 from lbg_forecast.angular_power import compare_cls
 from lbg_forecast.angular_power import define_cosmo
+from lbg_forecast.angular_power import pk
 
 from lbg_forecast.modified_likelihood import gaussian_log_likelihood
 from lbg_forecast.modified_likelihood import marginalised_log_likelihood
@@ -124,7 +125,13 @@ class Likelihood:
         """Reduced theory vector for fisher forecast"""
 
         cosmo_params, blbg, bint = get_cosmo_params(self._cosmo_fid), self._b_lbg, self._b_int
-        cosmo_params = cosmo_params.at[0].set(params[0]) #set sigma8
+        #cosmo_params = cosmo_params.at[0].set(params[0]) #set sigma8
+
+        ####Stuff for W&W
+        norm_diff = pk(self._cosmo_fid, 1/8, 0)/pk(self._cosmo_fid, 1/8, 2.6)
+        cosmo_params = cosmo_params.at[0].set(params[0]*jnp.sqrt(norm_diff)) #sigma8 at z=2.6
+        ####
+
         #cosmo_params = cosmo_params.at[1].set(params[1]) 
         #cosmo_params = cosmo_params.at[2].set(params[2]) 
         #cosmo_params = cosmo_params.at[3].set(params[3])

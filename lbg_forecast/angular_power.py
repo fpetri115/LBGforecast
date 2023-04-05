@@ -9,8 +9,10 @@ import jax_cosmo as jc
 from jax_cosmo import Cosmology
 
 from jax_cosmo.redshift import delta_nz
-from jax_cosmo.power import sigmasqr
-import jax_cosmo.transfer as tklib
+
+from jax_cosmo.power import linear_matter_power
+
+from jax_cosmo.utils import z2a
 
 from lbg_forecast import modified_probes
 from jax_cosmo import probes
@@ -359,5 +361,5 @@ def cl_hat(cosmo, bin_heights, bin_edges, ell):
 
     return signal.flatten()
 
-def sigma_8(cosmo):
-    return jnp.sqrt(sigmasqr(cosmo, 8.0, transfer_fn=tklib.Eisenstein_Hu))
+def pk(cosmo, k, z):
+    return linear_matter_power(cosmo, k, a=z2a(z))
