@@ -85,8 +85,8 @@ class Likelihood:
         self._ell = jnp.arange(200, 1000, 1)
         self._fsky = 0.4
 
-        self._b_lbg = 3.585
-        self._b_int = 3.585
+        self._b_lbg = 3.#3.585
+        self._b_int = 3.#3.585
         seed = 100
 
         self.nz_params_mean = jnp.hstack(
@@ -125,21 +125,21 @@ class Likelihood:
         """Reduced theory vector for fisher forecast"""
 
         cosmo_params, blbg, bint = get_cosmo_params(self._cosmo_fid), self._b_lbg, self._b_int
-        #cosmo_params = cosmo_params.at[0].set(params[0]) #set sigma8
+        cosmo_params = cosmo_params.at[0].set(params[0]) #set sigma8
 
         ####Stuff for W&W
-        norm_diff = pk(self._cosmo_fid, 1/8, 0)/pk(self._cosmo_fid, 1/8, 2.6)
-        cosmo_params = cosmo_params.at[0].set(params[0]*jnp.sqrt(norm_diff)) #sigma8 at z=2.6
+        #norm_diff = pk(self._cosmo_fid, 1/8, 0)/pk(self._cosmo_fid, 1/8, 2.6)
+        #cosmo_params = cosmo_params.at[0].set(params[0]*jnp.sqrt(norm_diff)) #sigma8 at z=2.6
         ####
 
-        #cosmo_params = cosmo_params.at[1].set(params[1]) 
-        #cosmo_params = cosmo_params.at[2].set(params[2]) 
-        #cosmo_params = cosmo_params.at[3].set(params[3])
-        #cosmo_params = cosmo_params.at[4].set(params[4]) 
+        cosmo_params = cosmo_params.at[1].set(params[1]) 
+        cosmo_params = cosmo_params.at[2].set(params[2]) 
+        cosmo_params = cosmo_params.at[3].set(params[3])
+        cosmo_params = cosmo_params.at[4].set(params[4]) 
         #cosmo_params = cosmo_params.at[5].set(params[5])  
         cosmo = cosmo_params_to_obj(cosmo_params)
 
-        blbg = params[1]
+        blbg = params[5]
         #bint = params[2]
         nz_params = self.nz_params_mean
     
