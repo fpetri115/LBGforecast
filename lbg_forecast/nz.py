@@ -1,4 +1,5 @@
 import numpy as np
+import matplotlib.pyplot as plt
 
 def load_redshift_distributions():
     """
@@ -24,9 +25,9 @@ def load_redshift_distributions():
     return [nzus, nzgs, nzrs]
 
 
-def normalise(self, nz, z_space):
+def normalise(nzs, z_space):
         """
-        Normalises a redshift distribution.
+        Normalises a redshift distribution. (SLOW)
         -------------------------------------
         Parameters:
         nz - Array containing redshift distribution
@@ -36,15 +37,19 @@ def normalise(self, nz, z_space):
         normalised redshift distribution
 
         """
-        area = np.trapz(nz, z_space)
 
-        return nz / area
+        nzs_norm = []
+        for nz in nzs:
+            area = np.trapz(nz, z_space)
+            nzs_norm.append(nz / area)
 
-def interloper_fraction(nz, z_space, z_cut=1.5):
+        return np.array(nzs_norm)
+
+def interloper_fraction(nzs, z_space, z_cut=1.5):
 
         """
         Given a LBG redshift distribution, cuts nz and z=1.5, and integrates over both peaks
-        to get interloper fraction f = number of galaxies @ < z=1.5/number of galaxies @ > z=1.5
+        to get interloper fraction f = number of galaxies @ < z=1.5/number of galaxies @ > z=1.5 (SLOW)
         -------------------------------------------------------------------------------------------
         Parameters:
         nz - Array containing redshift distribution
@@ -53,7 +58,7 @@ def interloper_fraction(nz, z_space, z_cut=1.5):
         f - Interloper Fraction
         """
 
-        nz = normalise(nz)
+        nzs = normalise(nzs, z_space)
 
         # find index in z_space where z>=1.5
         index = 0
@@ -61,14 +66,37 @@ def interloper_fraction(nz, z_space, z_cut=1.5):
             if i >= z_cut:
                 break
             index += 1
-
+        
         # divide z_space into two regions, one for lbg, one for interlopers
         z_space_low = z_space[:index]
         z_space_high = z_space[index:]
+        
+        f_list = []
+        for nz in nzs:
 
-        no_int = np.trapz(nz[:index], z_space_low)
-        no_lbg = np.trapz(nz[index:], z_space_high)
+            no_int = np.trapz(nz[:index], z_space_low)
+            no_lbg = np.trapz(nz[index:], z_space_high)
 
-        f = no_int / (no_lbg + no_int)
+            f = no_int / (no_lbg + no_int)
+            f_list.append(f)
 
-        return f
+        return np.array(f_list)
+
+def plot_nzs(nzs, z_space, alpha=0.025):
+        """
+        plots nzs overlaid on one graph
+        ---------------------------------------
+        Parameters:
+        nzs - array of nzs (output of _pca methods and _data methods)
+
+        Returns:
+        None
+
+        """
+        fig = plt.subplots(1, 1, figsize=(20, 10))
+        no = len(nzs)
+
+        i = 0
+        while i < no:
+            plt.plot(z_space, nzs[i], c="k", alpha=alpha)
+            i += 1
