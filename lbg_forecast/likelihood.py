@@ -87,15 +87,19 @@ class Likelihood:
         seed = 100
 
         self._b_lbg_u = 3
-        self._b_lbg_g = 3
-        self._b_lbg_r = 3
+        self._b_lbg_g = 5
+        self._b_lbg_r = 7
 
-        self._b_int = 3
+        self._b_int_u = 3
+        self._b_int_g = 5
+        self._b_int_r = 7
 
         self._bias_params = jnp.array([self._b_lbg_u,
                                        self._b_lbg_g,
                                        self._b_lbg_r,
-                                       self._b_int
+                                       self._b_int_u,
+                                       self._b_int_g,
+                                       self._b_int_r
         ])
 
         self.nz_params_mean = jnp.hstack(

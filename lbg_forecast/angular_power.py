@@ -81,8 +81,8 @@ def cl_theory(cosmo, nz_params, bias_params, ell):
 
     bias = [
         custom_bias(bias_params[3], bias_params[0], z_cut),
-        custom_bias(bias_params[3], bias_params[1], z_cut),
-        custom_bias(bias_params[3], bias_params[2], z_cut)
+        custom_bias(bias_params[4], bias_params[1], z_cut),
+        custom_bias(bias_params[5], bias_params[2], z_cut)
     ]
 
     tracers = [probes.NumberCounts(redshift_distributions, bias)]
@@ -124,8 +124,8 @@ def cl_theory_CMB(cosmo, nz_params, bias_params, ell):
 
     bias = [
         custom_bias(bias_params[3], bias_params[0], z_cut),
-        custom_bias(bias_params[3], bias_params[1], z_cut),
-        custom_bias(bias_params[3], bias_params[2], z_cut)
+        custom_bias(bias_params[4], bias_params[1], z_cut),
+        custom_bias(bias_params[5], bias_params[2], z_cut)
     ]
 
     cosmo_probes = [probes.NumberCounts(redshift_distributions, bias),
@@ -168,8 +168,8 @@ def cl_data(cosmo, nz_params, bias_params, ell, f_sky, seed, ncls):
 
     bias = [
         custom_bias(bias_params[3], bias_params[0], z_cut),
-        custom_bias(bias_params[3], bias_params[1], z_cut),
-        custom_bias(bias_params[3], bias_params[2], z_cut)
+        custom_bias(bias_params[4], bias_params[1], z_cut),
+        custom_bias(bias_params[5], bias_params[2], z_cut)
     ]
 
     tracers = [probes.NumberCounts(redshift_distributions, bias)]
@@ -218,8 +218,8 @@ def cl_data_CMB(cosmo, nz_params, bias_params, ell, f_sky, seed, ncls):
 
     bias = [
         custom_bias(bias_params[3], bias_params[0], z_cut),
-        custom_bias(bias_params[3], bias_params[1], z_cut),
-        custom_bias(bias_params[3], bias_params[2], z_cut)
+        custom_bias(bias_params[4], bias_params[1], z_cut),
+        custom_bias(bias_params[5], bias_params[2], z_cut)
     ]
 
     cosmo_probes = [probes.NumberCounts(redshift_distributions, bias),
