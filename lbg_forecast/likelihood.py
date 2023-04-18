@@ -87,6 +87,7 @@ class Likelihood:
 
         self._b_lbg = 3.#3.585
         self._b_int = 3.#3.585
+
         seed = 100
 
         self.nz_params_mean = jnp.hstack(
@@ -118,32 +119,32 @@ class Likelihood:
         
         self.Cm = self.C + self.T @ self.P @ self.T.T
 
+        ####For use with Fisher:
+        cosmo_params = get_cosmo_params(self._cosmo_fid)
+        bias_params = jnp.array([self._b_lbg, self._b_int])
+        self._combined_params = jnp.concatenate((cosmo_params, bias_params))
+
         print("Initialisation Complete")
 
 
-    def _mu_vec(self, params):
+    def _mu_vec(self, params, inds):
         """Reduced theory vector for fisher forecast"""
 
-        cosmo_params, blbg, bint = get_cosmo_params(self._cosmo_fid), self._b_lbg, self._b_int
-        cosmo_params = cosmo_params.at[0].set(params[0]) #set sigma8
+        combined_params = self._combined_params
+        params_ind = 0
+        for i in inds:
+            combined_params = combined_params.at[i].set(params[params_ind])
+            params_ind+=1
 
         ####Stuff for W&W
         #norm_diff = pk(self._cosmo_fid, 1/8, 0)/pk(self._cosmo_fid, 1/8, 2.6)
         #cosmo_params = cosmo_params.at[0].set(params[0]*jnp.sqrt(norm_diff)) #sigma8 at z=2.6
         ####
 
-        cosmo_params = cosmo_params.at[1].set(params[1]) 
-        cosmo_params = cosmo_params.at[2].set(params[2]) 
-        cosmo_params = cosmo_params.at[3].set(params[3])
-        cosmo_params = cosmo_params.at[4].set(params[4]) 
-        #cosmo_params = cosmo_params.at[5].set(params[5])  
-        cosmo = cosmo_params_to_obj(cosmo_params)
-
-        blbg = params[5]
-        #bint = params[2]
+        cosmo = cosmo_params_to_obj(combined_params[:6])
         nz_params = self.nz_params_mean
     
-        return cl_theory_CMB(cosmo, nz_params, blbg, bint, self._ell)
+        return cl_theory_CMB(cosmo, nz_params, combined_params[6], combined_params[7], self._ell)
 
     def logL(self, params):
         """marginalised likelihood"""
@@ -177,23 +178,21 @@ class Likelihood:
 
         return gaussian_log_likelihood(c, t, cov, include_logdet=False)
     
-    def fisher(self, params):
+    def fisher(self, params, inds):
 
         inv_cov = jnp.linalg.inv(self.C)
-        jac_at_mean = jax.jit(jax.jacfwd(self._mu_vec))
-
-        dmudp = jac_at_mean(params)
+        jac_at_mean = jax.jit(jax.jacfwd(self._mu_vec, argnums=0))
+        dmudp = jac_at_mean(params, inds)
 
         F = dmudp.T@inv_cov@dmudp
 
         return F
     
-    def fisher_marg(self, params):
+    def fisher_marg(self, params, inds):
 
         inv_cov = jnp.linalg.inv(self.Cm)
-        jac_at_mean = jax.jit(jax.jacfwd(self._mu_vec))
-
-        dmudp = jac_at_mean(params)
+        jac_at_mean = jax.jit(jax.jacfwd(self._mu_vec, argnums=0))
+        dmudp = jac_at_mean(params, inds)
 
         F = dmudp.T@inv_cov@dmudp
 
