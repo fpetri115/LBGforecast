@@ -84,11 +84,19 @@ class Likelihood:
         self._z_cut = 1.5
         self._ell = jnp.arange(200, 1000, 1)
         self._fsky = 0.4
-
-        self._b_lbg = 3.#3.585
-        self._b_int = 3.#3.585
-
         seed = 100
+
+        self._b_lbg_u = 3
+        self._b_lbg_g = 3
+        self._b_lbg_r = 3
+
+        self._b_int = 3
+
+        self._bias_params = jnp.array([self._b_lbg_u,
+                                       self._b_lbg_g,
+                                       self._b_lbg_r,
+                                       self._b_int
+        ])
 
         self.nz_params_mean = jnp.hstack(
             (self._mean_vec_u, self._mean_vec_g, self._mean_vec_r)
@@ -99,8 +107,7 @@ class Likelihood:
         mean_cl, covmat = cl_data_CMB(
             self._cosmo_fid,
             self.nz_params_mean,
-            self._b_lbg,
-            self._b_int,
+            self._bias_params,
             self._ell,
             self._fsky,
             seed,
@@ -115,14 +122,13 @@ class Likelihood:
         # jacobian
         self._jacobian = jax.jit(jacfwd(cl_theory_CMB, argnums=1))
         self.T = self._jacobian(self._cosmo_fid, self.nz_params_mean,
-                                 self._b_lbg, self._b_int, self._ell)
+                                 self._bias_params, self._ell)
         
         self.Cm = self.C + self.T @ self.P @ self.T.T
 
         ####For use with Fisher:
         cosmo_params = get_cosmo_params(self._cosmo_fid)
-        bias_params = jnp.array([self._b_lbg, self._b_int])
-        self._combined_params = jnp.concatenate((cosmo_params, bias_params))
+        self._combined_params = jnp.concatenate((cosmo_params, self._bias_params))
 
         print("Initialisation Complete")
 
@@ -142,14 +148,15 @@ class Likelihood:
         ####
 
         cosmo = cosmo_params_to_obj(combined_params[:6])
+        bias_params = combined_params[6:]
         nz_params = self.nz_params_mean
     
-        return cl_theory_CMB(cosmo, nz_params, combined_params[6], combined_params[7], self._ell)
+        return cl_theory_CMB(cosmo, nz_params, bias_params, self._ell)
 
     def logL(self, params):
         """marginalised likelihood"""
 
-        cosmo_params, blbg, bint = unpack_params(params)
+        cosmo_params, bias_params = unpack_params(params)
         cosmo = cosmo_params_to_obj(cosmo_params)
 
         nz_params = self.nz_params_mean
@@ -158,7 +165,7 @@ class Likelihood:
         C = self.C
         P = self.P
 
-        t = cl_theory_CMB(cosmo, nz_params, blbg, bint, self._ell)
+        t = cl_theory_CMB(cosmo, nz_params, bias_params, self._ell)
         c = self.cl_mean
 
         return marginalised_log_likelihood(c, t, C, P, T)
@@ -166,14 +173,14 @@ class Likelihood:
     def logLgauss(self, params):
         """Gaussian likelihood for n(z) fixed at mean value"""
 
-        cosmo_params, blbg, bint = unpack_params(params)
+        cosmo_params, bias_params = unpack_params(params)
         cosmo = cosmo_params_to_obj(cosmo_params)
 
         nz_params = self.nz_params_mean
 
         cov = self.C
 
-        t = cl_theory_CMB(cosmo, nz_params, blbg, bint, self._ell)
+        t = cl_theory_CMB(cosmo, nz_params, bias_params, self._ell)
         c = self.cl_mean
 
         return gaussian_log_likelihood(c, t, cov, include_logdet=False)
@@ -207,9 +214,8 @@ class Likelihood:
         # theory vector evaluated at mean redshift distribution
         nz_params = self.nz_params_mean
         cosmo = self._cosmo_fid
-        blbg = self._b_lbg
-        bint = self._b_int
-        theory_cl = cl_theory_CMB(cosmo, nz_params, blbg, bint, self._ell)
+        bias_params = self._bias_params
+        theory_cl = cl_theory_CMB(cosmo, nz_params, bias_params, self._ell)
 
         # plot together
         compare_cls(data_cl, theory_cl, self._ell, figure_size=(15, 10), fontsize=18)

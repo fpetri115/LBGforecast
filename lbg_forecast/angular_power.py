@@ -53,7 +53,7 @@ def z_space():
 
 
 @jit
-def cl_theory(cosmo, nz_params, b_lbg, b_int, ell):
+def cl_theory(cosmo, nz_params, bias_params, ell):
     """
     Calculates theory vector for Likelihood. Computes angular cls
     and cross correlations of u, g, r dropouts with two component bias.
@@ -79,7 +79,11 @@ def cl_theory(cosmo, nz_params, b_lbg, b_int, ell):
 
     redshift_distributions = [nz_u, nz_g, nz_r]
 
-    bias = custom_bias(b_int, b_lbg, z_cut)
+    bias = [
+        custom_bias(bias_params[3], bias_params[0], z_cut),
+        custom_bias(bias_params[3], bias_params[1], z_cut),
+        custom_bias(bias_params[3], bias_params[2], z_cut)
+    ]
 
     tracers = [probes.NumberCounts(redshift_distributions, bias)]
 
@@ -90,7 +94,7 @@ def cl_theory(cosmo, nz_params, b_lbg, b_int, ell):
     return jnp.hstack(total_cl)
 
 @jit
-def cl_theory_CMB(cosmo, nz_params, b_lbg, b_int, ell):
+def cl_theory_CMB(cosmo, nz_params, bias_params, ell):
     """
     Calculates theory vector for Likelihood. Computes angular cls
     and cross correlations of u, g, r dropouts with two component bias.
@@ -118,7 +122,11 @@ def cl_theory_CMB(cosmo, nz_params, b_lbg, b_int, ell):
 
     redshift_distributions = [nz_u, nz_g, nz_r]
 
-    bias = custom_bias(b_int, b_lbg, z_cut)
+    bias = [
+        custom_bias(bias_params[3], bias_params[0], z_cut),
+        custom_bias(bias_params[3], bias_params[1], z_cut),
+        custom_bias(bias_params[3], bias_params[2], z_cut)
+    ]
 
     cosmo_probes = [probes.NumberCounts(redshift_distributions, bias),
                     modified_probes.WeakLensing([surface_of_last_scattering])]
@@ -130,7 +138,7 @@ def cl_theory_CMB(cosmo, nz_params, b_lbg, b_int, ell):
     return jnp.hstack(total_cl)
 
 #@partial(jit, static_argnums=7)
-def cl_data(cosmo, nz_params, b_lbg, b_int, ell, f_sky, seed, ncls):
+def cl_data(cosmo, nz_params, bias_params, ell, f_sky, seed, ncls):
     """
     Genrates Mock LBG lustering angular power spectra data. Gives
     u, g, r-dropout clustering plus cross correlations. Gaussian noise
@@ -158,7 +166,11 @@ def cl_data(cosmo, nz_params, b_lbg, b_int, ell, f_sky, seed, ncls):
 
     redshift_distributions = [nz_u, nz_g, nz_r]
 
-    bias = custom_bias(b_int, b_lbg, z_cut)
+    bias = [
+        custom_bias(bias_params[3], bias_params[0], z_cut),
+        custom_bias(bias_params[3], bias_params[1], z_cut),
+        custom_bias(bias_params[3], bias_params[2], z_cut)
+    ]
 
     tracers = [probes.NumberCounts(redshift_distributions, bias)]
 
@@ -174,7 +186,7 @@ def cl_data(cosmo, nz_params, b_lbg, b_int, ell, f_sky, seed, ncls):
     return total_cl, cov
 
 #@jit
-def cl_data_CMB(cosmo, nz_params, b_lbg, b_int, ell, f_sky, seed, ncls):
+def cl_data_CMB(cosmo, nz_params, bias_params, ell, f_sky, seed, ncls):
     """
     Genrates Mock LBG lustering angular power spectra data. Gives
     u, g, r-dropout clustering plus cross correlations. Gaussian noise
@@ -204,7 +216,11 @@ def cl_data_CMB(cosmo, nz_params, b_lbg, b_int, ell, f_sky, seed, ncls):
 
     redshift_distributions = [nz_u, nz_g, nz_r]
 
-    bias = custom_bias(b_int, b_lbg, z_cut)
+    bias = [
+        custom_bias(bias_params[3], bias_params[0], z_cut),
+        custom_bias(bias_params[3], bias_params[1], z_cut),
+        custom_bias(bias_params[3], bias_params[2], z_cut)
+    ]
 
     cosmo_probes = [probes.NumberCounts(redshift_distributions, bias),
                     modified_probes.WeakLensing([surface_of_last_scattering])]
