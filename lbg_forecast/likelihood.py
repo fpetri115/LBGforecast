@@ -107,6 +107,11 @@ class Likelihood:
         )
         self._cosmo_fid = define_cosmo()
 
+        _o_m = self._cosmo_fid.Omega_c + self._cosmo_fid.Omega_b
+        _s8 = self._cosmo_fid.sigma8*jnp.sqrt(_o_m/0.3)
+
+        self._derived_params = jnp.array([_o_m, _s8])
+
         # Generate mock data
         mean_cl, covmat = cl_data_CMB(
             self._cosmo_fid,
@@ -132,7 +137,9 @@ class Likelihood:
 
         ####For use with Fisher:
         cosmo_params = get_cosmo_params(self._cosmo_fid)
-        self._combined_params = jnp.concatenate((cosmo_params, self._bias_params))
+        self._combined_params = jnp.concatenate((cosmo_params, 
+                                                 self._bias_params, 
+                                                 self._derived_params))
 
         print("Initialisation Complete")
 
@@ -151,9 +158,21 @@ class Likelihood:
         #cosmo_params = cosmo_params.at[0].set(params[0]*jnp.sqrt(norm_diff)) #sigma8 at z=2.6
         ####
 
-        cosmo = cosmo_params_to_obj(combined_params[:6])
-        bias_params = combined_params[6:]
+        bias_params = combined_params[6:9]
+        derived_params = combined_params[9:]
         nz_params = self.nz_params_mean
+
+        #if(len(derived_params)== 1):
+        #    o_m = derived_params[0]
+        #    combined_params = combined_params.at[1].set(o_m - combined_params[2])
+
+        #if(len(derived_params)>1):
+        o_m = derived_params[0]
+        s8 = derived_params[1]
+        combined_params = combined_params.at[0].set(s8/jnp.sqrt(o_m/0.3))
+        combined_params = combined_params.at[1].set(o_m - combined_params[2])
+
+        cosmo = cosmo_params_to_obj(combined_params[:6])
     
         return cl_theory_CMB(cosmo, nz_params, bias_params, self._ell)
 
