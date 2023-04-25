@@ -149,9 +149,11 @@ class Likelihood:
 
         combined_params = self._combined_params
         params_ind = 0
+        final_index = 0
         for i in inds:
             combined_params = combined_params.at[i].set(params[params_ind])
-            params_ind+=1
+            params_ind += 1
+            final_index = i
 
         ####Stuff for W&W
         #norm_diff = pk(self._cosmo_fid, 1/8, 0)/pk(self._cosmo_fid, 1/8, 2.6)
@@ -162,11 +164,26 @@ class Likelihood:
         derived_params = combined_params[9:]
         nz_params = self.nz_params_mean
 
-        #if(len(derived_params)== 1):
-        #    o_m = derived_params[0]
-        #    combined_params = combined_params.at[1].set(o_m - combined_params[2])
+        cosmo = cosmo_params_to_obj(combined_params[:6])
+    
+        return cl_theory_CMB(cosmo, nz_params, bias_params, self._ell)
+    
+    def _mu_vec_deriv(self, params, inds):
+        """Reduced theory vector for fisher forecast"""
 
-        #if(len(derived_params)>1):
+        combined_params = self._combined_params
+        params_ind = 0
+        final_index = 0
+        for i in inds:
+            combined_params = combined_params.at[i].set(params[params_ind])
+            params_ind += 1
+            final_index = i
+
+        bias_params = combined_params[6:9]
+        derived_params = combined_params[9:]
+        nz_params = self.nz_params_mean
+
+
         o_m = derived_params[0]
         s8 = derived_params[1]
         combined_params = combined_params.at[0].set(s8/jnp.sqrt(o_m/0.3))
@@ -222,6 +239,26 @@ class Likelihood:
 
         inv_cov = jnp.linalg.inv(self.Cm)
         jac_at_mean = jax.jit(jax.jacfwd(self._mu_vec, argnums=0))
+        dmudp = jac_at_mean(params, inds)
+
+        F = dmudp.T@inv_cov@dmudp
+
+        return F
+    
+    def fisher_deriv(self, params, inds):
+
+        inv_cov = jnp.linalg.inv(self.C)
+        jac_at_mean = jax.jit(jax.jacfwd(self._mu_vec_deriv, argnums=0))
+        dmudp = jac_at_mean(params, inds)
+
+        F = dmudp.T@inv_cov@dmudp
+
+        return F
+    
+    def fisher_marg_deriv(self, params, inds):
+
+        inv_cov = jnp.linalg.inv(self.Cm)
+        jac_at_mean = jax.jit(jax.jacfwd(self._mu_vec_deriv, argnums=0))
         dmudp = jac_at_mean(params, inds)
 
         F = dmudp.T@inv_cov@dmudp
