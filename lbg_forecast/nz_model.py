@@ -298,17 +298,35 @@ class NzModel:
 
         i = 0
         while i < no_u:
-            plt.plot(self._z_space, self.u_data()[i], c="b", alpha=alpha, lw=2)
+            
+            if(i == 0):
+                label = "u-dropouts"
+            else:
+                label = None
+
+            plt.plot(self._z_space, self.u_data()[i], c="steelblue", alpha=alpha, lw=2, label=label, ls='-')
             i += 1
 
         i = 0
         while i < no_g:
-            plt.plot(self._z_space, self.g_data()[i], c="g", alpha=alpha, lw=2)
+
+            if(i == 0):
+                label = "g-dropouts"
+            else:
+                label = None
+
+            plt.plot(self._z_space, self.g_data()[i], c="orangered", alpha=alpha, lw=2, label=label, ls='-')
             i += 1
 
         i = 0
         while i < no_r:
-            plt.plot(self._z_space, self.r_data()[i], c="r", alpha=alpha, lw=2)
+
+            if(i == 0):
+                label = "r-dropouts"
+            else:
+                label = None
+
+            plt.plot(self._z_space, self.r_data()[i], c="seagreen", alpha=alpha, lw=2, label=label, ls="-")
             i += 1
 
         plt.xlabel("$z$", fontsize=22)
@@ -316,6 +334,7 @@ class NzModel:
 
         plt.ylabel("$p(z)$", fontsize=22)
         plt.yticks(fontsize=22)
+        plt.legend(loc=0, fontsize= 24, frameon=False, ncols=3)
 
         ax = plt.gca()
         plt.setp(ax.spines.values(), linewidth=3)
