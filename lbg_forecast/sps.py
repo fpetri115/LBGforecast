@@ -94,17 +94,6 @@ def redshift_fsps_spectrum(spectrum, angstroms, mass, redshift):
     
     return  f_cgs_aa, aa_red
 
-def update_sps_parameters(age, mass, tau, const, redshift, metal, dustesc, dust1, dust2, tburst, fburst, igm, gas_ion, gas_z, fagn, imf1, imf2, imf3, sps_model):
-
-    sps_params = np.array([age, mass, tau, const, redshift, metal, 
-                           dustesc, dust1, dust2, tburst, 
-                           fburst, igm, gas_ion, gas_z, fagn, 
-                           imf1, imf2, imf3])
-
-    update_sps_model(sps_model, sps_params)
-
-    return sps_params
-
 def plot_sed(spectrum):
     
     plt.plot(spectrum[1], spectrum[0])
