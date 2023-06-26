@@ -9,9 +9,10 @@ from astropy.constants import L_sun
 
 from sedpy import observate
 
-def initialise_sps_model():
+#If dust_type=2, dust1 must be zero!
+def initialise_sps_model(dust_type=2):
 
-    sps_model = fsps.StellarPopulation(compute_vega_mags=False, zcontinuous=1, sfh=1, dust_type=0)
+    sps_model = fsps.StellarPopulation(compute_vega_mags=False, zcontinuous=1, sfh=1, dust_type=dust_type)
 
     sps_model.params['add_neb_emission'] = True 
     sps_model.params['add_igm_absorption'] = True
@@ -108,6 +109,8 @@ def plot_sed(spectrum):
     
     plt.plot(spectrum[1], spectrum[0])
     plt.xlim(2000, 9000)
+    plt.ylabel("Flux Density $f_{\lambda}$ $[\mathrm{ergs}^{-1}\mathrm{cm}^{-3}]$")
+    plt.xlabel("Wavelength $\lambda$ $[\mathrm{\AA}]$")
 
 #for homebrew get_mags
 def get_lsst_filters():
