@@ -94,12 +94,22 @@ def redshift_fsps_spectrum(spectrum, angstroms, mass, redshift):
     
     return  f_cgs_aa, aa_red
 
-def plot_sed(spectrum):
+def plot_sed(spectrum, scaley, xmin, xmax, ymin, ymax, xsize=10, ysize=5, fontsize=32, log=False, **kwargs):
     
-    plt.plot(spectrum[1], spectrum[0])
-    plt.xlim(2000, 9000)
-    plt.ylabel("Flux Density $f_{\lambda}$ $[\mathrm{ergs}^{-1}\mathrm{cm}^{-3}]$")
-    plt.xlabel("Wavelength $\lambda$ $[\mathrm{\AA}]$")
+    plt.figure(figsize=(xsize,ysize))
+    plt.plot(spectrum[1], spectrum[0]*(10**scaley), **kwargs)
+    plt.xlim(xmin, xmax)
+    plt.ylim(ymin, ymax)
+
+    mscaley = -1*scaley
+    plt.ylabel("Flux Density $f_{\lambda}$ $[$" + r"$10^{{{}}}$".format(mscaley) + "$\mathrm{ergs}^{-1}\mathrm{cm}^{-3}]$", fontsize=fontsize)
+    plt.xlabel("Wavelength $\lambda$ $[\mathrm{\AA}]$", fontsize=fontsize)
+            
+    plt.tick_params(axis="x", width = 2, labelsize=fontsize*0.8)
+    plt.tick_params(axis="y", width = 2, labelsize=fontsize*0.8)
+
+    if(log):
+        plt.xscale("log")
 
 #for homebrew get_mags
 def get_lsst_filters():
@@ -122,7 +132,7 @@ def get_lsst_filters():
     
     return filters
 
-def plot_lsst_filters():
+def plot_lsst_filters(factor):
 
     ufltr = fsps.filters.Filter(144, 'lsst_u', 'lsst')
     gfltr = fsps.filters.Filter(145, 'lsst_g', 'lsst')
@@ -131,9 +141,9 @@ def plot_lsst_filters():
     zfltr = fsps.filters.Filter(148, 'lsst_z', 'lsst')
     yfltr = fsps.filters.Filter(149, 'lsst_y', 'lsst')
 
-    plt.plot(ufltr.transmission[0], ufltr.transmission[1])
-    plt.plot(gfltr.transmission[0], gfltr.transmission[1])
-    plt.plot(rfltr.transmission[0], rfltr.transmission[1])
-    plt.plot(ifltr.transmission[0], ifltr.transmission[1])
-    plt.plot(zfltr.transmission[0], zfltr.transmission[1])
-    plt.plot(yfltr.transmission[0], yfltr.transmission[1])
+    plt.plot(ufltr.transmission[0], ufltr.transmission[1]*factor)
+    plt.plot(gfltr.transmission[0], gfltr.transmission[1]*factor)
+    plt.plot(rfltr.transmission[0], rfltr.transmission[1]*factor)
+    plt.plot(ifltr.transmission[0], ifltr.transmission[1]*factor)
+    plt.plot(zfltr.transmission[0], zfltr.transmission[1]*factor)
+    plt.plot(yfltr.transmission[0], yfltr.transmission[1]*factor)

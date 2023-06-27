@@ -3,8 +3,8 @@ from numpy import random
 
 def galaxy_population_model():
 
-    age = 1e-2
-    mass = 1e10
+    age = 1e-1
+    mass = 1e11
     tau = 1
     const = 0.2
     redshift = 3
