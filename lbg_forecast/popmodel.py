@@ -1,30 +1,48 @@
 import numpy as np
-from numpy import random
 
-def galaxy_population_model():
+def galaxy_population_model(pop_params):
 
-    age = 1e-1
-    mass = 1e11
+    zmin = pop_params[0]
+
+    tage = 1e-1
     tau = 1
     const = 0.2
-    redshift = 3
-    metal = -0.1
-    dustesc = 8.0
+    zred = np.random.uniform(zmin, 3)
+    logzsol = -0.1
+    dust_tesc = 8.0
     dust1 = 0.0
     dust2 = 0.1
     tburst = 1e-2
     fburst = 0.1
-    igm = 1
-    gas_ion = -2.0
-    gas_z = -0.0
+    igm_factor = 1
+    gas_logu = -2.0
+    gas_logz = -0.0
     fagn = 1
     imf1 = 1.3
     imf2 = 2.3
     imf3 = 2.3
+    mass = 1e11
 
-    realisation = np.array([age, mass, tau, const, redshift, metal,
-                            dustesc, dust1, dust2, tburst, fburst,
-                            igm, gas_ion, gas_z, fagn, imf1, imf2, imf3])
+    realisation = {
+        'tage': tage,
+        'tau': tau,
+        'const': const,
+        'zred': zred,
+        'logzsol': logzsol,
+        'dust_tesc': dust_tesc,
+        'dust1': dust1,
+        'dust2': dust2,
+        'tburst': tburst,
+        'fburst': fburst,
+        'igm_factor': igm_factor,
+        'gas_logu': gas_logu,
+        'gas_logz': gas_logz,
+        'fagn': fagn,
+        'imf1': imf1,
+        'imf2': imf2,
+        'imf3': imf3,
+        'mass': mass
+    }
 
     return realisation
 

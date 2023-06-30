@@ -22,41 +22,39 @@ def initialise_sps_model(dust_type=2):
 
 def update_sps_model(sps_model, sps_parameters):
 
-    age, mass, tau, const, redshift, metal, dustesc, dust1, dust2, tburst, fburst, igm, gas_ion, gas_z, fagn, imf1, imf2, imf3 = sps_parameters
-
     #need to reset these two every loop otherwise FSPS will break
     sps_model.params['const'] = 0
     sps_model.params['fburst'] = 0
     #############################################################
 
     #set parameters
-    sps_model.params['tage'] = age
-    sps_model.params['tau'] = tau
-    sps_model.params['const'] = const
-    sps_model.params['zred'] = redshift
-    sps_model.params['logzsol'] = metal
-    sps_model.params['dust_tesc'] = dustesc
-    sps_model.params['dust1'] = dust1
-    sps_model.params['dust2'] = dust2
-    sps_model.params['tburst'] = tburst
-    sps_model.params['fburst'] = fburst
-    sps_model.params['igm_factor'] = igm
-    sps_model.params['gas_logu'] = gas_ion
-    sps_model.params['gas_logz'] = gas_z
-    sps_model.params['fagn'] = fagn
-    sps_model.params['imf1'] = imf1
-    sps_model.params['imf2'] = imf2
-    sps_model.params['imf3'] = imf3
+    sps_model.params['tage'] = sps_parameters['tage']
+    sps_model.params['tau'] = sps_parameters['tau']
+    sps_model.params['const'] = sps_parameters['const']
+    sps_model.params['zred'] = sps_parameters['zred']
+    sps_model.params['logzsol'] = sps_parameters['logzsol']
+    sps_model.params['dust_tesc'] = sps_parameters['dust_tesc']
+    sps_model.params['dust1'] = sps_parameters['dust1']
+    sps_model.params['dust2'] = sps_parameters['dust2']
+    sps_model.params['tburst'] = sps_parameters['tburst']
+    sps_model.params['fburst'] = sps_parameters['fburst']
+    sps_model.params['igm_factor'] = sps_parameters['igm_factor']
+    sps_model.params['gas_logu'] = sps_parameters['gas_logu']
+    sps_model.params['gas_logz'] = sps_parameters['gas_logz']
+    sps_model.params['fagn'] = sps_parameters['fagn']
+    sps_model.params['imf1'] = sps_parameters['imf1']
+    sps_model.params['imf2'] = sps_parameters['imf2']
+    sps_model.params['imf3'] = sps_parameters['imf3']
 
     #############################################################
 
 def simulate_sed(sps_model, sps_parameters):
     
-    age, mass = sps_parameters[0], sps_parameters[1]
+    tage, mass, zred = sps_model.params['tage'], sps_parameters['mass'], sps_model.params['zred']
 
     #get SED
-    angstroms, spectrum = sps_model.get_spectrum(tage=age, peraa=True)
-    spectrum_cgs_redshifted, aa_redshifted = redshift_fsps_spectrum(spectrum, angstroms, mass, sps_model.params['zred'])
+    angstroms, spectrum = sps_model.get_spectrum(tage=tage, peraa=True)
+    spectrum_cgs_redshifted, aa_redshifted = redshift_fsps_spectrum(spectrum, angstroms, mass, zred)
 
     return spectrum_cgs_redshifted, aa_redshifted
 
