@@ -1,4 +1,5 @@
 import numpy as np
+import matplotlib.pyplot as plt
 
 def galaxy_population_model(pop_params):
 
@@ -45,4 +46,8 @@ def galaxy_population_model(pop_params):
     }
 
     return realisation
+
+def plot_galaxy_population():
+
+    return 0
 
