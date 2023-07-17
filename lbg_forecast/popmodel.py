@@ -5,24 +5,24 @@ def galaxy_population_model(pop_params):
 
     zmin = pop_params[0]
 
-    tage = 1e-1
-    tau = 1
-    const = 0.2
+    tage = np.random.uniform(1e-1, 1e-1)
+    tau = np.random.uniform(1, 1)
+    const = np.random.uniform(0.2, 0.2)
     zred = np.random.uniform(zmin, 3)
-    logzsol = -0.1
-    dust_tesc = 8.0
-    dust1 = 0.0
-    dust2 = 0.1
-    tburst = 1e-2
-    fburst = 0.1
-    igm_factor = 1
-    gas_logu = -2.0
-    gas_logz = -0.0
-    fagn = 1
-    imf1 = 1.3
-    imf2 = 2.3
-    imf3 = 2.3
-    mass = 1e11
+    logzsol = np.random.uniform(-0.1, -0.1)
+    dust_tesc = np.random.uniform(8.0, 8.0)
+    dust1 = np.random.uniform(0.0, 0.0)
+    dust2 = np.random.uniform(0.1, 0.1)
+    tburst = np.random.uniform(1e-2, 1e-2)
+    fburst = np.random.uniform(0.1, 0.1)
+    igm_factor = np.random.uniform(1, 1)
+    gas_logu = np.random.uniform(-2.0, -2.0)
+    gas_logz = np.random.uniform(0.0, 0.0)
+    fagn = np.random.uniform(1, 1)
+    imf1 = np.random.uniform(1.3, 1.3)
+    imf2 = np.random.uniform(2.3, 2.3)
+    imf3 = np.random.uniform(2.3, 2.3)
+    mass = np.random.uniform(1e11, 1e11)
 
     realisation = {
         'tage': tage,
