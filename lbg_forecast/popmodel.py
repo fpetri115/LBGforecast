@@ -1,4 +1,5 @@
 import numpy as np
+import math
 import matplotlib.pyplot as plt
 
 def galaxy_population_model(nsamples, pop_params):
@@ -18,7 +19,7 @@ def galaxy_population_model(nsamples, pop_params):
     igm_factor = np.random.uniform(1, 1, nsamples)
     gas_logu = np.random.uniform(-2.0, -2.0, nsamples)
     gas_logz = np.random.uniform(0.0, 0.0, nsamples)
-    fagn = np.random.uniform(1, 1, nsamples)
+    fagn = np.random.normal(1, 1, nsamples)
     imf1 = np.random.uniform(1.3, 1.3, nsamples)
     imf2 = np.random.uniform(2.3, 2.3, nsamples)
     imf3 = np.random.uniform(2.3, 2.3, nsamples)
@@ -47,22 +48,23 @@ def galaxy_population_model(nsamples, pop_params):
 
     return realisation
 
-def plot_galaxy_population(nsamples):
+def plot_galaxy_population(nsamples, rows=5):
 
     realisation = galaxy_population_model(nsamples, np.array([3]))
     parameters = realisation.values()
     names = realisation.keys()
 
-    columns = 3
     nparams = len(parameters)
 
-    fig1, axes1 = plt.subplots(int(nparams/columns), columns, figsize=(20,20), sharex=False, sharey=False)
+    columns = math.ceil(nparams/rows)
+
+    fig1, axes1 = plt.subplots(rows, columns, figsize=(20,20), sharex=False, sharey=False)
 
     i = 0
     j = 0
     for name in names:
         
-        if(i > nparams/columns - 1):
+        if(i > rows - 1):
             j+=1
             i=0
 
