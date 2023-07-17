@@ -1,28 +1,28 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-def galaxy_population_model(pop_params):
+def galaxy_population_model(nsamples, pop_params):
 
     zmin = pop_params[0]
 
-    tage = np.random.uniform(1e-1, 1e-1)
-    tau = np.random.uniform(1, 1)
-    const = np.random.uniform(0.2, 0.2)
-    zred = np.random.uniform(zmin, 3)
-    logzsol = np.random.uniform(-0.1, -0.1)
-    dust_tesc = np.random.uniform(8.0, 8.0)
-    dust1 = np.random.uniform(0.0, 0.0)
-    dust2 = np.random.uniform(0.1, 0.1)
-    tburst = np.random.uniform(1e-2, 1e-2)
-    fburst = np.random.uniform(0.1, 0.1)
-    igm_factor = np.random.uniform(1, 1)
-    gas_logu = np.random.uniform(-2.0, -2.0)
-    gas_logz = np.random.uniform(0.0, 0.0)
-    fagn = np.random.uniform(1, 1)
-    imf1 = np.random.uniform(1.3, 1.3)
-    imf2 = np.random.uniform(2.3, 2.3)
-    imf3 = np.random.uniform(2.3, 2.3)
-    mass = np.random.uniform(1e11, 1e11)
+    tage = np.random.uniform(1e-1, 1e-1, nsamples)
+    tau = np.random.uniform(1, 1, nsamples)
+    const = np.random.uniform(0.2, 0.2, nsamples)
+    zred = np.random.uniform(zmin, 3, nsamples)
+    logzsol = np.random.uniform(-0.1, -0.1, nsamples)
+    dust_tesc = np.random.uniform(8.0, 8.0, nsamples)
+    dust1 = np.random.uniform(0.0, 0.0, nsamples)
+    dust2 = np.random.uniform(0.1, 0.1, nsamples)
+    tburst = np.random.uniform(1e-2, 1e-2, nsamples)
+    fburst = np.random.uniform(0.1, 0.1, nsamples)
+    igm_factor = np.random.uniform(1, 1, nsamples)
+    gas_logu = np.random.uniform(-2.0, -2.0, nsamples)
+    gas_logz = np.random.uniform(0.0, 0.0, nsamples)
+    fagn = np.random.uniform(1, 1, nsamples)
+    imf1 = np.random.uniform(1.3, 1.3, nsamples)
+    imf2 = np.random.uniform(2.3, 2.3, nsamples)
+    imf3 = np.random.uniform(2.3, 2.3, nsamples)
+    mass = np.random.uniform(1e11, 1e11, nsamples)
 
     realisation = {
         'tage': tage,
@@ -47,7 +47,27 @@ def galaxy_population_model(pop_params):
 
     return realisation
 
-def plot_galaxy_population():
+def plot_galaxy_population(nsamples):
 
-    return 0
+    realisation = galaxy_population_model(nsamples, np.array([3]))
+    parameters = realisation.values()
+    names = realisation.keys()
+
+    columns = 3
+    nparams = len(parameters)
+
+    fig1, axes1 = plt.subplots(int(nparams/columns), columns, figsize=(20,20), sharex=False, sharey=False)
+
+    i = 0
+    j = 0
+    for name in names:
+        
+        if(i > nparams/columns - 1):
+            j+=1
+            i=0
+
+        axes1[i, j].hist(realisation[name], density = True)
+        axes1[i, j].set_xlabel(name)
+        axes1[i, j].set_ylabel("$p(z)$")
+        i+=1
 
