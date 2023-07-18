@@ -9,14 +9,14 @@ def galaxy_population_model(nsamples, pop_params):
     tage = np.random.uniform(1e-1, 1e-1, nsamples)
     tau = np.random.uniform(1, 1, nsamples)
     const = np.random.uniform(0.2, 0.2, nsamples)
-    zred = np.random.uniform(zmin, 3, nsamples)
+    zred = np.random.uniform(0.1, 7, nsamples)
     logzsol = np.random.uniform(-0.1, -0.1, nsamples)
     dust_tesc = np.random.uniform(8.0, 8.0, nsamples)
-    dust1 = np.random.uniform(0.0, 0.0, nsamples)
-    dust2 = np.random.uniform(0.1, 0.1, nsamples)
+    dust1 = np.random.uniform(0.0, 2.0, nsamples)
+    dust2 = np.random.uniform(0.0, 2.0, nsamples)
     tburst = np.random.uniform(1e-2, 1e-2, nsamples)
     fburst = np.random.uniform(0.1, 0.1, nsamples)
-    igm_factor = np.random.uniform(1, 1, nsamples)
+    igm_factor = np.random.normal(1, 1, nsamples)
     gas_logu = np.random.uniform(-2.0, -2.0, nsamples)
     gas_logz = np.random.uniform(0.0, 0.0, nsamples)
     fagn = np.random.normal(1, 1, nsamples)
@@ -48,28 +48,41 @@ def galaxy_population_model(nsamples, pop_params):
 
     return realisation
 
-def plot_galaxy_population(nsamples, rows=5):
+def plot_galaxy_population(nsamples, rows=5, nbins=20):
 
     realisation = galaxy_population_model(nsamples, np.array([3]))
     parameters = realisation.values()
     names = realisation.keys()
 
     nparams = len(parameters)
-
     columns = math.ceil(nparams/rows)
+    total_plots = nparams
+    grid = rows*columns
 
     fig1, axes1 = plt.subplots(rows, columns, figsize=(20,20), sharex=False, sharey=False)
 
     i = 0
     j = 0
+    plot_no = 0
     for name in names:
-        
+
         if(i > rows - 1):
             j+=1
             i=0
 
-        axes1[i, j].hist(realisation[name], density = True)
-        axes1[i, j].set_xlabel(name)
-        axes1[i, j].set_ylabel("$p(z)$")
+        if(plot_no > total_plots):
+            axes1[i, j].set_axis_off()
+        else:
+            axes1[i, j].hist(realisation[name], density = True, bins=nbins)
+            axes1[i, j].set_xlabel(name)
+            axes1[i, j].set_ylabel("$p(z)$")
+        i+=1
+        plot_no += 1
+
+    #clear blank figures
+    no_empty_plots = grid - nparams
+    i = 0
+    while(i < no_empty_plots):
+        axes1[rows - i - 1, columns - 1].set_axis_off()
         i+=1
 
