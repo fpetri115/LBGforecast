@@ -6,15 +6,15 @@ def galaxy_population_model(nsamples, pop_params):
 
     zmin = pop_params[0]
 
-    tage = np.random.uniform(1e-1, 1e-1, nsamples)
-    tau = np.random.uniform(1, 1, nsamples)
-    const = np.random.uniform(0.0, 0.0, nsamples)
+    tage = np.random.uniform(1, 1, nsamples)
+    tau = np.random.uniform(10000, 10000, nsamples)
+    const = np.random.uniform(1.0, 1.0, nsamples)
     zred = np.random.uniform(3, 3, nsamples)
     logzsol = np.random.uniform(-0.1, -0.1, nsamples)
     dust_tesc = np.random.uniform(8.0, 8.0, nsamples)
     dust1 = np.random.uniform(0.0, 0.0, nsamples)
     dust2 = np.random.uniform(0.0, 0.0, nsamples)
-    tburst = np.random.uniform(1e-2, 1e-2, nsamples)
+    tburst = np.random.uniform(11, 11, nsamples)
     fburst = np.random.uniform(0.0, 0.0, nsamples)
     igm_factor = np.random.uniform(1, 1, nsamples)
     gas_logu = np.random.uniform(-2.0, -2.0, nsamples)
@@ -44,6 +44,50 @@ def galaxy_population_model(nsamples, pop_params):
         'imf2': imf2,
         'imf3': imf3,
         'mass': mass
+    }
+
+    return realisation
+
+def galaxy_population_model_dpl(nsamples, pop_params):
+
+    zmin = pop_params[0]
+
+    tage = np.random.uniform(1, 1, nsamples)
+    tau = np.random.uniform(2, 2, nsamples)
+    zred = np.random.uniform(3, 3, nsamples)
+    logzsol = np.random.uniform(-0.1, -0.1, nsamples)
+    dust_tesc = np.random.uniform(8.0, 8.0, nsamples)
+    dust1 = np.random.uniform(0.0, 0.0, nsamples)
+    dust2 = np.random.uniform(0.0, 0.0, nsamples)
+    igm_factor = np.random.uniform(1, 1, nsamples)
+    gas_logu = np.random.uniform(-2.0, -2.0, nsamples)
+    gas_logz = np.random.uniform(0.0, 0.0, nsamples)
+    fagn = np.random.uniform(1, 1, nsamples)
+    imf1 = np.random.uniform(1.3, 1.3, nsamples)
+    imf2 = np.random.uniform(2.3, 2.3, nsamples)
+    imf3 = np.random.uniform(2.3, 2.3, nsamples)
+    mass = np.random.uniform(1e11, 1e11, nsamples)
+    a = np.random.uniform(1000, 1000, nsamples)
+    b = np.random.uniform(0, 0, nsamples)
+
+    realisation = {
+        'tage': tage,
+        'tau': tau,
+        'zred': zred,
+        'logzsol': logzsol,
+        'dust_tesc': dust_tesc,
+        'dust1': dust1,
+        'dust2': dust2,
+        'igm_factor': igm_factor,
+        'gas_logu': gas_logu,
+        'gas_logz': gas_logz,
+        'fagn': fagn,
+        'imf1': imf1,
+        'imf2': imf2,
+        'imf3': imf3,
+        'mass': mass,
+        'a': a,
+        'b': b
     }
 
     return realisation

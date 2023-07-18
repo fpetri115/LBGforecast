@@ -49,7 +49,7 @@ def update_sps_model(sps_model, sps_parameters):
 
     #############################################################
 
-def update_sps_model_tabulated_sfh(sps_model, sps_parameters):
+def update_sps_model_dpl(sps_model, sps_parameters):
 
     #############################################################
 
@@ -69,7 +69,10 @@ def update_sps_model_tabulated_sfh(sps_model, sps_parameters):
     sps_model.params['imf3'] = sps_parameters['imf3']
 
     time_grid = np.logspace(-10, np.log10(sps_parameters['tage'][0]), 1000)
-    sfh = lbg_forecast.sfh.tau_model(sps_parameters['tau'][0], time_grid)
+
+    sfh = lbg_forecast.sfh.dpl(sps_parameters['a'][0], sps_parameters['b'][0],
+                                sps_parameters['tau'][0], time_grid)
+    
     normed_sfh = sfh/np.trapz((10**9)*sfh, time_grid)
     sps_model.set_tabular_sfh(time_grid, normed_sfh)
 
