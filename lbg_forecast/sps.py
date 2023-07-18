@@ -2,6 +2,7 @@ import fsps
 import numpy as np
 import matplotlib.pyplot as plt
 from astropy import units as u
+import lbg_forecast.sfh
 
 from astropy.cosmology import WMAP9
 from astropy.coordinates import Distance
@@ -10,9 +11,9 @@ from astropy.constants import L_sun
 from sedpy import observate
 
 #If dust_type=2, dust1 must be zero!
-def initialise_sps_model(dust_type=2):
+def initialise_sps_model(sfh_type=1, dust_type=2):
 
-    sps_model = fsps.StellarPopulation(compute_vega_mags=False, zcontinuous=1, sfh=1, dust_type=dust_type)
+    sps_model = fsps.StellarPopulation(compute_vega_mags=False, zcontinuous=1, sfh=sfh_type, dust_type=dust_type)
 
     sps_model.params['add_neb_emission'] = True 
     sps_model.params['add_igm_absorption'] = True
@@ -45,6 +46,32 @@ def update_sps_model(sps_model, sps_parameters):
     sps_model.params['imf1'] = sps_parameters['imf1']
     sps_model.params['imf2'] = sps_parameters['imf2']
     sps_model.params['imf3'] = sps_parameters['imf3']
+
+    #############################################################
+
+def update_sps_model_tabulated_sfh(sps_model, sps_parameters):
+
+    #############################################################
+
+    #set parameters
+    sps_model.params['tage'] = sps_parameters['tage']
+    sps_model.params['zred'] = sps_parameters['zred']
+    sps_model.params['logzsol'] = sps_parameters['logzsol']
+    sps_model.params['dust_tesc'] = sps_parameters['dust_tesc']
+    sps_model.params['dust1'] = sps_parameters['dust1']
+    sps_model.params['dust2'] = sps_parameters['dust2']
+    sps_model.params['igm_factor'] = sps_parameters['igm_factor']
+    sps_model.params['gas_logu'] = sps_parameters['gas_logu']
+    sps_model.params['gas_logz'] = sps_parameters['gas_logz']
+    sps_model.params['fagn'] = sps_parameters['fagn']
+    sps_model.params['imf1'] = sps_parameters['imf1']
+    sps_model.params['imf2'] = sps_parameters['imf2']
+    sps_model.params['imf3'] = sps_parameters['imf3']
+
+    time_grid = np.logspace(-10, np.log10(sps_parameters['tage'][0]), 1000)
+    sfh = lbg_forecast.sfh.tau_model(sps_parameters['tau'][0], time_grid)
+    normed_sfh = sfh/np.trapz((10**9)*sfh, time_grid)
+    sps_model.set_tabular_sfh(time_grid, normed_sfh)
 
     #############################################################
 
