@@ -6,7 +6,7 @@ def galaxy_population_model(nsamples, pop_params):
 
     zmin = pop_params[0]
 
-    tage = np.random.uniform(1, 1, nsamples)
+    tage = np.random.uniform(2, 2, nsamples)
     tau = np.random.uniform(10000, 10000, nsamples)
     const = np.random.uniform(1.0, 1.0, nsamples)
     zred = np.random.uniform(3, 3, nsamples)
@@ -52,8 +52,8 @@ def galaxy_population_model_dpl(nsamples, pop_params):
 
     zmin = pop_params[0]
 
-    tage = np.random.uniform(1, 1, nsamples)
-    tau = np.random.uniform(2, 2, nsamples)
+    tage = np.random.uniform(2, 2, nsamples)
+    tau = np.random.uniform(3, 3, nsamples)
     zred = np.random.uniform(3, 3, nsamples)
     logzsol = np.random.uniform(-0.1, -0.1, nsamples)
     dust_tesc = np.random.uniform(8.0, 8.0, nsamples)
@@ -67,7 +67,7 @@ def galaxy_population_model_dpl(nsamples, pop_params):
     imf2 = np.random.uniform(2.3, 2.3, nsamples)
     imf3 = np.random.uniform(2.3, 2.3, nsamples)
     mass = np.random.uniform(1e11, 1e11, nsamples)
-    a = np.random.uniform(1000, 1000, nsamples)
+    a = np.random.uniform(1000000, 1000000, nsamples)
     b = np.random.uniform(0, 0, nsamples)
 
     realisation = {

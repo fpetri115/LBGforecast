@@ -2,7 +2,7 @@ import fsps
 import numpy as np
 import matplotlib.pyplot as plt
 from astropy import units as u
-import lbg_forecast.sfh
+import lbg_forecast.sfh as sfh
 
 from astropy.cosmology import WMAP9
 from astropy.coordinates import Distance
@@ -68,13 +68,15 @@ def update_sps_model_dpl(sps_model, sps_parameters):
     sps_model.params['imf2'] = sps_parameters['imf2']
     sps_model.params['imf3'] = sps_parameters['imf3']
 
-    time_grid = np.logspace(-10, np.log10(sps_parameters['tage'][0]), 1000)
+    time_grid = np.logspace(-5, np.log10(sps_parameters['tage'][0]), 10000)
 
-    sfh = lbg_forecast.sfh.dpl(sps_parameters['a'][0], sps_parameters['b'][0],
+    sfr = sfh.dpl(sps_parameters['a'][0], sps_parameters['b'][0],
                                 sps_parameters['tau'][0], time_grid)
     
-    normed_sfh = sfh/np.trapz((10**9)*sfh, time_grid)
-    sps_model.set_tabular_sfh(time_grid, normed_sfh)
+    normed_sfr = sfr/np.trapz((10**9)*sfr, time_grid)
+    sps_model.set_tabular_sfh(time_grid, normed_sfr)
+
+    sfh.plot_sfh(normed_sfr, time_grid)
 
     #############################################################
 
