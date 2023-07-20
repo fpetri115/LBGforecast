@@ -11,7 +11,6 @@ def galaxy_population_model(nsamples, pop_params):
     const = np.random.uniform(1.0, 1.0, nsamples)
     zred = np.random.uniform(3, 3, nsamples)
     logzsol = np.random.uniform(-0.1, -0.1, nsamples)
-    dust_tesc = np.random.uniform(8.0, 8.0, nsamples)
     dust1 = np.random.uniform(0.0, 0.0, nsamples)
     dust2 = np.random.uniform(0.0, 0.0, nsamples)
     tburst = np.random.uniform(11, 11, nsamples)
@@ -31,7 +30,6 @@ def galaxy_population_model(nsamples, pop_params):
         'const': const,
         'zred': zred,
         'logzsol': logzsol,
-        'dust_tesc': dust_tesc,
         'dust1': dust1,
         'dust2': dust2,
         'tburst': tburst,
@@ -56,7 +54,6 @@ def galaxy_population_model_dpl(nsamples, pop_params):
     tau = np.random.uniform(3, 3, nsamples)
     zred = np.random.uniform(3, 3, nsamples)
     logzsol = np.random.uniform(-0.1, -0.1, nsamples)
-    dust_tesc = np.random.uniform(8.0, 8.0, nsamples)
     dust1 = np.random.uniform(0.0, 0.0, nsamples)
     dust2 = np.random.uniform(0.0, 0.0, nsamples)
     igm_factor = np.random.uniform(1, 1, nsamples)
@@ -75,7 +72,6 @@ def galaxy_population_model_dpl(nsamples, pop_params):
         'tau': tau,
         'zred': zred,
         'logzsol': logzsol,
-        'dust_tesc': dust_tesc,
         'dust1': dust1,
         'dust2': dust2,
         'igm_factor': igm_factor,
