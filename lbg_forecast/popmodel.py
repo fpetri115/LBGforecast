@@ -1,26 +1,19 @@
 import numpy as np
 import math
 import matplotlib.pyplot as plt
+from astropy.cosmology import WMAP9 as cosmo
+from astropy.cosmology import z_at_value
+import astropy.units as u
+import lbg_forecast.distributions as dstr
 
 def galaxy_population_model_dpl():
 
-    #tage
-    tage = np.random.lognormal(0, 1)
-    while(tage < 1e-6 or tage > 13):
-         tage = np.random.lognormal(0, 1)
-    
-    #zred
-    zred = np.random.normal(1, 0.5)
-    while(zred < 0 or zred > 7):
-        zred = np.random.normal(1, 0.5)
-
-    #logzsol
+    tage = dstr.sample_lognormal(1, 1, 1e-6, 10)
+    zred = dstr.sample_normal(6.5, 1, 0, 7)
     logzsol = np.random.uniform(-0.1, -0.1)
-
-    
-    dust1 = np.random.uniform(0.0, 0.0)
-    dust2 = np.random.uniform(0.0, 0.0)
-    igm_factor = np.random.normal(1, 0.25)
+    dust1 = dstr.sample_normal(0.1, 0.5, 0, 2)
+    dust2 = dstr.sample_normal(0.5, 0.5, 0, 2)
+    igm_factor = dstr.sample_normal(1, 0.25, 0, 99)
     gas_logu = np.random.uniform(-2.0, -2.0)
     gas_logz = np.random.uniform(0.0, 0.0)
     fagn = np.random.uniform(1, 1)
@@ -30,7 +23,7 @@ def galaxy_population_model_dpl():
     tau = np.random.uniform(3, 3)
     a = np.random.uniform(1000000, 1000000)
     b = np.random.uniform(0, 0)
-    mass = np.random.uniform(1e11, 1e11)
+    mass = dstr.sample_lognormal(10, 1, 1e8, 1e12)
 
     realisation = np.array([tage, zred, logzsol, dust1, dust2, igm_factor,
                             gas_logu, gas_logz, fagn, imf1, imf2, imf3,
@@ -82,6 +75,7 @@ def plot_galaxy_population(nsamples, rows=5, nbins=20):
 
         if(plot_no > total_plots):
             axes1[i, j].set_axis_off()
+
         else:
             axes1[i, j].hist(realisations[:,col], density = True, bins=nbins)
             axes1[i, j].set_xlabel(names[name_count])
@@ -97,7 +91,6 @@ def plot_galaxy_population(nsamples, rows=5, nbins=20):
     while(i < no_empty_plots):
         axes1[rows - i - 1, columns - 1].set_axis_off()
         i+=1
-
 
 
 
