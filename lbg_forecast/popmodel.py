@@ -2,27 +2,35 @@ import numpy as np
 import math
 import matplotlib.pyplot as plt
 
-def galaxy_population_model_dpl(nsamples):
+def galaxy_population_model_dpl():
 
-    tage = np.random.lognormal(0, 1, nsamples)
-    if(any(tage < 1e-6) or any(tage > 10)):
-         tage = np.random.lognormal(0, 1, nsamples)
+    #tage
+    tage = np.random.lognormal(0, 1)
+    while(tage < 1e-6 or tage > 13):
+         tage = np.random.lognormal(0, 1)
     
-    zred = np.random.uniform(3, 3, nsamples)
-    logzsol = np.random.uniform(-0.1, -0.1, nsamples)
-    dust1 = np.random.uniform(0.0, 0.0, nsamples)
-    dust2 = np.random.uniform(0.0, 0.0, nsamples)
-    igm_factor = np.random.normal(1, 0.25, nsamples)
-    gas_logu = np.random.uniform(-2.0, -2.0, nsamples)
-    gas_logz = np.random.uniform(0.0, 0.0, nsamples)
-    fagn = np.random.uniform(1, 1, nsamples)
-    imf1 = np.random.uniform(1.3, 1.3, nsamples)
-    imf2 = np.random.uniform(2.3, 2.3, nsamples)
-    imf3 = np.random.uniform(2.3, 2.3, nsamples)
-    tau = np.random.uniform(3, 3, nsamples)
-    a = np.random.uniform(1000000, 1000000, nsamples)
-    b = np.random.uniform(0, 0, nsamples)
-    mass = np.random.uniform(1e11, 1e11, nsamples)
+    #zred
+    zred = np.random.normal(1, 0.5)
+    while(zred < 0 or zred > 7):
+        zred = np.random.normal(1, 0.5)
+
+    #logzsol
+    logzsol = np.random.uniform(-0.1, -0.1)
+
+    
+    dust1 = np.random.uniform(0.0, 0.0)
+    dust2 = np.random.uniform(0.0, 0.0)
+    igm_factor = np.random.normal(1, 0.25)
+    gas_logu = np.random.uniform(-2.0, -2.0)
+    gas_logz = np.random.uniform(0.0, 0.0)
+    fagn = np.random.uniform(1, 1)
+    imf1 = np.random.uniform(1.3, 1.3)
+    imf2 = np.random.uniform(2.3, 2.3)
+    imf3 = np.random.uniform(2.3, 2.3)
+    tau = np.random.uniform(3, 3)
+    a = np.random.uniform(1000000, 1000000)
+    b = np.random.uniform(0, 0)
+    mass = np.random.uniform(1e11, 1e11)
 
     realisation = np.array([tage, zred, logzsol, dust1, dust2, igm_factor,
                             gas_logu, gas_logz, fagn, imf1, imf2, imf3,
@@ -30,16 +38,29 @@ def galaxy_population_model_dpl(nsamples):
 
     return realisation
 
+def draw_samples_from_population(nsamples):
+
+    realisations = []
+    i = 0
+    while(i < nsamples):
+        realisations.append(galaxy_population_model_dpl())
+        i+=1
+
+    realisations = np.array(realisations)
+    realisations = np.vstack(realisations) #column for each parameter
+
+    return realisations
+
 def plot_galaxy_population(nsamples, rows=5, nbins=20):
 
-    realisations = galaxy_population_model_dpl(nsamples)
-    nparams = len(realisations)
+    realisations = draw_samples_from_population(nsamples)
+    nparams = realisations.shape[1]
 
     names = np.array(["tage", "zred", "logzsol", "dust1", "dust2", 
                       "igm_factor", "gas_logu", "gas_logz", "fagn", "imf1",
                         "imf2", "imf3", "tau", "a", "b", "mass"])
     
-    if(len(names) != len(realisations)):
+    if(len(names) != nparams):
         raise Exception("Number of parameters and parameter labels don't match")
 
     columns = math.ceil(nparams/rows)
@@ -52,7 +73,8 @@ def plot_galaxy_population(nsamples, rows=5, nbins=20):
     j = 0
     plot_no = 0
     name_count = 0
-    for parameter in realisations:
+    col = 0
+    while(col < nparams):
 
         if(i > rows - 1):
             j+=1
@@ -61,12 +83,13 @@ def plot_galaxy_population(nsamples, rows=5, nbins=20):
         if(plot_no > total_plots):
             axes1[i, j].set_axis_off()
         else:
-            axes1[i, j].hist(parameter, density = True, bins=nbins)
+            axes1[i, j].hist(realisations[:,col], density = True, bins=nbins)
             axes1[i, j].set_xlabel(names[name_count])
             axes1[i, j].set_ylabel("$p(z)$")
         i+=1
         plot_no += 1
         name_count += 1
+        col += 1
 
     #clear blank figures
     no_empty_plots = grid - nparams
