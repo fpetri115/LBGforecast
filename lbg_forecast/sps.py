@@ -3,6 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from astropy import units as u
 import lbg_forecast.sfh as sfh
+import lbg_forecast.popmodel as pop
 
 from astropy.cosmology import WMAP9
 from astropy.coordinates import Distance
@@ -21,66 +22,40 @@ def initialise_sps_model(sfh_type=1, dust_type=2):
 
     return sps_model 
 
-def update_sps_model(sps_model, sps_parameters):
-
-    #need to reset these two every loop otherwise FSPS will break
-    sps_model.params['const'] = 0
-    sps_model.params['fburst'] = 0
-    #############################################################
-
-    #set parameters
-    sps_model.params['tage'] = sps_parameters['tage']
-    sps_model.params['tau'] = sps_parameters['tau']
-    sps_model.params['const'] = sps_parameters['const']
-    sps_model.params['zred'] = sps_parameters['zred']
-    sps_model.params['logzsol'] = sps_parameters['logzsol']
-    sps_model.params['dust1'] = sps_parameters['dust1']
-    sps_model.params['dust2'] = sps_parameters['dust2']
-    sps_model.params['tburst'] = sps_parameters['tburst']
-    sps_model.params['fburst'] = sps_parameters['fburst']
-    sps_model.params['igm_factor'] = sps_parameters['igm_factor']
-    sps_model.params['gas_logu'] = sps_parameters['gas_logu']
-    sps_model.params['gas_logz'] = sps_parameters['gas_logz']
-    sps_model.params['fagn'] = sps_parameters['fagn']
-    sps_model.params['imf1'] = sps_parameters['imf1']
-    sps_model.params['imf2'] = sps_parameters['imf2']
-    sps_model.params['imf3'] = sps_parameters['imf3']
-
-    #############################################################
-
-def update_sps_model_dpl(sps_model, sps_parameters):
+def update_sps_model_dpl(sps_model, sps_parameters, plot=False):
 
     #############################################################
 
     #set parameters
-    sps_model.params['tage'] = sps_parameters['tage']
-    sps_model.params['zred'] = sps_parameters['zred']
-    sps_model.params['logzsol'] = sps_parameters['logzsol']
-    sps_model.params['dust1'] = sps_parameters['dust1']
-    sps_model.params['dust2'] = sps_parameters['dust2']
-    sps_model.params['igm_factor'] = sps_parameters['igm_factor']
-    sps_model.params['gas_logu'] = sps_parameters['gas_logu']
-    sps_model.params['gas_logz'] = sps_parameters['gas_logz']
-    sps_model.params['fagn'] = sps_parameters['fagn']
-    sps_model.params['imf1'] = sps_parameters['imf1']
-    sps_model.params['imf2'] = sps_parameters['imf2']
-    sps_model.params['imf3'] = sps_parameters['imf3']
+    sps_model.params['tage'] = sps_parameters[0][0]
+    sps_model.params['zred'] = sps_parameters[1][0]
+    sps_model.params['logzsol'] = sps_parameters[2][0]
+    sps_model.params['dust1'] = sps_parameters[3][0]
+    sps_model.params['dust2'] = sps_parameters[4][0]
+    sps_model.params['igm_factor'] = sps_parameters[5][0]
+    sps_model.params['gas_logu'] = sps_parameters[6][0]
+    sps_model.params['gas_logz'] = sps_parameters[7][0]
+    sps_model.params['fagn'] = sps_parameters[8][0]
+    sps_model.params['imf1'] = sps_parameters[9][0]
+    sps_model.params['imf2'] = sps_parameters[10][0]
+    sps_model.params['imf3'] = sps_parameters[11][0]
 
-    time_grid = np.logspace(-5, np.log10(sps_parameters['tage'][0]), 10000)
+    time_grid = np.logspace(-5, np.log10(sps_model.params['tage']), 10000)
 
-    sfr = sfh.dpl(sps_parameters['a'][0], sps_parameters['b'][0],
-                                sps_parameters['tau'][0], time_grid)
+    sfr = sfh.dpl(sps_parameters[12][0], sps_parameters[13][0],
+                                sps_parameters[14][0], time_grid)
     
     normed_sfr = sfr/np.trapz((10**9)*sfr, time_grid)
     sps_model.set_tabular_sfh(time_grid, normed_sfr)
 
-    sfh.plot_sfh(normed_sfr, time_grid)
+    if(plot):
+        sfh.plot_sfh(normed_sfr, time_grid)
 
     #############################################################
 
 def simulate_sed(sps_model, sps_parameters):
     
-    tage, mass, zred = sps_model.params['tage'], sps_parameters['mass'], sps_model.params['zred']
+    tage, mass, zred = sps_model.params['tage'], sps_parameters[15][0], sps_model.params['zred']
 
     #get SED
     angstroms, spectrum = sps_model.get_spectrum(tage=tage, peraa=True)
@@ -175,3 +150,78 @@ def plot_lsst_filters(factor):
     plt.plot(ifltr.transmission[0], ifltr.transmission[1]*factor)
     plt.plot(zfltr.transmission[0], zfltr.transmission[1]*factor)
     plt.plot(yfltr.transmission[0], yfltr.transmission[1]*factor)
+
+
+
+
+
+
+
+
+################Old
+def update_sps_model_tau(sps_model, sps_parameters):
+
+    #need to reset these two every loop otherwise FSPS will break
+    sps_model.params['const'] = 0
+    sps_model.params['fburst'] = 0
+    #############################################################
+
+    #set parameters
+    sps_model.params['tage'] = sps_parameters['tage']
+    sps_model.params['tau'] = sps_parameters['tau']
+    sps_model.params['const'] = sps_parameters['const']
+    sps_model.params['zred'] = sps_parameters['zred']
+    sps_model.params['logzsol'] = sps_parameters['logzsol']
+    sps_model.params['dust1'] = sps_parameters['dust1']
+    sps_model.params['dust2'] = sps_parameters['dust2']
+    sps_model.params['tburst'] = sps_parameters['tburst']
+    sps_model.params['fburst'] = sps_parameters['fburst']
+    sps_model.params['igm_factor'] = sps_parameters['igm_factor']
+    sps_model.params['gas_logu'] = sps_parameters['gas_logu']
+    sps_model.params['gas_logz'] = sps_parameters['gas_logz']
+    sps_model.params['fagn'] = sps_parameters['fagn']
+    sps_model.params['imf1'] = sps_parameters['imf1']
+    sps_model.params['imf2'] = sps_parameters['imf2']
+    sps_model.params['imf3'] = sps_parameters['imf3']
+
+    #############################################################
+
+def simulate_sed_tau(sps_model, sps_parameters):
+    
+    tage, mass, zred = sps_model.params['tage'], sps_parameters['mass'], sps_model.params['zred']
+
+    #get SED
+    angstroms, spectrum = sps_model.get_spectrum(tage=tage, peraa=True)
+    spectrum_cgs_redshifted, aa_redshifted = redshift_fsps_spectrum(spectrum, angstroms, mass, zred)
+
+    return spectrum_cgs_redshifted, aa_redshifted
+
+def simulate_sample_photometry_tau(nsamples, spectra=False):
+
+    #Define SPS Model
+    sps_model = initialise_sps_model(sfh_type=1, dust_type=2)
+
+    i = 0
+    photo_data = []
+    while(i <  nsamples):
+
+        #Update Model and draw Priors
+        sps_params = pop.galaxy_population_model(1, np.array([3]))
+        update_sps_model_tau(sps_model, sps_params)
+
+        #Generate Photometry
+        photo_data.append(simulate_photometry_lsst_fsps(sps_model, mass=sps_params["mass"]))
+
+        #Plot Spectra
+        if(spectra):
+            spectrum = simulate_sed_tau(sps_model, sps_params)
+            
+            plot_sed(spectrum, scaley = 16, xmin=2000, xmax=12000, ymin=0,
+                ymax=1.4, xsize=20, ysize=10, 
+                fontsize=32, log=False, c = 'k')
+            
+            plot_lsst_filters(factor=1)
+
+        i+=1
+
+    return np.asarray(photo_data)
