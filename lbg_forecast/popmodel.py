@@ -15,7 +15,7 @@ def galaxy_population_model(nsamples, pop_params):
     dust2 = np.random.uniform(0.0, 0.0, nsamples)
     tburst = np.random.uniform(11, 11, nsamples)
     fburst = np.random.uniform(0.0, 0.0, nsamples)
-    igm_factor = np.random.uniform(1, 1, nsamples)
+    igm_factor = np.random.normal(1, 0.25, nsamples)
     gas_logu = np.random.uniform(-2.0, -2.0, nsamples)
     gas_logz = np.random.uniform(0.0, 0.0, nsamples)
     fagn = np.random.uniform(1, 1, nsamples)
@@ -50,13 +50,16 @@ def galaxy_population_model_dpl(nsamples, pop_params):
 
     zmin = pop_params[0]
 
-    tage = np.random.uniform(2, 2, nsamples)
+    tage = np.random.lognormal(0, 1, nsamples)
+    #if(tage < 1e-3 or tage > 13):
+    #    tage = np.random.lognormal(0, 1, nsamples)
+    
     tau = np.random.uniform(3, 3, nsamples)
     zred = np.random.uniform(3, 3, nsamples)
     logzsol = np.random.uniform(-0.1, -0.1, nsamples)
     dust1 = np.random.uniform(0.0, 0.0, nsamples)
     dust2 = np.random.uniform(0.0, 0.0, nsamples)
-    igm_factor = np.random.uniform(1, 1, nsamples)
+    igm_factor = np.random.normal(1, 0.25, nsamples)
     gas_logu = np.random.uniform(-2.0, -2.0, nsamples)
     gas_logz = np.random.uniform(0.0, 0.0, nsamples)
     fagn = np.random.uniform(1, 1, nsamples)
@@ -90,7 +93,7 @@ def galaxy_population_model_dpl(nsamples, pop_params):
 
 def plot_galaxy_population(nsamples, rows=5, nbins=20):
 
-    realisation = galaxy_population_model(nsamples, np.array([3]))
+    realisation = galaxy_population_model_dpl(nsamples, np.array([3]))
     parameters = realisation.values()
     names = realisation.keys()
 
