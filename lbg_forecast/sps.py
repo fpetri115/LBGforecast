@@ -27,7 +27,7 @@ def update_sps_model_dpl(sps_model, sps_parameters, plot=False):
     #############################################################
 
     #set parameters
-    sps_model.params['tage'] = sps_parameters[0][0]
+    sps_model.params['tage'] = 10**(sps_parameters[0][0])
     sps_model.params['zred'] = sps_parameters[1][0]
     sps_model.params['logzsol'] = sps_parameters[2][0]
     sps_model.params['dust1'] = sps_parameters[3][0]
@@ -42,8 +42,8 @@ def update_sps_model_dpl(sps_model, sps_parameters, plot=False):
 
     time_grid = np.logspace(-5, np.log10(sps_model.params['tage']), 10000)
 
-    sfr = sfh.dpl(sps_parameters[12][0], sps_parameters[13][0],
-                                sps_parameters[14][0], time_grid)
+    sfr = sfh.dpl(10**sps_parameters[12][0], 10**sps_parameters[13][0],
+                                10**sps_parameters[14][0], time_grid)
     
     normed_sfr = sfr/np.trapz((10**9)*sfr, time_grid)
     sps_model.set_tabular_sfh(time_grid, normed_sfr)
@@ -55,20 +55,20 @@ def update_sps_model_dpl(sps_model, sps_parameters, plot=False):
 
 def simulate_sed(sps_model, sps_parameters):
     
-    tage, mass, zred = sps_model.params['tage'], sps_parameters[15][0], sps_model.params['zred']
+    tage, logmass, zred = sps_model.params['tage'], sps_parameters[15][0], sps_model.params['zred']
 
     #get SED
     angstroms, spectrum = sps_model.get_spectrum(tage=tage, peraa=True)
-    spectrum_cgs_redshifted, aa_redshifted = redshift_fsps_spectrum(spectrum, angstroms, mass, zred)
+    spectrum_cgs_redshifted, aa_redshifted = redshift_fsps_spectrum(spectrum, angstroms, logmass, zred)
 
     return spectrum_cgs_redshifted, aa_redshifted
 
-def simulate_photometry_lsst_fsps(sps_model, mass):
+def simulate_photometry_lsst_fsps(sps_model, logmass):
 
     lsst_filters = fsps.find_filter('lsst')
     mags = sps_model.get_mags(tage=sps_model.params['tage'], bands=lsst_filters)
 
-    return mags - 2.5*np.log10(mass)
+    return mags - 2.5*logmass
 
 #my own version of fsps get_mags using sedpy
 def simulate_photometry_lsst(aa_redshifted, redshifted_spectrum_cgs):
@@ -86,10 +86,10 @@ def simulate_photometry_lsst(aa_redshifted, redshifted_spectrum_cgs):
 
     return mags
 
-def redshift_fsps_spectrum(spectrum, angstroms, mass, redshift):
+def redshift_fsps_spectrum(spectrum, angstroms, logmass, redshift):
 
     L_sol_cgs = L_sun.cgs.value
-    spectrum = spectrum*mass
+    spectrum = spectrum*10**(logmass)
     DL = Distance(z=redshift, cosmology=WMAP9).cgs.value
 
     f_cgs_aa = spectrum/(4*(1+redshift)*np.pi*DL**2) * (L_sol_cgs)

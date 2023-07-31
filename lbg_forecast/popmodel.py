@@ -8,26 +8,26 @@ import lbg_forecast.distributions as dstr
 
 def galaxy_population_model_dpl():
 
-    tage = dstr.sample_lognormal(1, 1, 1e-6, 10)
+    logtage = dstr.sample_normal(-1, 1, -6, 1)
     zred = dstr.sample_normal(6.5, 1, 0, 7)
-    logzsol = np.random.uniform(-0.1, -0.1)
+    logzsol = dstr.sample_normal(-1, 0.5, -2.5, 0.5)
     dust1 = dstr.sample_normal(0.1, 0.5, 0, 2)
     dust2 = dstr.sample_normal(0.5, 0.5, 0, 2)
     igm_factor = dstr.sample_normal(1, 0.25, 0, 99)
-    gas_logu = np.random.uniform(-2.0, -2.0)
-    gas_logz = np.random.uniform(0.0, 0.0)
-    fagn = np.random.uniform(1, 1)
-    imf1 = np.random.uniform(1.3, 1.3)
-    imf2 = np.random.uniform(2.3, 2.3)
-    imf3 = np.random.uniform(2.3, 2.3)
-    tau = np.random.uniform(3, 3)
-    a = np.random.uniform(1000000, 1000000)
-    b = np.random.uniform(0, 0)
-    mass = dstr.sample_lognormal(10, 1, 1e8, 1e12)
+    gas_logu = dstr.sample_normal(-2, 0.25, -4, -1)
+    gas_logz = dstr.sample_normal(-1, 0.25, -2.5, -0.5) #log(z/zsol)
+    fagn = dstr.sample_normal(1, 0.25, 0, 10)
+    imf1 = dstr.sample_normal(1.3, 0.1, 0.3, 2.3)
+    imf2 = dstr.sample_normal(2.3, 0.1, 1.3, 3.3)
+    imf3 = dstr.sample_normal(2.3, 0.1, 1.3, 3.3)
+    logtau = dstr.sample_normal(0, 1, -4, 1)
+    loga = dstr.sample_normal(0, 1, -3, 3)
+    logb = dstr.sample_normal(0, 1, -3, 3)
+    logmass = dstr.sample_normal(11, 2, 7, 13)
 
-    realisation = np.array([tage, zred, logzsol, dust1, dust2, igm_factor,
+    realisation = np.array([logtage, zred, logzsol, dust1, dust2, igm_factor,
                             gas_logu, gas_logz, fagn, imf1, imf2, imf3,
-                             tau, a, b, mass])
+                             logtau, loga, logb, logmass])
 
     return realisation
 
@@ -49,9 +49,10 @@ def plot_galaxy_population(nsamples, rows=5, nbins=20):
     realisations = draw_samples_from_population(nsamples)
     nparams = realisations.shape[1]
 
-    names = np.array(["tage", "zred", "logzsol", "dust1", "dust2", 
+    names = np.array(["$\mathrm{log_{10}tage}$", "zred", "logzsol", "dust1", "dust2", 
                       "igm_factor", "gas_logu", "gas_logz", "fagn", "imf1",
-                        "imf2", "imf3", "tau", "a", "b", "mass"])
+                        "imf2", "imf3", "$\mathrm{log_{10}}tau$", "$\mathrm{log_{10}}a$", 
+                        "$\mathrm{log_{10}}b$", "$\mathrm{log_{10}mass}$"])
     
     if(len(names) != nparams):
         raise Exception("Number of parameters and parameter labels don't match")
