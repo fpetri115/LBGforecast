@@ -8,8 +8,12 @@ import lbg_forecast.distributions as dstr
 
 def galaxy_population_model_dpl():
 
-    logtage = dstr.sample_normal(-1, 1, -6, 1)
-    zred = dstr.sample_normal(6.5, 1, 0, 7)
+    zred = dstr.sample_normal(6.7, 1, 0, 7)
+
+    logtage = dstr.sample_normal(1, 1, -6, 1)
+    if(logtage >  cosmo.age(zred).value):
+        logtage = dstr.sample_normal(1, 1, -6, 1)
+    
     logzsol = dstr.sample_normal(-1, 0.5, -2.5, 0.5)
     dust1 = dstr.sample_normal(0.1, 0.5, 0, 2)
     dust2 = dstr.sample_normal(0.5, 0.5, 0, 2)
@@ -25,7 +29,7 @@ def galaxy_population_model_dpl():
     logb = dstr.sample_normal(0, 1, -3, 3)
     logmass = dstr.sample_normal(11, 2, 7, 13)
 
-    realisation = np.array([logtage, zred, logzsol, dust1, dust2, igm_factor,
+    realisation = np.array([zred, logtage, logzsol, dust1, dust2, igm_factor,
                             gas_logu, gas_logz, fagn, imf1, imf2, imf3,
                              logtau, loga, logb, logmass])
 
@@ -49,7 +53,7 @@ def plot_galaxy_population(nsamples, rows=5, nbins=20):
     realisations = draw_samples_from_population(nsamples)
     nparams = realisations.shape[1]
 
-    names = np.array(["$\mathrm{log_{10}tage}$", "zred", "logzsol", "dust1", "dust2", 
+    names = np.array(["zred", "$\mathrm{log_{10}tage}$", "logzsol", "dust1", "dust2", 
                       "igm_factor", "gas_logu", "gas_logz", "fagn", "imf1",
                         "imf2", "imf3", "$\mathrm{log_{10}}tau$", "$\mathrm{log_{10}}a$", 
                         "$\mathrm{log_{10}}b$", "$\mathrm{log_{10}mass}$"])

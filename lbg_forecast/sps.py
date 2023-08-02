@@ -27,8 +27,8 @@ def update_sps_model_dpl(sps_model, sps_parameters, plot=False):
     #############################################################
 
     #set parameters
-    sps_model.params['tage'] = 10**(sps_parameters[0][0])
-    sps_model.params['zred'] = sps_parameters[1][0]
+    sps_model.params['zred'] = sps_parameters[0][0]
+    sps_model.params['tage'] = 10**(sps_parameters[1][0])
     sps_model.params['logzsol'] = sps_parameters[2][0]
     sps_model.params['dust1'] = sps_parameters[3][0]
     sps_model.params['dust2'] = sps_parameters[4][0]
