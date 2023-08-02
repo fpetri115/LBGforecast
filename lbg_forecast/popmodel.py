@@ -2,8 +2,6 @@ import numpy as np
 import math
 import matplotlib.pyplot as plt
 from astropy.cosmology import WMAP9 as cosmo
-from astropy.cosmology import z_at_value
-import astropy.units as u
 import lbg_forecast.distributions as dstr
 
 def galaxy_population_model_dpl():
