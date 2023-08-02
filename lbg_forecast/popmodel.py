@@ -8,7 +8,7 @@ import lbg_forecast.distributions as dstr
 
 def galaxy_population_model_dpl():
 
-    zred = dstr.sample_normal(6.7, 1, 0, 7)
+    zred = dstr.sample_normal(0.5, 2, 0, 7)
 
     logtage = dstr.sample_normal(1, 1, -6, 1)
     if(logtage >  cosmo.age(zred).value):

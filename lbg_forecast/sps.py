@@ -27,23 +27,23 @@ def update_sps_model_dpl(sps_model, sps_parameters, plot=False):
     #############################################################
 
     #set parameters
-    sps_model.params['zred'] = sps_parameters[0][0]
-    sps_model.params['tage'] = 10**(sps_parameters[1][0])
-    sps_model.params['logzsol'] = sps_parameters[2][0]
-    sps_model.params['dust1'] = sps_parameters[3][0]
-    sps_model.params['dust2'] = sps_parameters[4][0]
-    sps_model.params['igm_factor'] = sps_parameters[5][0]
-    sps_model.params['gas_logu'] = sps_parameters[6][0]
-    sps_model.params['gas_logz'] = sps_parameters[7][0]
-    sps_model.params['fagn'] = sps_parameters[8][0]
-    sps_model.params['imf1'] = sps_parameters[9][0]
-    sps_model.params['imf2'] = sps_parameters[10][0]
-    sps_model.params['imf3'] = sps_parameters[11][0]
+    sps_model.params['zred'] = sps_parameters[0]
+    sps_model.params['tage'] = 10**(sps_parameters[1])
+    sps_model.params['logzsol'] = sps_parameters[2]
+    sps_model.params['dust1'] = sps_parameters[3]
+    sps_model.params['dust2'] = sps_parameters[4]
+    sps_model.params['igm_factor'] = sps_parameters[5]
+    sps_model.params['gas_logu'] = sps_parameters[6]
+    sps_model.params['gas_logz'] = sps_parameters[7]
+    sps_model.params['fagn'] = sps_parameters[8]
+    sps_model.params['imf1'] = sps_parameters[9]
+    sps_model.params['imf2'] = sps_parameters[10]
+    sps_model.params['imf3'] = sps_parameters[11]
 
     time_grid = np.logspace(-5, np.log10(sps_model.params['tage']), 10000)
 
-    sfr = sfh.dpl(10**sps_parameters[12][0], 10**sps_parameters[13][0],
-                                10**sps_parameters[14][0], time_grid)
+    sfr = sfh.dpl(10**sps_parameters[12], 10**sps_parameters[13],
+                                10**sps_parameters[14], time_grid)
     
     normed_sfr = sfr/np.trapz((10**9)*sfr, time_grid)
     sps_model.set_tabular_sfh(time_grid, normed_sfr)
@@ -55,7 +55,7 @@ def update_sps_model_dpl(sps_model, sps_parameters, plot=False):
 
 def simulate_sed(sps_model, sps_parameters):
     
-    tage, logmass, zred = sps_model.params['tage'], sps_parameters[15][0], sps_model.params['zred']
+    tage, logmass, zred = sps_model.params['tage'], sps_parameters[15], sps_model.params['zred']
 
     #get SED
     angstroms, spectrum = sps_model.get_spectrum(tage=tage, peraa=True)
