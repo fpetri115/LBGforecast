@@ -2,19 +2,34 @@ import numpy as np
 import matplotlib.pyplot as plt
 import lbg_forecast.distributions as dstr
 
-def sample_lognormal(mu, sig, min, max):
-
-    param = np.random.lognormal(dstr.mu_lognorm(mu, sig), dstr.sig_lognorm(mu, sig))
-    while(param < min or param > max):
-         param = np.random.lognormal(dstr.mu_lognorm(mu, sig), dstr.sig_lognorm(mu, sig))
-
-    return param
-
 def sample_normal(mu, sig, min, max):
 
     param = np.random.normal(mu, sig)
     while(param < min or param > max):
          param = np.random.normal(mu, sig)
+
+    return param
+
+def sample_normal_hyperparams(mu1, mu2, sig1, sig2):
+
+     mu = np.random.uniform(mu1, mu2)
+     sig = np.random.uniform(sig1, sig2)
+
+     return np.array([mu, sig])
+
+
+
+
+#####################################old
+
+
+
+
+def sample_lognormal(mu, sig, min, max):
+
+    param = np.random.lognormal(dstr.mu_lognorm(mu, sig), dstr.sig_lognorm(mu, sig))
+    while(param < min or param > max):
+         param = np.random.lognormal(dstr.mu_lognorm(mu, sig), dstr.sig_lognorm(mu, sig))
 
     return param
 
