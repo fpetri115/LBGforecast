@@ -63,11 +63,16 @@ def simulate_sed(sps_model, sps_parameters):
 
     return spectrum_cgs_redshifted, aa_redshifted
 
-def simulate_photometry_lsst_fsps(sps_model, logmass):
+def simulate_photometry_fsps(sps_model, logmass, filters='lsst'):
 
-    lsst_filters = fsps.find_filter('lsst')
-    mags = sps_model.get_mags(tage=sps_model.params['tage'], bands=lsst_filters)
+    if(filters=='lsst'):
+        bands = fsps.find_filter('lsst')
+    if(filters=='suprimecam'):
+        bands =fsps.find_filter('suprimecam')
+    if(filters=='all'):
+        bands = fsps.find_filter('lsst') + fsps.find_filter('suprimecam')
 
+    mags = sps_model.get_mags(tage=sps_model.params['tage'], bands=bands)
     return mags - 2.5*logmass
 
 #my own version of fsps get_mags using sedpy

@@ -19,7 +19,7 @@ def simulate_sample_photometry_dpl(nsamples, spectra=False):
         sps.update_sps_model_dpl(sps_model, sps_params)
 
         #Generate Photometry
-        photo_data.append(sps.simulate_photometry_lsst_fsps(sps_model, logmass=sps_params[15]))
+        photo_data.append(sps.simulate_photometry_fsps(sps_model, logmass=sps_params[15], filters='lsst'))
         source_data.append(sps_params)
 
         #Plot Spectra
