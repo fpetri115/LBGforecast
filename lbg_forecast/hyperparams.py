@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import math
 
 
-def sample_hyper_parameters(bounds, sig_min=0.1):
+def sample_hyper_parameters(bounds, sig_min=1e-6):
     
     ##################################### mu_min, mu_max, sig_min, sig_max
     zred = dstr.sample_normal_hyperparams(bounds[0][0], bounds[0][1], sig_min, bounds[0][1]-bounds[0][0])
@@ -56,7 +56,7 @@ def define_hyperparameter_bounds(
 
     return bounds
 
-def plot_hyperparameters(nsamples, bounds, sigmin=0.1, rows=5, nbins=20):
+def plot_hyperparameters(nsamples, bounds, sigmin=1e-6, rows=5, nbins=20):
 
     nparams = 2*len(bounds)
     columns = math.ceil(nparams/rows)
