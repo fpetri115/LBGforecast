@@ -68,9 +68,9 @@ def simulate_photometry_fsps(sps_model, logmass, filters='lsst'):
     if(filters=='lsst'):
         bands = fsps.find_filter('lsst')
     if(filters=='suprimecam'):
-        bands =fsps.find_filter('suprimecam')
+        bands = fsps.find_filter('suprimecam')[1:2]+fsps.find_filter('suprimecam')[3:]
     if(filters=='all'):
-        bands = fsps.find_filter('lsst') + fsps.find_filter('suprimecam')
+        bands = fsps.find_filter('lsst') + fsps.find_filter('suprimecam')[1:2]+fsps.find_filter('suprimecam')[3:]
 
     mags = sps_model.get_mags(tage=sps_model.params['tage'], bands=bands)
     return mags - 2.5*logmass

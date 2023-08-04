@@ -1,4 +1,5 @@
 import numpy as np
+import matplotlib.pyplot as plt
 import lbg_forecast.sps as sps
 import lbg_forecast.hyperparams as hyp
 import lbg_forecast.popmodel as pop
@@ -35,3 +36,39 @@ def simulate_sample_photometry_dpl(nsamples, spectra=False):
         i+=1
 
     return [np.asarray(photo_data), np.asarray(source_data), hyperparams]
+
+def simulate_photometry(ngalaxies, filters='lsst'):
+
+    #Define SPS Model
+    sps_model = sps.initialise_sps_model(sfh_type=3, dust_type=2)
+    #Define bounds for hyper parameters
+    bounds = hyp.define_hyperparameter_bounds()
+    #determine galaxy population distribution
+    hyperparams = hyp.sample_hyper_parameters(bounds)
+
+    i = 0
+    photometry = []
+    while(i < ngalaxies):
+
+        #draw sps parameters for a galaxy and send to fsps
+        source = pop.galaxy_population_model_dpl(hyperparams)
+        sps.update_sps_model_dpl(sps_model, source)
+
+        #generate photometry for source
+        photometry.append(sps.simulate_photometry_fsps(sps_model, logmass=source[15], filters=filters))
+
+        i+=1
+        print(i)
+
+    photometry = np.vstack(np.asarray(photometry))
+
+    return photometry
+
+def calculate_colours(photometry):
+    
+    photo1 = photometry[:,:-1]
+    photo2 = photometry[:,1:]
+    colours = photo1 - photo2
+
+    return colours
+
