@@ -12,13 +12,13 @@ from astropy.constants import L_sun
 from sedpy import observate
 
 #If dust_type=2, dust1 must be zero!
-def initialise_sps_model(sfh_type=1, dust_type=2):
+def initialise_sps_model(sfh_type=1, imf_type=2, dust_type=2):
 
-    sps_model = fsps.StellarPopulation(compute_vega_mags=False, zcontinuous=1, sfh=sfh_type, dust_type=dust_type)
+    sps_model = fsps.StellarPopulation(compute_vega_mags=False, zcontinuous=1, imf_type=imf_type, sfh=sfh_type, dust_type=dust_type)
 
     sps_model.params['add_neb_emission'] = True 
     sps_model.params['add_igm_absorption'] = True
-    sps_model.params['imf_type'] = 2
+    sps_model.params['imf_type'] = imf_type
 
     return sps_model 
 
@@ -40,7 +40,7 @@ def update_sps_model_dpl(sps_model, sps_parameters, plot=False):
     sps_model.params['imf2'] = sps_parameters[10]
     sps_model.params['imf3'] = sps_parameters[11]
 
-    time_grid = np.logspace(-5, np.log10(sps_model.params['tage']), 10000)
+    time_grid = np.logspace(-7, np.log10(sps_model.params['tage']), 10000)
 
     sfr = sfh.dpl(10**sps_parameters[12], 10**sps_parameters[13],
                                 10**sps_parameters[14], time_grid)

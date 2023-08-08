@@ -3,52 +3,38 @@ import lbg_forecast.distributions as dstr
 import matplotlib.pyplot as plt
 import math
 
-
 def sample_hyper_parameters(bounds, sig_min=1e-6):
-    
-    ##################################### mu_min, mu_max, sig_min, sig_max
-    zred = dstr.sample_normal_hyperparams(bounds[0][0], bounds[0][1], sig_min, bounds[0][1]-bounds[0][0])
-    logtage = dstr.sample_normal_hyperparams(bounds[1][0], bounds[1][1], sig_min, bounds[1][1]-bounds[1][0])
-    logzsol = dstr.sample_normal_hyperparams(bounds[2][0], bounds[2][1], sig_min, bounds[2][1]-bounds[2][0])
-    dust1 = dstr.sample_normal_hyperparams(bounds[3][0], bounds[3][1], sig_min, bounds[3][1]-bounds[3][0])
-    dust2 = dstr.sample_normal_hyperparams(bounds[4][0], bounds[4][1], sig_min, bounds[4][1]-bounds[4][0])
-    igm_factor = dstr.sample_normal_hyperparams(bounds[5][0], bounds[5][0], bounds[5][1], bounds[5][1]) #fixed
-    gas_logu = dstr.sample_normal_hyperparams(bounds[6][0], bounds[6][1], sig_min, bounds[6][1]-bounds[6][0])
-    gas_logz = dstr.sample_normal_hyperparams(bounds[7][0], bounds[7][1], sig_min, bounds[7][1]-bounds[7][0]) 
-    fagn = dstr.sample_normal_hyperparams(bounds[8][0], bounds[8][1], sig_min, bounds[8][1]-bounds[8][0])
-    imf1 = dstr.sample_normal_hyperparams(bounds[9][0], bounds[9][0], bounds[9][1], bounds[9][1]) #fixed
-    imf2 = dstr.sample_normal_hyperparams(bounds[10][0], bounds[10][0], bounds[10][1], bounds[10][1]) #fixed
-    imf3 = dstr.sample_normal_hyperparams(bounds[11][0], bounds[11][0], bounds[11][1], bounds[11][1]) #fixed
-    logtau = dstr.sample_normal_hyperparams(bounds[12][0], bounds[12][1], sig_min, bounds[12][1]-bounds[12][0])
-    loga = dstr.sample_normal_hyperparams(bounds[13][0], bounds[13][1], sig_min, bounds[13][1]-bounds[13][0])
-    logb = dstr.sample_normal_hyperparams(bounds[14][0], bounds[14][1], sig_min, bounds[14][1]-bounds[14][0])
-    logmass = dstr.sample_normal_hyperparams(bounds[15][0], bounds[15][1], sig_min, bounds[15][1]-bounds[15][0])
 
-    hyperparams = np.array([zred, logtage, logzsol, dust1, dust2, igm_factor,
-                            gas_logu, gas_logz, fagn, imf1, imf2, imf3,
-                             logtau, loga, logb, logmass])
+    hyperparams_list = []
+    for bound in bounds:
+        hyperparams_list.append(dstr.sample_hyperparams(bound, sig_min))
+
+    hyperparams = np.asarray(hyperparams_list)
     
     return hyperparams
 
 #bounds for hyperparams(mu_min, mu_max), for fixed priors: (mu, sig)
+# 0: uniform priors, 1: gaussian
+# so if uniform array[1:] are min and max of uniform distribution
+# if gaussian array[1:] are mu_min and mu_max of gaussian prior
 def define_hyperparameter_bounds( 
                            
-    zred = np.array([0, 7]),
-    logtage = np.array([-3, 1]),
-    logzsol = np.array([-2.5, 0.5]),
-    dust1 = np.array([0, 2]),
-    dust2 = np.array([0, 2]),
-    igm_factor = np.array([1, 0.25]), #fixed (mu, sigma)
-    gas_logu = np.array([-4, -1]),
-    gas_logz = np.array([-2.5, 0.5]),
-    fagn = np.array([0, 10]),
-    imf1 = np.array([1.3, 0.1]), #fixed (mu, sigma)
-    imf2 = np.array([2.3, 0.1]), #fixed (mu, sigma)
-    imf3 = np.array([2.3, 0.1]), #fixed (mu, sigma)
-    logtau = np.array([-4, 1]),
-    loga = np.array([-3, 3]),
-    logb = np.array([-3, 3]),
-    logmass = np.array([7, 13])):
+    zred = np.array([0, 0, 7]),
+    logtage = np.array([1, -3, 1]),
+    logzsol = np.array([1, -2.5, 0.5]),
+    dust1 = np.array([0, 0, 0]),
+    dust2 = np.array([1, 0, 2]),
+    igm_factor = np.array([0, 1, 1]), 
+    gas_logu = np.array([1, -4, -1]),
+    gas_logz = np.array([1, -2.5, 0.5]),
+    fagn = np.array([1, 0, 10]),
+    imf1 = np.array([0, 1.3, 1.3]), 
+    imf2 = np.array([0, 2.3, 2.3]), 
+    imf3 = np.array([0, 2.3, 2.3]), 
+    logtau = np.array([1, -4, 1]),
+    loga = np.array([1, -3, 3]),
+    logb = np.array([1, -3, 3]),
+    logmass = np.array([1, 7, 13])):
 
     bounds = np.array([zred, logtage, logzsol, dust1, dust2, igm_factor,
                             gas_logu, gas_logz, fagn, imf1, imf2, imf3,
@@ -71,6 +57,9 @@ def plot_hyperparameters(nsamples, bounds, sigmin=1e-6, rows=5, nbins=20):
         i+=1
 
     tot_hyperparams = np.vstack(np.asarray(tot_hyperparams))
+    
+    #delete every third column to remove unneeded arrays
+    tot_hyperparams = np.delete(tot_hyperparams, list(range(0, tot_hyperparams.shape[1], 3)), axis=1)
 
     names = np.array(["zred_mu", "zred_sig", "$\mathrm{log_{10}tage}$_mu", "$\mathrm{log_{10}tage}$_sig",
                       "logzsol_mu", "logzsol_sig", "dust1_mu", "dust1_sig", "dust2_mu", "dust2_sig",
@@ -80,6 +69,15 @@ def plot_hyperparameters(nsamples, bounds, sigmin=1e-6, rows=5, nbins=20):
                       "$\mathrm{log_{10}}tau$_sig", "$\mathrm{log_{10}}a$_mu", "$\mathrm{log_{10}}a$_sig", 
                         "$\mathrm{log_{10}}b$_mu", "$\mathrm{log_{10}}b$_sig", "$\mathrm{log_{10}mass}$_mu",
                         "$\mathrm{log_{10}mass}$_sig"])
+    
+    names_uni = np.array(["zred_min", "zred_max", "$\mathrm{log_{10}tage}$_min", "$\mathrm{log_{10}tage}$_max",
+                      "logzsol_min", "logzsol_max", "dust1_min", "dust1_max", "dust2_min", "dust2_max",
+                      "igm_factor_min", "igm_factor_max", "gas_logu_min", "gas_logu_max", 
+                      "gas_logz_min", "gas_logz_max", "fagn_min", "fagn_max", "imf1_min", "imf1_max",
+                      "imf2_min", "imf2_max", "imf3_min", "imf3_max", "$\mathrm{log_{10}}tau$_min",
+                      "$\mathrm{log_{10}}tau$_max", "$\mathrm{log_{10}}a$_min", "$\mathrm{log_{10}}a$_max", 
+                        "$\mathrm{log_{10}}b$_min", "$\mathrm{log_{10}}b$_max", "$\mathrm{log_{10}mass}$_min",
+                        "$\mathrm{log_{10}mass}$_max"])
 
 
     fig1, axes1 = plt.subplots(rows, columns, figsize=(20,20), sharex=False, sharey=False)
@@ -89,6 +87,10 @@ def plot_hyperparameters(nsamples, bounds, sigmin=1e-6, rows=5, nbins=20):
     plot_no = 0
     name_count = 0
     col = 0
+    bounds = np.hstack(bounds)
+    bounds = np.delete(bounds, list(range(1, bounds.size, 3)))
+    bounds = np.delete(bounds, list(range(1, bounds.size, 2)))
+    bounds = np.repeat(bounds, 2)
     while(col < nparams):
 
         if(i > rows - 1):
@@ -100,7 +102,14 @@ def plot_hyperparameters(nsamples, bounds, sigmin=1e-6, rows=5, nbins=20):
 
         else:
             axes1[i, j].hist(tot_hyperparams[:,col], density = True, bins=nbins)
-            axes1[i, j].set_xlabel(names[name_count])
+
+            #change label depending on distribution
+            if(int(bounds[col]) == 0):
+                axes1[i, j].set_xlabel(names_uni[name_count])
+
+            if(int(bounds[col]) == 1):
+                axes1[i, j].set_xlabel(names[name_count])
+
             axes1[i, j].set_ylabel("$p(z)$")
         i+=1
         plot_no += 1

@@ -6,30 +6,22 @@ import lbg_forecast.distributions as dstr
 
 def galaxy_population_model_dpl(hparams):
 
-    zred = dstr.sample_normal(hparams[0][0], hparams[0][1], 0, 7)
+    i = 0
+    realisation_list = []
+    for hparam in hparams:
 
-    logtage = dstr.sample_normal(hparams[1][0], hparams[1][1], -6, 1)
-    if(logtage >  cosmo.age(zred).value):
-        logtage = dstr.sample_normal(hparams[1][0], hparams[1][1], -6, 1)
-    
-    logzsol = dstr.sample_normal(hparams[2][0], hparams[2][1], -2.5, 0.5)
-    dust1 = dstr.sample_normal(hparams[3][0], hparams[3][1], 0, 2)
-    dust2 = dstr.sample_normal(hparams[4][0], hparams[4][1], 0, 2)
-    igm_factor = dstr.sample_normal(hparams[5][0], hparams[5][1], 0, 99)
-    gas_logu = dstr.sample_normal(hparams[6][0], hparams[6][1], -4, -1)
-    gas_logz = dstr.sample_normal(hparams[7][0], hparams[7][1], -2.5, 0.5) #log(z/zsol)
-    fagn = dstr.sample_normal(hparams[8][0], hparams[8][1], 0, 10)
-    imf1 = dstr.sample_normal(hparams[9][0], hparams[9][1], 0.3, 2.3)
-    imf2 = dstr.sample_normal(hparams[10][0], hparams[10][1], 1.3, 3.3)
-    imf3 = dstr.sample_normal(hparams[11][0], hparams[11][1], 1.3, 3.3)
-    logtau = dstr.sample_normal(hparams[12][0], hparams[12][1], -4, 1)
-    loga = dstr.sample_normal(hparams[13][0], hparams[13][1], -3, 3)
-    logb = dstr.sample_normal(hparams[14][0], hparams[14][1], -3, 3)
-    logmass = dstr.sample_normal(hparams[15][0], hparams[15][1], 7, 13)
+        if(i == 1): #sample age (dependent on redshift)
+            logtage = dstr.sample_prior(hparam)
+            zred = realisation_list[0]
+            while(logtage >  cosmo.age(zred).value):
+                logtage = dstr.sample_prior(hparam)
 
-    realisation = np.array([zred, logtage, logzsol, dust1, dust2, igm_factor,
-                            gas_logu, gas_logz, fagn, imf1, imf2, imf3,
-                             logtau, loga, logb, logmass])
+            realisation_list.append(logtage)
+
+        else: #all other params
+            realisation_list.append(dstr.sample_prior(hparam))
+
+    realisation = np.asarray(realisation_list)
 
     return realisation
 

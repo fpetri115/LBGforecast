@@ -2,52 +2,52 @@ import numpy as np
 import matplotlib.pyplot as plt
 import lbg_forecast.distributions as dstr
 
-def sample_normal(mu, sig, min, max):
+#sample uniform distribution or truncated normal
+def sample_prior(hparams):
 
-    param = np.random.normal(mu, sig)
-    while(param < min or param > max):
-         param = np.random.normal(mu, sig)
+     bound, p1, p2 = hparams
+     distribution = bound[0]
 
-    return param
-
-def sample_normal_hyperparams(mu1, mu2, sig1, sig2):
-
-     mu = np.random.uniform(mu1, mu2)
-     sig = np.random.uniform(sig1, sig2)
-
-     return np.array([mu, sig])
-
-
-
-
-#####################################old
-
-
-
-
-def sample_lognormal(mu, sig, min, max):
-
-    param = np.random.lognormal(dstr.mu_lognorm(mu, sig), dstr.sig_lognorm(mu, sig))
-    while(param < min or param > max):
-         param = np.random.lognormal(dstr.mu_lognorm(mu, sig), dstr.sig_lognorm(mu, sig))
-
-    return param
-
-def lognormal_pdf(x, mu, sig, log=False):
-
-     pdf = (np.exp(-(np.log(x) - mu)**2 / (2 * sig**2))
-       / (x * sig * np.sqrt(2 * np.pi)))
+     if(distribution == 0):
+          param = np.random.uniform(p1, p2)
      
-     if(log):
-          plt.xscale("log")
+     if(distribution == 1):
+          param = np.random.normal(p1, p2)
+          bmin = bound[1]
+          bmax = bound[2]
+          while(param < bmin or param > bmax):
+               param = np.random.normal(p1, p2)
+
+     if(distribution != 1 and distribution != 0):
+          raise Exception("Unknown Distribution, bound[0] must be int < 2")
+
+     return param
+
+# sample/set prior parameters depending on distribution specified
+def sample_hyperparams(bound, sig_min):
+
+     distribution, bmin, bmax = bound
+
+     #uniform - fixed
+     if(distribution == 0):
+
+          uniform_min = bmin
+          uniform_max = bmax
+
+          return np.array([bound, uniform_min, uniform_max], dtype=object)
      
-     return plt.plot(x, pdf)
+     #gaussian - sample mu and sigma
+     if(distribution == 1):
 
-def lognormal_mean(mu, sig):
-     return np.exp(mu + (sig*sig)/2)
+          mu_min = bmin
+          mu_max = bmax
 
-def mu_lognorm(mu, sig):
-     return np.log((mu*mu)/np.sqrt(mu*mu+sig*sig))
+          mu = np.random.uniform(mu_min, mu_max)
 
-def sig_lognorm(mu, sig):
-     return np.sqrt(np.log(1+(sig*sig)/(mu*mu)))
+          #minimum gaussian width = sig_min, max given by range of means allowed
+          sig = np.random.uniform(sig_min, (mu_max-mu_min)+sig_min)
+
+          return np.array([bound, mu, sig], dtype=object)
+     
+     if(distribution != 1 and distribution != 0):
+          raise Exception("Unknown Distribution, bound[0] must be int < 2")
