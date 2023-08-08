@@ -59,7 +59,8 @@ def simulate_photometry(ngalaxies, bounds, dust_type=2, imf_type=2, filters='lss
         photometry.append(sps.simulate_photometry_fsps(sps_model, logmass=source[15], filters=filters))
 
         i+=1
-        print(i)
+        if(i%100 == 0):
+            print(i)
 
     photometry = np.vstack(np.asarray(photometry))
 
