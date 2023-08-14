@@ -7,6 +7,14 @@ def tau_model(tau, t):
 def dpl(tau, a, b, t):
     return ((t/tau)**(a) + (t/tau)**(-b))**(-1)
 
+# metallicity at max(t)
+def z(t, normedsfr, zgas, zmin, mass):
+    
+    f_mass_formed = np.trapz(normedsfr, t) #does this work? tgird != sfr grid?
+
+    return (zgas - zmin)*f_mass_formed/mass + zmin
+
+
 def plot_sfh(sfh, t):
 
     plt.figure(figsize=(10,5))
