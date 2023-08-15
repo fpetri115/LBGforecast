@@ -37,7 +37,7 @@ def simulate_sample_photometry_dpl(nsamples, spectra=False):
 
     return [np.asarray(photo_data), np.asarray(source_data), np.asarray(hyperparams)]
 
-def simulate_photometry(ngalaxies, bounds, dust_type=2, imf_type=2, filters='lsst'):
+def simulate_photometry(ngalaxies, bounds, dust_type=2, imf_type=2, filters='lsst', show_sfh=False):
 
     #Define SPS Model
     sps_model = sps.initialise_sps_model(sfh_type=3, dust_type=dust_type, imf_type=imf_type)
@@ -53,7 +53,7 @@ def simulate_photometry(ngalaxies, bounds, dust_type=2, imf_type=2, filters='lss
         #draw sps parameters for a galaxy and send to fsps
         source = pop.galaxy_population_model_dpl(hyperparams)
         redshifts.append(source[0])
-        sps.update_sps_model_dpl(sps_model, source)
+        sps.update_sps_model_dpl(sps_model, source, plot=show_sfh)
 
         #generate photometry for source
         photometry.append(sps.simulate_photometry_fsps(sps_model, logmass=source[15], filters=filters))

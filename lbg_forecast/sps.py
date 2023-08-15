@@ -3,6 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from astropy import units as u
 import lbg_forecast.sfh as sfh
+import lbg_forecast.zhistory as zh
 import lbg_forecast.popmodel as pop
 
 from astropy.cosmology import WMAP9
@@ -41,15 +42,16 @@ def update_sps_model_dpl(sps_model, sps_parameters, plot=False):
     sps_model.params['imf3'] = sps_parameters[11]
 
     time_grid = np.logspace(-7, np.log10(sps_model.params['tage']), 10000)
-
-    sfr = sfh.dpl(10**sps_parameters[12], 10**sps_parameters[13],
-                                10**sps_parameters[14], time_grid)
-    
-    normed_sfr = sfr/np.trapz((10**9)*sfr, time_grid)
-    sps_model.set_tabular_sfh(time_grid, normed_sfr)
+    sfr = sfh.normed_sfh(sps_parameters[12], sps_parameters[13], sps_parameters[14], time_grid)
+    zhis = zh.sfr_to_zh(sfr, time_grid, 10**sps_parameters[15], 0.5)
+    sps_model.set_tabular_sfh(time_grid, sfr)
 
     if(plot):
-        sfh.plot_sfh(normed_sfr, time_grid)
+        sfh.plot_sfh(sfr*10**sps_parameters[15], time_grid)
+
+        plt.figure(figsize=(10,5))
+        plt.plot(time_grid, zhis)
+        
 
     #############################################################
 
