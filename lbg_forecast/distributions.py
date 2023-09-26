@@ -8,9 +8,11 @@ def sample_prior(hparams):
      bound, p1, p2 = hparams
      distribution = bound[0]
 
+     #uniform
      if(distribution == 0):
           param = np.random.uniform(p1, p2)
      
+     #truncated gaussian with free parameters
      if(distribution == 1):
           param = np.random.normal(p1, p2)
           bmin = bound[1]
@@ -18,8 +20,16 @@ def sample_prior(hparams):
           while(param < bmin or param > bmax):
                param = np.random.normal(p1, p2)
 
-     if(distribution != 1 and distribution != 0):
-          raise Exception("Unknown Distribution, bound[0] must be int < 2")
+     #(for igm_factor)
+     if(distribution == 2):
+          param = np.random.normal(1, 0.5)
+          bmin = bound[1]
+          bmax = bound[2]
+          while(param < bmin or param > bmax):
+               param = np.random.normal(p1, p2)
+
+     if(distribution != 1 and distribution != 0 and distribution != 2):
+          raise Exception("Unknown Distribution, bound[0] must be int < 3")
 
      return param
 
@@ -49,5 +59,9 @@ def sample_hyperparams(bound, sig_min):
 
           return np.array([bound, mu, sig], dtype=object)
      
-     if(distribution != 1 and distribution != 0):
-          raise Exception("Unknown Distribution, bound[0] must be int < 2")
+     #(for igm_factor)
+     if(distribution == 2):
+           return np.array([bound, 1, 0.5], dtype=object)
+     
+     if(distribution != 1 and distribution != 0 and distribution != 2):
+          raise Exception("Unknown Distribution, bound[0] must be int < 3")

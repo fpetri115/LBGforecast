@@ -4,7 +4,10 @@ import matplotlib.pyplot as plt
 from astropy.cosmology import WMAP9 as cosmo
 import lbg_forecast.distributions as dstr
 
-def galaxy_population_model_dpl(hparams):
+#draws single galaxy sample given a set of hyper parmeters (hparams)
+#hparams are found using sample_hyper_parameters() in hyperparams.py
+#returns: 1D array with SPS parameters sampled from priors defined by hparams
+def galaxy_population_model(hparams):
 
     i = 0
     realisation_list = []
@@ -25,22 +28,10 @@ def galaxy_population_model_dpl(hparams):
 
     return realisation
 
-def draw_samples_from_population(nsamples, hparams):
-
-    realisations = []
-    i = 0
-    while(i < nsamples):
-        realisations.append(galaxy_population_model_dpl(hparams))
-        i+=1
-
-    realisations = np.array(realisations)
-    realisations = np.vstack(realisations) #column for each parameter
-
-    return realisations
-
+#for plotting galaxy population
 def plot_galaxy_population(nsamples, hparams, rows=5, nbins=20):
 
-    realisations = draw_samples_from_population(nsamples, hparams)
+    realisations = _draw_samples_from_population(nsamples, hparams)
     nparams = realisations.shape[1]
 
     names = np.array(["zred", "$\mathrm{log_{10}tage}$", "logzsol", "dust1", "dust2", 
@@ -87,3 +78,17 @@ def plot_galaxy_population(nsamples, hparams, rows=5, nbins=20):
         axes1[rows - i - 1, columns - 1].set_axis_off()
         i+=1
 
+#call this function to draw multiple galaxy samples given a set of hyper parameters
+#USED FOR PLOTTING in plot_galaxy_population()
+def _draw_samples_from_population(nsamples, hparams):
+
+    realisations = []
+    i = 0
+    while(i < nsamples):
+        realisations.append(galaxy_population_model(hparams))
+        i+=1
+
+    realisations = np.array(realisations)
+    realisations = np.vstack(realisations) #column for each parameter
+
+    return realisations

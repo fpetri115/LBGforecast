@@ -3,6 +3,13 @@ import lbg_forecast.distributions as dstr
 import matplotlib.pyplot as plt
 import math
 
+# sample hyperparameters given bounds from define_hyperparameter_bounds()
+# minimum varaince given by sig_min
+# returns: N x 3 nested array
+#   first column contains (distr, a, b) for each SPS parameter passed from define_hyperparameter_bounds()
+#   second and third contain sampled hyperparameters
+#       if uniform this will just be a and b respectively
+#       if gaussian this will be mu (between a and b) and a variance between sig_min and b-a respectively
 def sample_hyper_parameters(bounds, sig_min=1e-6):
 
     hyperparams_list = []
@@ -13,10 +20,13 @@ def sample_hyper_parameters(bounds, sig_min=1e-6):
     
     return hyperparams
 
-#bounds for hyperparams(mu_min, mu_max), for fixed priors: (mu, sig)
-# 0: uniform priors, 1: gaussian
-# so if uniform array[1:] are min and max of uniform distribution
-# if gaussian array[1:] are mu_min and mu_max of gaussian prior
+# bounds for hyperparams, each parameter has structure (distr, a, b)
+# distr = 0 => uniform priors; distr = 1 => gaussian
+# if distr = 0 (uniform) a and b are min and max of uniform distribution respectively
+# if distr = 1 (gaussian) a and b are mu_min and mu_max of gaussian prior respectively
+# returns: N x 3 array containing (distr, a, b) for each (N) SPS parameters
+# REDSHIFT SHOULD ALWAYS BE FIRST, LOGMASS ALWAYS LAST
+# IGM_FACTOR CURRENTLY NOT IN USE, HARDCODED IN SPS.PY
 def define_hyperparameter_bounds( 
                            
     zred = np.array([0, 0, 7]),
@@ -42,6 +52,7 @@ def define_hyperparameter_bounds(
 
     return bounds
 
+#for plotting hyperparameters given bounds
 def plot_hyperparameters(nsamples, bounds, sigmin=1e-6, rows=5, nbins=20):
 
     nparams = 2*len(bounds)

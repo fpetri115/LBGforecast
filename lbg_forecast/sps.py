@@ -43,14 +43,14 @@ def update_sps_model_dpl(sps_model, sps_parameters, plot=False):
 
     time_grid = np.logspace(-7, np.log10(sps_model.params['tage']), 10000)
     sfr = sfh.normed_sfh(sps_parameters[12], sps_parameters[13], sps_parameters[14], time_grid)
-    zhis = zh.sfr_to_zh(sfr, time_grid, 10**sps_parameters[15], 0.5)
+    #zhis = zh.sfr_to_zh(sfr, time_grid, 10**sps_parameters[15], 0.5)
     sps_model.set_tabular_sfh(time_grid, sfr)
 
     if(plot):
         sfh.plot_sfh(sfr*10**sps_parameters[15], time_grid)
 
         plt.figure(figsize=(10,5))
-        plt.plot(time_grid, zhis)
+        #plt.plot(time_grid, zhis)
         
 
     #############################################################
