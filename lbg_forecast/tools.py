@@ -13,14 +13,24 @@ def simulate_photometry(ngalaxies, hyperparams, dust_type=2, imf_type=2, filters
     #Define SPS Model
     sps_model = sps.initialise_sps_model(sfh_type=3, dust_type=dust_type, imf_type=imf_type)
 
+    #draw sps parameters from priors
     i = 0
-    photometry = []
     sps_parameters = []
     while(i < ngalaxies):
 
-        #draw sps parameters for a galaxy and send to fsps
         source = pop.galaxy_population_model(hyperparams)
         sps_parameters.append(source)
+
+        i+=1
+    
+    print("SPS Parameters Generated")
+
+    #use sps parameters to generate photometry
+    i = 0
+    photometry = []
+    while(i < ngalaxies):
+
+        source = sps_parameters[i]
         sps.update_sps_model_dpl(sps_model, source, plot=show_sfh)
 
         #generate photometry for source
@@ -32,6 +42,8 @@ def simulate_photometry(ngalaxies, hyperparams, dust_type=2, imf_type=2, filters
 
     photometry = np.vstack(np.asarray(photometry))
     sps_parameters = np.vstack(np.asarray(sps_parameters))
+
+    print("Complete")
 
     return photometry, sps_parameters
 
