@@ -53,7 +53,7 @@ def simulate_photometry(ngalaxies, hyperparams, dust_type=2, imf_type=2, filters
 
     return photometry, sps_parameters
 
-
+#draw population of sps parameters given priors/hyperparameters
 def draw_sps_parameters(ngalaxies, hyperparams):
 
     i = 0
@@ -69,8 +69,8 @@ def draw_sps_parameters(ngalaxies, hyperparams):
 
     return sps_parameters
 
-#calculate sfh at index
-def calculate_sfh(sps_parameters, index, show_plot=False):
+#calculate sfh at index for a given set of sps parameters from draw_sps_parameters()
+def calculate_sfh(sps_parameters, index, show_plot=True):
 
     sfh_params = np.vstack(sps_parameters[:, 12:15])
     logages = sps_parameters[:, 1]
