@@ -10,6 +10,11 @@ def dpl(tau, a, b, t):
 def normed_sfh(logtau, loga, logb, t):
 
     sfh = dpl(10**logtau, 10**loga, 10**logb, t)
+    
+    #if sfh is very small inside age of galaxy, replace with uniform
+    if((sfh < 1e-30).all()):
+        sfh = np.ones_like(t)
+
     normed_sfh = sfh/np.trapz((10**9)*sfh, t)
 
     return normed_sfh
