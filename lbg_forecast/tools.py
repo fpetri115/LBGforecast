@@ -22,10 +22,11 @@ def simulate_photometry(ngalaxies, hyperparams, dust_type=2, imf_type=2, filters
     #it should be okay to shuffle around imfs as imf priors are uncorrelated to other parameters
     #i.e. drawing zred, shouldn't affect the values drawnfor imf1 2 and 3
     # hence imf1, 2 and 3 can be shuffled for ease of computation
-    imf_params = np.vstack(sps_parameters[:, 9:12])
-    imf_params = np.round_(imf_params, decimals = 2)
-    imf_params = np.sort(imf_params, axis=0, kind='quicksort')
-    sps_parameters[:, 9:12] = imf_params
+    
+    #imf_params = np.vstack(sps_parameters[:, 9:12])
+    #imf_params = np.round_(imf_params, decimals = 2)
+    #imf_params = np.sort(imf_params, axis=0, kind='quicksort')
+    #sps_parameters[:, 9:12] = imf_params
 
     print("SPS Parameters Generated")
     ###################################################
@@ -43,7 +44,7 @@ def simulate_photometry(ngalaxies, hyperparams, dust_type=2, imf_type=2, filters
         photometry.append(sps.simulate_photometry_fsps(sps_model, logmass=source[-1], filters=filters))
 
         i+=1
-        if(i%100 == 0):
+        if(i%1000 == 0):
             print(i)
 
     photometry = np.vstack(np.asarray(photometry))
