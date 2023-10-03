@@ -13,20 +13,19 @@ from astropy.constants import L_sun
 from sedpy import observate
 
 #If dust_type=2, dust1 must be zero!
-def initialise_sps_model(sfh_type=1, imf_type=2, dust_type=2):
+def initialise_sps_model(sfh_type=1, neb_em=True, zcont=1, imf_type=2, dust_type=2):
 
-    sps_model = fsps.StellarPopulation(compute_vega_mags=False, zcontinuous=1, imf_type=imf_type, sfh=sfh_type, dust_type=dust_type)
+    sps_model = fsps.StellarPopulation(compute_vega_mags=False, zcontinuous=zcont, imf_type=imf_type, sfh=sfh_type, dust_type=dust_type)
 
-    sps_model.params['add_neb_emission'] = True 
+    sps_model.params['add_neb_emission'] = neb_em 
     sps_model.params['add_igm_absorption'] = True
     sps_model.params['imf_type'] = imf_type
 
     return sps_model 
 
-def update_sps_model_dpl(sps_model, sps_parameters, plot=False):
+def update_sps_model_dpl(sps_model, sps_parameters, zhis=False, plot=False):
 
     #############################################################
-
     #set parameters
     sps_model.params['zred'] = sps_parameters[0]
     sps_model.params['tage'] = 10**(sps_parameters[1])
@@ -43,14 +42,20 @@ def update_sps_model_dpl(sps_model, sps_parameters, plot=False):
 
     time_grid = np.logspace(-7, np.log10(sps_model.params['tage']), 10000)
     sfr = sfh.normed_sfh(sps_parameters[12], sps_parameters[13], sps_parameters[14], time_grid)
-    #zhis = zh.sfr_to_zh(sfr, time_grid, 10**sps_parameters[15], 0.5)
-    sps_model.set_tabular_sfh(time_grid, sfr)
+
+    if(zhis):
+        Z_MIST = 0.0142 #solar metallicity for MIST
+        sps_model.params['logzsol'] = 0.0
+        zhis = zh.sfr_to_zh(sfr, time_grid, 10**sps_parameters[-1], (10**sps_parameters[2])*Z_MIST)
+        sps_model.set_tabular_sfh(time_grid, sfr, zhis)
+    else:
+        sps_model.set_tabular_sfh(time_grid, sfr)
 
     if(plot):
-        sfh.plot_sfh(sfr*10**sps_parameters[15], time_grid)
+        sfh.plot_sfh(sfr*10**sps_parameters[-1], time_grid)
 
         plt.figure(figsize=(10,5))
-        #plt.plot(time_grid, zhis)
+        plt.plot(time_grid, zhis)
         
 
     #############################################################

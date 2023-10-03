@@ -4,6 +4,7 @@ import lbg_forecast.sps as sps
 import lbg_forecast.hyperparams as hyp
 import lbg_forecast.popmodel as pop
 import lbg_forecast.sfh as sfh
+import lbg_forecast.zhistory as zh
 import math
 
 # simulate photometry for ngalaxies given some hyperparameters
@@ -11,38 +12,94 @@ import math
 # first element is a ngalaxies x number of filters array containing photometry for the sample
 # second element is a ngalaxies x number of SPS parameters containing SPS parameters for each source/galaxy
 def simulate_photometry(ngalaxies, hyperparams, dust_type=2, imf_type=2, filters='lsst', show_sfh=False):
-
-    #Define SPS Model
-    sps_model = sps.initialise_sps_model(sfh_type=3, dust_type=dust_type, imf_type=imf_type)
     
     #draw parameters from priors
     sps_parameters = draw_sps_parameters(ngalaxies, hyperparams)
+    np.save('generated_spsparams', sps_parameters)
 
     print("SPS Parameters Generated")
     ###################################################
 
-    #GENERATE PHOTOMETRY FOR GIVEN SPS PARAMETERS
+    #Define SPS Model with Nebular emmision
+    sps_model = sps.initialise_sps_model(sfh_type=3, neb_em=True, zcont=1, dust_type=dust_type, imf_type=imf_type)
+
+    #GENERATE PHOTOMETRY FOR GIVEN SPS PARAMETERS WITH NEBULAR EMMISION
     ###################################################
     i = 0
-    photometry = []
+    photometry_neb = []
     while(i < ngalaxies):
 
         source = sps_parameters[i]
-        sps.update_sps_model_dpl(sps_model, source, plot=show_sfh)
+        sps.update_sps_model_dpl(sps_model, source, zhis=False, plot=show_sfh)
 
         #generate photometry for source
-        photometry.append(sps.simulate_photometry_fsps(sps_model, logmass=source[-1], filters=filters))
+        photometry_neb.append(sps.simulate_photometry_fsps(sps_model, logmass=source[-1], filters=filters))
 
         i+=1
         if(i%1000 == 0):
             print(i)
 
-    photometry = np.vstack(np.asarray(photometry))
+    photometry_neb = np.vstack(np.asarray(photometry_neb))
+    np.save('generated_photo_neb', photometry_neb)
+
+    print("First Run Complete")
+    ###################################################
+
+    #Define SPS Model without Nebular emmision
+    sps_model = sps.initialise_sps_model(sfh_type=3, neb_em=False, zcont=1, dust_type=dust_type, imf_type=imf_type)
+
+    #GENERATE PHOTOMETRY FOR GIVEN SPS PARAMETERS WITHOUT NEBULAR EMMISION
+    ###################################################
+    i = 0
+    photometry_no_neb = []
+    while(i < ngalaxies):
+
+        source = sps_parameters[i]
+        sps.update_sps_model_dpl(sps_model, source, zhis=False, plot=show_sfh)
+
+        #generate photometry for source
+        photometry_no_neb.append(sps.simulate_photometry_fsps(sps_model, logmass=source[-1], filters=filters))
+
+        i+=1
+        if(i%1000 == 0):
+            print(i)
+
+    photometry_no_neb = np.vstack(np.asarray(photometry_no_neb))
+    np.save('generated_photo_no_neb', photometry_neb)
+
+    print("Second Run Complete")
+    ###################################################
+
+    photometric_contribution_from_neb = photometry_neb - photometry_no_neb
+
+    #Define SPS Model without Nebular emmision BUT with zhistory
+    sps_model = sps.initialise_sps_model(sfh_type=3, neb_em=False, zcont=3, dust_type=dust_type, imf_type=imf_type)
+
+    #GENERATE PHOTOMETRY FOR GIVEN SPS PARAMETERS WITHOUT NEBULAR EMMISION BUT WITH ZHISTORY
+    ###################################################
+    i = 0
+    photometry_zhis = []
+    while(i < ngalaxies):
+
+        source = sps_parameters[i]
+        sps.update_sps_model_dpl(sps_model, source, zhis=True, plot=show_sfh)
+
+        #generate photometry for source
+        photometry_zhis.append(sps.simulate_photometry_fsps(sps_model, logmass=source[-1], filters=filters))
+
+        i+=1
+        if(i%1000 == 0):
+            print(i)
+
+    photometry_zhis = np.vstack(np.asarray(photometry_zhis))
     ###################################################
     
+    photometry_final = photometry_zhis + photometric_contribution_from_neb
+    np.save('generated_photo_zhis_neb', photometry_final)
+
     print("Complete")
 
-    return photometry, sps_parameters
+    return photometry_final, sps_parameters
 
 #draw population of sps parameters given priors/hyperparameters
 #extra sorting of imf paramters for faster computation using large ngalaxies
@@ -97,9 +154,11 @@ def calculate_sfh(sps_parameters, index, show_plot=True):
     a = sfh_params[index, 1]
     b = sfh_params[index, 2]
 
+    sfhis = sfh.normed_sfh(tau, a, b, time_grid)
+
     if(show_plot):
         plt.figure(figsize=(10,5))
-        plt.plot(time_grid, sfh.normed_sfh(tau, a, b, time_grid))
+        plt.plot(time_grid, sfhis)
         plt.xlabel("Time Since the Beginning of the Universe [$\mathrm{Gyr}$]",
                 fontsize=12)
         plt.ylabel("Star Formation Rate [$\mathrm{M}_{\odot}\mathrm{yr}^{-1}$]",
@@ -107,8 +166,51 @@ def calculate_sfh(sps_parameters, index, show_plot=True):
         
         plt.tick_params(axis="x", width = 2, labelsize=12*0.8)
         plt.tick_params(axis="y", width = 2, labelsize=12*0.8)
+
+        return sfhis
     else:
-        return sfh.normed_sfh(tau, a, b, time_grid)
+        return sfhis
+
+#calculate sfh at index for a given set of sps parameters from draw_sps_parameters()
+def calculate_zhis(sps_parameters, index, show_plot=True):
+
+    Z_MIST = 0.0142
+    sfh_params = np.vstack(sps_parameters[:, 12:15])
+    logages = sps_parameters[:, 1]
+    z_gases = (10**sps_parameters[:, 2])*Z_MIST
+
+    time_grid = np.logspace(-7, logages[index], 10000)
+
+    tau = sfh_params[index, 0]
+    a = sfh_params[index, 1]
+    b = sfh_params[index, 2]
+    z_gas = z_gases[index]
+
+    z_history = zh.sfr_to_zh(sfh.normed_sfh(tau, a, b, time_grid), time_grid, 10**sps_parameters[-1], z_gas)
+    if(show_plot):
+        plt.figure(figsize=(10,5))
+        plt.plot(time_grid, z_history)
+        plt.xlabel("Time Since the Beginning of the Universe [$\mathrm{Gyr}$]",
+                fontsize=12)
+        plt.ylabel("Chemical Evolution [$\mathrm{Absolute \  Metallicity}$]",
+                fontsize=12)
+        
+        plt.tick_params(axis="y", width = 2, labelsize=12*0.8)
+        plt.tick_params(axis="x", width = 2, labelsize=12*0.8)
+
+        return z_history
+    else:
+        return z_history
+    
+def sfh_zhis_diag(sps_parameters, index):
+
+    print("Galaxy Age (Gyr):", 10**sps_parameters[index, 1])
+    print("Observed Metallicity (Absolute Metallicity):", 10**sps_parameters[index, 2]*0.0142)
+    sfh = calculate_sfh(sps_parameters, index)
+    zhis = calculate_zhis(sps_parameters, index)
+
+    return (zhis, sfh)
+
 
 #plot galaxy population given by draw_sps_parameters()/simulate_photo..()
 def plot_galaxy_population(sps_parameters, rows=5, nbins=20):
