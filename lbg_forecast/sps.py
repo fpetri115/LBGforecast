@@ -40,7 +40,7 @@ def update_sps_model_dpl(sps_model, sps_parameters, zhis=False, plot=False):
     sps_model.params['imf2'] = sps_parameters[10]
     sps_model.params['imf3'] = sps_parameters[11]
 
-    time_grid = np.logspace(-7, np.log10(sps_model.params['tage']), 10000)
+    time_grid = np.logspace(-7, np.log10(sps_model.params['tage']), 1000)
     sfr = sfh.normed_sfh(sps_parameters[12], sps_parameters[13], sps_parameters[14], time_grid)
 
     if(zhis):
@@ -62,7 +62,7 @@ def update_sps_model_dpl(sps_model, sps_parameters, zhis=False, plot=False):
 
 def simulate_sed(sps_model, sps_parameters):
     
-    tage, logmass, zred = sps_model.params['tage'], sps_parameters[15], sps_model.params['zred']
+    tage, logmass, zred = sps_model.params['tage'], sps_parameters[-1], sps_model.params['zred']
 
     #get SED
     angstroms, spectrum = sps_model.get_spectrum(tage=tage, peraa=True)

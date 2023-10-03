@@ -95,7 +95,8 @@ def simulate_photometry(ngalaxies, hyperparams, dust_type=2, imf_type=2, filters
     ###################################################
     
     photometry_final = photometry_zhis + photometric_contribution_from_neb
-    np.save('generated_photo_zhis_neb', photometry_final)
+    np.save('generated_photo_zhis_no_neb', photometry_zhis)
+    np.save('generated_photo_final', photometry_final)
 
     print("Complete")
 
@@ -148,7 +149,7 @@ def calculate_sfh(sps_parameters, index, show_plot=True):
     sfh_params = np.vstack(sps_parameters[:, 12:15])
     logages = sps_parameters[:, 1]
 
-    time_grid = np.logspace(-7, logages[index], 10000)
+    time_grid = np.logspace(-7, logages[index], 1000)
 
     tau = sfh_params[index, 0]
     a = sfh_params[index, 1]
@@ -179,7 +180,7 @@ def calculate_zhis(sps_parameters, index, show_plot=True):
     logages = sps_parameters[:, 1]
     z_gases = (10**sps_parameters[:, 2])*Z_MIST
 
-    time_grid = np.logspace(-7, logages[index], 10000)
+    time_grid = np.logspace(-7, logages[index], 1000)
 
     tau = sfh_params[index, 0]
     a = sfh_params[index, 1]
