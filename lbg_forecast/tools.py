@@ -4,6 +4,7 @@ import lbg_forecast.sps as sps
 import lbg_forecast.hyperparams as hyp
 import lbg_forecast.popmodel as pop
 import lbg_forecast.sfh as sfh
+import math
 
 # simulate photometry for ngalaxies given some hyperparameters
 # returns tuple of 2 arrays
@@ -16,17 +17,6 @@ def simulate_photometry(ngalaxies, hyperparams, dust_type=2, imf_type=2, filters
     
     #draw parameters from priors
     sps_parameters = draw_sps_parameters(ngalaxies, hyperparams)
-
-    #sort and discretise imf parameters for ease of computation
-    #this reduces the amount of times fsps needs to recompile
-    #it should be okay to shuffle around imfs as imf priors are uncorrelated to other parameters
-    #i.e. drawing zred, shouldn't affect the values drawnfor imf1 2 and 3
-    # hence imf1, 2 and 3 can be shuffled for ease of computation
-    
-    #imf_params = np.vstack(sps_parameters[:, 9:12])
-    #imf_params = np.round_(imf_params, decimals = 2)
-    #imf_params = np.sort(imf_params, axis=0, kind='quicksort')
-    #sps_parameters[:, 9:12] = imf_params
 
     print("SPS Parameters Generated")
     ###################################################
@@ -55,8 +45,10 @@ def simulate_photometry(ngalaxies, hyperparams, dust_type=2, imf_type=2, filters
     return photometry, sps_parameters
 
 #draw population of sps parameters given priors/hyperparameters
-def draw_sps_parameters(ngalaxies, hyperparams):
+#extra sorting of imf paramters for faster computation using large ngalaxies
+def draw_sps_parameters(ngalaxies, hyperparams, imf_spacing=4):
 
+    #main loop over parameters
     i = 0
     sps_parameters = []
     while(i < ngalaxies):
@@ -67,6 +59,29 @@ def draw_sps_parameters(ngalaxies, hyperparams):
         i+=1
     
     sps_parameters = np.vstack(np.asarray(sps_parameters))
+
+    #round imf parameters to nearest decimal
+    #if imf_spacing =4 and decimals =1, then this will be to every 0.4
+    imf_params = np.vstack(sps_parameters[:, 10:12])
+    imf_params = np.round_(imf_params*(1/imf_spacing), decimals = 1)*imf_spacing
+    sps_parameters[:, 10:12] = imf_params
+
+    #do a weighted sum of IMF parameters
+    #add these sums to in a column to sps params
+    #this allows for the sps parameters to be ordered given the weighted sum of imf parameters
+    #this should allow for faster computation of photometry in large simulations
+    imf_params = imf_params*np.array([1.02, 1.01]) #weights
+    sums = np.sum(imf_params, axis=1)
+    sums = np.reshape(sums, (len(sums), 1))
+
+    #add to column
+    sps_parameters = np.append(sps_parameters, sums, axis=1)
+
+    #sort rows by sums
+    sps_parameters = sps_parameters[sps_parameters[:, -1].argsort()]
+
+    #remove sum column after sorting
+    sps_parameters = sps_parameters[:, :-1]
 
     return sps_parameters
 
@@ -94,6 +109,56 @@ def calculate_sfh(sps_parameters, index, show_plot=True):
         plt.tick_params(axis="y", width = 2, labelsize=12*0.8)
     else:
         return sfh.normed_sfh(tau, a, b, time_grid)
+
+#plot galaxy population given by draw_sps_parameters()/simulate_photo..()
+def plot_galaxy_population(sps_parameters, rows=5, nbins=20):
+    
+    realisations = sps_parameters
+    nparams = realisations.shape[1]
+
+    names = np.array(["zred", "$\mathrm{log_{10}tage}$", "logzsol", "dust1", "dust2", 
+                      "igm_factor", "gas_logu", "gas_logz", "fagn", "imf1",
+                        "imf2", "imf3", "$\mathrm{log_{10}}tau$", "$\mathrm{log_{10}}a$", 
+                        "$\mathrm{log_{10}}b$", "$\mathrm{log_{10}mass}$"])
+    
+    if(len(names) != nparams):
+        raise Exception("Number of parameters and parameter labels don't match")
+
+    columns = math.ceil(nparams/rows)
+    total_plots = nparams
+    grid = rows*columns
+
+    fig1, axes1 = plt.subplots(rows, columns, figsize=(20,20), sharex=False, sharey=False)
+
+    i = 0
+    j = 0
+    plot_no = 0
+    name_count = 0
+    col = 0
+    while(col < nparams):
+
+        if(i > rows - 1):
+            j+=1
+            i=0
+
+        if(plot_no > total_plots):
+            axes1[i, j].set_axis_off()
+
+        else:
+            axes1[i, j].hist(realisations[:,col], density = True, bins=nbins)
+            axes1[i, j].set_xlabel(names[name_count])
+            axes1[i, j].set_ylabel("$p(z)$")
+        i+=1
+        plot_no += 1
+        name_count += 1
+        col += 1
+
+    #clear blank figures
+    no_empty_plots = grid - nparams
+    i = 0
+    while(i < no_empty_plots):
+        axes1[rows - i - 1, columns - 1].set_axis_off()
+        i+=1
 
 def calculate_colours(photometry):
     
