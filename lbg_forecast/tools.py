@@ -11,7 +11,7 @@ import math
 # returns tuple of 2 arrays
 # first element is a ngalaxies x number of filters array containing photometry for the sample
 # second element is a ngalaxies x number of SPS parameters containing SPS parameters for each source/galaxy
-def simulate_photometry(ngalaxies, hyperparams, dust_type=2, imf_type=2, filters='lsst', show_sfh=False):
+def simulate_photometry(ngalaxies, hyperparams, dust_type, imf_type, filters='lsst', show_sfh=False):
     
     #draw parameters from priors
     sps_parameters = draw_sps_parameters(ngalaxies, hyperparams)
