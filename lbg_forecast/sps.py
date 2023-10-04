@@ -17,7 +17,10 @@ def initialise_sps_model(sfh_type=1, neb_em=True, zcont=1, imf_type=2, dust_type
 
     sps_model = fsps.StellarPopulation(compute_vega_mags=False, zcontinuous=zcont, imf_type=imf_type, sfh=sfh_type, dust_type=dust_type)
 
-    sps_model.params['add_neb_emission'] = neb_em 
+    sps_model.params['add_neb_emission'] = neb_em
+    sps_model.params['add_neb_continuum'] = neb_em
+    sps_model.params['nebemlineinspec'] = neb_em
+    
     sps_model.params['add_igm_absorption'] = True
     sps_model.params['imf_type'] = imf_type
 

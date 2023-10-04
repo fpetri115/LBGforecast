@@ -65,7 +65,7 @@ def simulate_photometry(ngalaxies, hyperparams, dust_type, imf_type, filters='ls
             print(i)
 
     photometry_no_neb = np.vstack(np.asarray(photometry_no_neb))
-    np.save('generated_photo_no_neb', photometry_neb)
+    np.save('generated_photo_no_neb', photometry_no_neb)
 
     print("Second Run Complete")
     ###################################################
