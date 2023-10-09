@@ -1,6 +1,6 @@
 import numpy as np
 
-def sfr_to_zh(sfr, time_grid, mass, zgas):
+def sfr_to_zh(sfr, time_grid, zgas):
 
     zmin = 10**(-2.5)*0.0142 #converting min z in isochrone from logzsol to absolute metallicity
     zh = []

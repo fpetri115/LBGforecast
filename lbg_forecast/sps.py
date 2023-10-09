@@ -13,7 +13,7 @@ from astropy.constants import L_sun
 from sedpy import observate
 
 #If dust_type=2, dust1 must be zero!
-def initialise_sps_model(sfh_type=1, neb_em=True, zcont=1, imf_type=2, dust_type=2):
+def initialise_sps_model(sfh_type, neb_em, zcont, imf_type, dust_type):
 
     sps_model = fsps.StellarPopulation(compute_vega_mags=False, zcontinuous=zcont, imf_type=imf_type, sfh=sfh_type, dust_type=dust_type)
 
@@ -26,7 +26,7 @@ def initialise_sps_model(sfh_type=1, neb_em=True, zcont=1, imf_type=2, dust_type
 
     return sps_model 
 
-def update_sps_model_dpl(sps_model, sps_parameters, zhis=False, plot=False):
+def update_sps_model_dpl(sps_model, sps_parameters, zhis, plot=False):
 
     #############################################################
     #set parameters
@@ -49,7 +49,8 @@ def update_sps_model_dpl(sps_model, sps_parameters, zhis=False, plot=False):
     if(zhis):
         Z_MIST = 0.0142 #solar metallicity for MIST
         sps_model.params['logzsol'] = 0.0
-        zhis = zh.sfr_to_zh(sfr, time_grid, 10**sps_parameters[-1], (10**sps_parameters[2])*Z_MIST)
+        sps_model.params['gas_logz'] = 0.0
+        zhis = zh.sfr_to_zh(sfr, time_grid, (10**sps_parameters[2])*Z_MIST)
         sps_model.set_tabular_sfh(time_grid, sfr, zhis)
     else:
         sps_model.set_tabular_sfh(time_grid, sfr)

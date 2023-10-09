@@ -11,8 +11,11 @@ import math
 # returns tuple of 2 arrays
 # first element is a ngalaxies x number of filters array containing photometry for the sample
 # second element is a ngalaxies x number of SPS parameters containing SPS parameters for each source/galaxy
-def simulate_photometry(ngalaxies, hyperparams, dust_type, imf_type, filters='lsst', show_sfh=False):
+def simulate_photometry(ngalaxies, hyperparams, dust_type, imf_type, zhistory, nebem, filters='lsst', show_sfh=False):
     
+    if(nebem == False and zhistory == True):
+        raise Exception("nebular emission cannot be turned off with zhistory enabled at present")
+
     #draw parameters from priors
     sps_parameters = draw_sps_parameters(ngalaxies, hyperparams)
     np.save('generated_spsparams', sps_parameters)
@@ -21,7 +24,9 @@ def simulate_photometry(ngalaxies, hyperparams, dust_type, imf_type, filters='ls
     ###################################################
 
     #Define SPS Model with Nebular emmision
-    sps_model = sps.initialise_sps_model(sfh_type=3, neb_em=True, zcont=1, dust_type=dust_type, imf_type=imf_type)
+    sps_model = sps.initialise_sps_model(sfh_type=3, neb_em=nebem, zcont=1, dust_type=dust_type, imf_type=imf_type)
+
+    print("libraries: ", sps_model.libraries)
 
     #GENERATE PHOTOMETRY FOR GIVEN SPS PARAMETERS WITH NEBULAR EMMISION
     ###################################################
@@ -45,58 +50,63 @@ def simulate_photometry(ngalaxies, hyperparams, dust_type, imf_type, filters='ls
     print("First Run Complete")
     ###################################################
 
-    #Define SPS Model without Nebular emmision
-    sps_model = sps.initialise_sps_model(sfh_type=3, neb_em=False, zcont=1, dust_type=dust_type, imf_type=imf_type)
+    if(zhistory):
+        #Define SPS Model without Nebular emmision
+        sps_model = sps.initialise_sps_model(sfh_type=3, neb_em=False, zcont=1, dust_type=dust_type, imf_type=imf_type)
 
-    #GENERATE PHOTOMETRY FOR GIVEN SPS PARAMETERS WITHOUT NEBULAR EMMISION
-    ###################################################
-    i = 0
-    photometry_no_neb = []
-    while(i < ngalaxies):
+        #GENERATE PHOTOMETRY FOR GIVEN SPS PARAMETERS WITHOUT NEBULAR EMMISION
+        ###################################################
+        i = 0
+        photometry_no_neb = []
+        while(i < ngalaxies):
 
-        source = sps_parameters[i]
-        sps.update_sps_model_dpl(sps_model, source, zhis=False, plot=show_sfh)
+            source = sps_parameters[i]
+            sps.update_sps_model_dpl(sps_model, source, zhis=False, plot=show_sfh)
 
-        #generate photometry for source
-        photometry_no_neb.append(sps.simulate_photometry_fsps(sps_model, logmass=source[-1], filters=filters))
+            #generate photometry for source
+            photometry_no_neb.append(sps.simulate_photometry_fsps(sps_model, logmass=source[-1], filters=filters))
 
-        i+=1
-        if(i%1000 == 0):
-            print(i)
+            i+=1
+            if(i%1000 == 0):
+                print(i)
 
-    photometry_no_neb = np.vstack(np.asarray(photometry_no_neb))
-    np.save('generated_photo_no_neb', photometry_no_neb)
+        photometry_no_neb = np.vstack(np.asarray(photometry_no_neb))
+        np.save('generated_photo_no_neb', photometry_no_neb)
 
-    print("Second Run Complete")
-    ###################################################
+        print("Second Run Complete")
+        ###################################################
 
-    photometric_contribution_from_neb = photometry_neb - photometry_no_neb
+        photometric_contribution_from_neb = photometry_neb - photometry_no_neb
 
-    #Define SPS Model without Nebular emmision BUT with zhistory
-    sps_model = sps.initialise_sps_model(sfh_type=3, neb_em=False, zcont=3, dust_type=dust_type, imf_type=imf_type)
+        #Define SPS Model without Nebular emmision BUT with zhistory
+        sps_model = sps.initialise_sps_model(sfh_type=3, neb_em=False, zcont=3, dust_type=dust_type, imf_type=imf_type)
 
-    #GENERATE PHOTOMETRY FOR GIVEN SPS PARAMETERS WITHOUT NEBULAR EMMISION BUT WITH ZHISTORY
-    ###################################################
-    i = 0
-    photometry_zhis = []
-    while(i < ngalaxies):
+        #GENERATE PHOTOMETRY FOR GIVEN SPS PARAMETERS WITHOUT NEBULAR EMMISION BUT WITH ZHISTORY
+        ###################################################
+        i = 0
+        photometry_zhis = []
+        while(i < ngalaxies):
 
-        source = sps_parameters[i]
-        sps.update_sps_model_dpl(sps_model, source, zhis=True, plot=show_sfh)
+            source = sps_parameters[i]
+            sps.update_sps_model_dpl(sps_model, source, zhis=True, plot=show_sfh)
 
-        #generate photometry for source
-        photometry_zhis.append(sps.simulate_photometry_fsps(sps_model, logmass=source[-1], filters=filters))
+            #generate photometry for source
+            photometry_zhis.append(sps.simulate_photometry_fsps(sps_model, logmass=source[-1], filters=filters))
 
-        i+=1
-        if(i%1000 == 0):
-            print(i)
+            i+=1
+            if(i%1000 == 0):
+                print(i)
 
-    photometry_zhis = np.vstack(np.asarray(photometry_zhis))
-    ###################################################
+        photometry_zhis = np.vstack(np.asarray(photometry_zhis))
+        ###################################################
+        
+        photometry_final = photometry_zhis + photometric_contribution_from_neb
+        np.save('generated_photo_zhis_no_neb', photometry_zhis)
+        np.save('generated_photo_final', photometry_final)
     
-    photometry_final = photometry_zhis + photometric_contribution_from_neb
-    np.save('generated_photo_zhis_no_neb', photometry_zhis)
-    np.save('generated_photo_final', photometry_final)
+    else:
+        photometry_final = photometry_neb
+        np.save('generated_photo_final', photometry_final)
 
     print("Complete")
 
@@ -187,7 +197,7 @@ def calculate_zhis(sps_parameters, index, show_plot=True):
     b = sfh_params[index, 2]
     z_gas = z_gases[index]
 
-    z_history = zh.sfr_to_zh(sfh.normed_sfh(tau, a, b, time_grid), time_grid, 10**sps_parameters[-1], z_gas)
+    z_history = zh.sfr_to_zh(sfh.normed_sfh(tau, a, b, time_grid), time_grid, z_gas)
     if(show_plot):
         plt.figure(figsize=(10,5))
         plt.plot(time_grid, z_history)
