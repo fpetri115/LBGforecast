@@ -24,6 +24,7 @@ def simulate_photometry(ngalaxies, hyperparams, dust_type, imf_type, zhistory, n
     ###################################################
 
     #Define SPS Model with Nebular emmision
+    print("Starting Run 1/3")
     sps_model = sps.initialise_sps_model(sfh_type=3, neb_em=nebem, zcont=1, dust_type=dust_type, imf_type=imf_type)
 
     print("libraries: ", sps_model.libraries)
@@ -45,12 +46,14 @@ def simulate_photometry(ngalaxies, hyperparams, dust_type, imf_type, zhistory, n
             print(i)
 
     photometry_neb = np.vstack(np.asarray(photometry_neb))
-    np.save('generated_photo_neb', photometry_neb)
+    #np.save('generated_photo_neb', photometry_neb)
 
-    print("First Run Complete")
+    print("Run 1/3 Complete")
     ###################################################
 
     if(zhistory):
+
+        print("Starting Run 2/3")
         #Define SPS Model without Nebular emmision
         sps_model = sps.initialise_sps_model(sfh_type=3, neb_em=False, zcont=1, dust_type=dust_type, imf_type=imf_type)
 
@@ -71,13 +74,13 @@ def simulate_photometry(ngalaxies, hyperparams, dust_type, imf_type, zhistory, n
                 print(i)
 
         photometry_no_neb = np.vstack(np.asarray(photometry_no_neb))
-        np.save('generated_photo_no_neb', photometry_no_neb)
+        #np.save('generated_photo_no_neb', photometry_no_neb)
 
-        print("Second Run Complete")
+        print("Run 2/3 Complete")
         ###################################################
 
         photometric_contribution_from_neb = photometry_neb - photometry_no_neb
-
+        print("Starting Run 3/3")
         #Define SPS Model without Nebular emmision BUT with zhistory
         sps_model = sps.initialise_sps_model(sfh_type=3, neb_em=False, zcont=3, dust_type=dust_type, imf_type=imf_type)
 
@@ -100,8 +103,9 @@ def simulate_photometry(ngalaxies, hyperparams, dust_type, imf_type, zhistory, n
         photometry_zhis = np.vstack(np.asarray(photometry_zhis))
         ###################################################
         
+        print("Run 3/3 Complete")
         photometry_final = photometry_zhis + photometric_contribution_from_neb
-        np.save('generated_photo_zhis_no_neb', photometry_zhis)
+        #np.save('generated_photo_zhis_no_neb', photometry_zhis)
         np.save('generated_photo_final', photometry_final)
     
     else:
