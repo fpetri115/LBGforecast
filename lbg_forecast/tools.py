@@ -130,15 +130,15 @@ def draw_sps_parameters(ngalaxies, hyperparams, imf_spacing=4):
 
     #round imf parameters to nearest decimal
     #if imf_spacing =4 and decimals =1, then this will be to every 0.4
-    imf_params = np.vstack(sps_parameters[:, 10:12])
+    imf_params = np.vstack(sps_parameters[:, 9:12])
     imf_params = np.round_(imf_params*(1/imf_spacing), decimals = 1)*imf_spacing
-    sps_parameters[:, 10:12] = imf_params
+    sps_parameters[:, 9:12] = imf_params
 
     #do a weighted sum of IMF parameters
     #add these sums to in a column to sps params
     #this allows for the sps parameters to be ordered given the weighted sum of imf parameters
     #this should allow for faster computation of photometry in large simulations
-    imf_params = imf_params*np.array([1.02, 1.01]) #weights
+    imf_params = imf_params*np.array([1.02, 1.01, 1.00]) #weights
     sums = np.sum(imf_params, axis=1)
     sums = np.reshape(sums, (len(sums), 1))
 
