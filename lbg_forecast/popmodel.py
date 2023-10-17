@@ -14,15 +14,16 @@ def galaxy_population_model(hparams):
     for hparam in hparams:
 
         if(i == 1): #sample age (dependent on redshift)
-            logtage = dstr.sample_prior(hparam)
+            tage = 10**dstr.sample_prior(hparam)
             zred = realisation_list[0]
-            while(logtage >  cosmo.age(zred).value):
-                logtage = dstr.sample_prior(hparam)
+            while(tage >  cosmo.age(zred).value):
+                tage = 10**dstr.sample_prior(hparam)
 
-            realisation_list.append(logtage)
-
+            realisation_list.append(np.log10(tage))
         else: #all other params
             realisation_list.append(dstr.sample_prior(hparam))
+
+        i+=1
 
     realisation = np.asarray(realisation_list)
 

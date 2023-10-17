@@ -5,13 +5,14 @@ import lbg_forecast.hyperparams as hyp
 import lbg_forecast.popmodel as pop
 import lbg_forecast.sfh as sfh
 import lbg_forecast.zhistory as zh
+from astropy.cosmology import WMAP9 as cosmo
 import math
 
 # simulate photometry for ngalaxies given some hyperparameters
 # returns tuple of 2 arrays
 # first element is a ngalaxies x number of filters array containing photometry for the sample
 # second element is a ngalaxies x number of SPS parameters containing SPS parameters for each source/galaxy
-def simulate_photometry(ngalaxies, hyperparams, dust_type, imf_type, zhistory, nebem, filters='lsst', show_sfh=False):
+def simulate_photometry(ngalaxies, hyperparams, dust_type, imf_type, zhistory, nebem, filters):
     
     if(nebem == False and zhistory == True):
         raise Exception("nebular emission cannot be turned off with zhistory enabled at present")
@@ -36,7 +37,7 @@ def simulate_photometry(ngalaxies, hyperparams, dust_type, imf_type, zhistory, n
     while(i < ngalaxies):
 
         source = sps_parameters[i]
-        sps.update_sps_model_dpl(sps_model, source, zhis=False, plot=show_sfh)
+        sps.update_sps_model_dpl(sps_model, source, zhis=False)
 
         #generate photometry for source
         photometry_neb.append(sps.simulate_photometry_fsps(sps_model, logmass=source[-1], filters=filters))
@@ -64,7 +65,7 @@ def simulate_photometry(ngalaxies, hyperparams, dust_type, imf_type, zhistory, n
         while(i < ngalaxies):
 
             source = sps_parameters[i]
-            sps.update_sps_model_dpl(sps_model, source, zhis=False, plot=show_sfh)
+            sps.update_sps_model_dpl(sps_model, source, zhis=False)
 
             #generate photometry for source
             photometry_no_neb.append(sps.simulate_photometry_fsps(sps_model, logmass=source[-1], filters=filters))
@@ -80,6 +81,7 @@ def simulate_photometry(ngalaxies, hyperparams, dust_type, imf_type, zhistory, n
         ###################################################
 
         photometric_contribution_from_neb = photometry_neb - photometry_no_neb
+        
         print("Starting Run 3/3")
         #Define SPS Model without Nebular emmision BUT with zhistory
         sps_model = sps.initialise_sps_model(sfh_type=3, neb_em=False, zcont=3, dust_type=dust_type, imf_type=imf_type)
@@ -91,7 +93,7 @@ def simulate_photometry(ngalaxies, hyperparams, dust_type, imf_type, zhistory, n
         while(i < ngalaxies):
 
             source = sps_parameters[i]
-            sps.update_sps_model_dpl(sps_model, source, zhis=True, plot=show_sfh)
+            sps.update_sps_model_dpl(sps_model, source, zhis=True)
 
             #generate photometry for source
             photometry_zhis.append(sps.simulate_photometry_fsps(sps_model, logmass=source[-1], filters=filters))
@@ -134,9 +136,9 @@ def draw_sps_parameters(ngalaxies, hyperparams, imf_spacing=4):
 
     #round imf parameters to nearest decimal
     #if imf_spacing =4 and decimals =1, then this will be to every 0.4
-    imf_params = np.vstack(sps_parameters[:, 9:12])
+    imf_params = np.vstack(sps_parameters[:, 8:11])
     imf_params = np.round_(imf_params*(1/imf_spacing), decimals = 1)*imf_spacing
-    sps_parameters[:, 9:12] = imf_params
+    sps_parameters[:, 8:11] = imf_params
 
     #do a weighted sum of IMF parameters
     #add these sums to in a column to sps params
@@ -155,12 +157,15 @@ def draw_sps_parameters(ngalaxies, hyperparams, imf_spacing=4):
     #remove sum column after sorting
     sps_parameters = sps_parameters[:, :-1]
 
+    if(all(cosmo.age(sps_parameters[:, 0][:]).value > 10**sps_parameters[:, 1][:]) == False):
+        raise Exception("Age of galaxy > Age of universe at given redshift!!")
+
     return sps_parameters
 
 #calculate sfh at index for a given set of sps parameters from draw_sps_parameters()
 def calculate_sfh(sps_parameters, index, show_plot=True):
 
-    sfh_params = np.vstack(sps_parameters[:, 12:15])
+    sfh_params = np.vstack(sps_parameters[:, 11:14])
     logages = sps_parameters[:, 1]
 
     time_grid = np.logspace(-7, logages[index], 1000)
@@ -190,7 +195,7 @@ def calculate_sfh(sps_parameters, index, show_plot=True):
 def calculate_zhis(sps_parameters, index, show_plot=True):
 
     Z_MIST = 0.0142
-    sfh_params = np.vstack(sps_parameters[:, 12:15])
+    sfh_params = np.vstack(sps_parameters[:, 11:14])
     logages = sps_parameters[:, 1]
     z_gases = (10**sps_parameters[:, 2])*Z_MIST
 
@@ -220,6 +225,8 @@ def calculate_zhis(sps_parameters, index, show_plot=True):
 def sfh_zhis_diag(sps_parameters, index):
 
     print("Galaxy Age (Gyr):", 10**sps_parameters[index, 1])
+    print("Age of the universe at given redshift (Gyr):", cosmo.age(sps_parameters[index, 0]).value)
+    print("Redshift:", sps_parameters[index, 0])
     print("Observed Metallicity (Absolute Metallicity):", 10**sps_parameters[index, 2]*0.0142)
     sfh = calculate_sfh(sps_parameters, index)
     zhis = calculate_zhis(sps_parameters, index)
@@ -234,7 +241,7 @@ def plot_galaxy_population(sps_parameters, rows=5, nbins=20):
     nparams = realisations.shape[1]
 
     names = np.array(["zred", "$\mathrm{log_{10}tage}$", "logzsol", "dust1", "dust2", 
-                      "igm_factor", "gas_logu", "gas_logz", "fagn", "imf1",
+                      "igm_factor", "gas_logu", "fagn", "imf1",
                         "imf2", "imf3", "$\mathrm{log_{10}}tau$", "$\mathrm{log_{10}}a$", 
                         "$\mathrm{log_{10}}b$", "$\mathrm{log_{10}mass}$"])
     

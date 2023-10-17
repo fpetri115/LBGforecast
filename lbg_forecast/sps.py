@@ -26,7 +26,7 @@ def initialise_sps_model(sfh_type, neb_em, zcont, imf_type, dust_type):
 
     return sps_model 
 
-def update_sps_model_dpl(sps_model, sps_parameters, zhis, plot=False):
+def update_sps_model_dpl(sps_model, sps_parameters, zhis):
 
     #############################################################
     #set parameters
@@ -37,14 +37,13 @@ def update_sps_model_dpl(sps_model, sps_parameters, zhis, plot=False):
     sps_model.params['dust2'] = sps_parameters[4]
     sps_model.params['igm_factor'] = sps_parameters[5]
     sps_model.params['gas_logu'] = sps_parameters[6]
-    sps_model.params['gas_logz'] = sps_parameters[7]
-    sps_model.params['fagn'] = sps_parameters[8]
-    sps_model.params['imf1'] = sps_parameters[9]
-    sps_model.params['imf2'] = sps_parameters[10]
-    sps_model.params['imf3'] = sps_parameters[11]
+    sps_model.params['fagn'] = sps_parameters[7]
+    sps_model.params['imf1'] = sps_parameters[8]
+    sps_model.params['imf2'] = sps_parameters[9]
+    sps_model.params['imf3'] = sps_parameters[10]
 
     time_grid = np.logspace(-7, np.log10(sps_model.params['tage']), 1000)
-    sfr = sfh.normed_sfh(sps_parameters[12], sps_parameters[13], sps_parameters[14], time_grid)
+    sfr = sfh.normed_sfh(sps_parameters[11], sps_parameters[12], sps_parameters[13], time_grid)
 
     if(zhis):
         Z_MIST = 0.0142 #solar metallicity for MIST
@@ -53,15 +52,8 @@ def update_sps_model_dpl(sps_model, sps_parameters, zhis, plot=False):
         zhis = zh.sfr_to_zh(sfr, time_grid, (10**sps_parameters[2])*Z_MIST)
         sps_model.set_tabular_sfh(time_grid, sfr, zhis)
     else:
-        sps_model.set_tabular_sfh(time_grid, sfr)
-
-    if(plot):
-        sfh.plot_sfh(sfr*10**sps_parameters[-1], time_grid)
-
-        plt.figure(figsize=(10,5))
-        plt.plot(time_grid, zhis)
-        
-
+        sps_model.params['gas_logz'] = sps_model.params['logzsol']
+        sps_model.set_tabular_sfh(time_grid, sfr)        
     #############################################################
 
 def simulate_sed(sps_model, sps_parameters):
@@ -74,7 +66,7 @@ def simulate_sed(sps_model, sps_parameters):
 
     return spectrum_cgs_redshifted, aa_redshifted
 
-def simulate_photometry_fsps(sps_model, logmass, filters='lsst'):
+def simulate_photometry_fsps(sps_model, logmass, filters):
 
     if(filters=='lsst'):
         bands = fsps.find_filter('lsst')
@@ -83,7 +75,7 @@ def simulate_photometry_fsps(sps_model, logmass, filters='lsst'):
     if(filters=='all'):
         bands = fsps.find_filter('lsst') + fsps.find_filter('suprimecam')[1:2]+fsps.find_filter('suprimecam')[3:]
 
-    mags = sps_model.get_mags(tage=sps_model.params['tage'], bands=bands)
+    mags = sps_model.get_mags(tage=sps_model.params['tage'], bands=bands, redshift=sps_model.params['zred'])
     return mags - 2.5*logmass
 
 #my own version of fsps get_mags using sedpy
