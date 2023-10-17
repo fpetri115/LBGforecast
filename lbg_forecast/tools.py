@@ -137,7 +137,7 @@ def draw_sps_parameters(ngalaxies, hyperparams, imf_spacing=4):
     #round imf parameters to nearest decimal
     #if imf_spacing =4 and decimals =1, then this will be to every 0.4
     imf_params = np.vstack(sps_parameters[:, 8:11])
-    imf_params = np.round_(imf_params*(1/imf_spacing), decimals = 1)*imf_spacing
+    imf_params = np.round(imf_params*(1/imf_spacing), decimals = 1)*imf_spacing
     sps_parameters[:, 8:11] = imf_params
 
     #do a weighted sum of IMF parameters
