@@ -37,7 +37,7 @@ def update_sps_model_dpl(sps_model, sps_parameters, zhis):
     sps_model.params['dust2'] = sps_parameters[4]
     sps_model.params['igm_factor'] = sps_parameters[5]
     sps_model.params['gas_logu'] = sps_parameters[6]
-    sps_model.params['fagn'] = sps_parameters[7]
+    sps_model.params['fagn'] = 10**sps_parameters[7]
     sps_model.params['imf1'] = sps_parameters[8]
     sps_model.params['imf2'] = sps_parameters[9]
     sps_model.params['imf3'] = sps_parameters[10]

@@ -36,7 +36,7 @@ def define_hyperparameter_bounds(
     dust2 = np.array([1, 0, 2]),
     igm_factor = np.array([0, 1, 1]), 
     gas_logu = np.array([1, -4, -1]),
-    fagn = np.array([1, 0, 10]),
+    logfagn = np.array([1, 0, 10]),
     imf1 = np.array([0, 1.3, 1.3]), 
     imf2 = np.array([0, 2.3, 2.3]), 
     imf3 = np.array([0, 2.3, 2.3]), 
@@ -46,7 +46,7 @@ def define_hyperparameter_bounds(
     logmass = np.array([1, 7, 13])):
 
     bounds = np.array([zred, logtage, logzsol, dust1, dust2, igm_factor,
-                            gas_logu, fagn, imf1, imf2, imf3,
+                            gas_logu, logfagn, imf1, imf2, imf3,
                              logtau, loga, logb, logmass])
 
     return bounds
@@ -73,7 +73,7 @@ def plot_hyperparameters(nsamples, bounds, sigmin=1e-6, rows=5, nbins=20):
 
     names = np.array(["zred_mu", "zred_sig", "$\mathrm{log_{10}tage}$_mu", "$\mathrm{log_{10}tage}$_sig",
                       "logzsol_mu", "logzsol_sig", "dust1_mu", "dust1_sig", "dust2_mu", "dust2_sig",
-                      "igm_factor_mu", "igm_factor_sig", "gas_logu_mu", "gas_logu_sig", "fagn_mu", "fagn_sig", "imf1_mu", "imf1_sig",
+                      "igm_factor_mu", "igm_factor_sig", "gas_logu_mu", "gas_logu_sig", "logfagn_mu", "logfagn_sig", "imf1_mu", "imf1_sig",
                       "imf2_mu", "imf2_sig", "imf3_mu", "imf3_sig", "$\mathrm{log_{10}}tau$_mu",
                       "$\mathrm{log_{10}}tau$_sig", "$\mathrm{log_{10}}a$_mu", "$\mathrm{log_{10}}a$_sig", 
                         "$\mathrm{log_{10}}b$_mu", "$\mathrm{log_{10}}b$_sig", "$\mathrm{log_{10}mass}$_mu",
@@ -81,7 +81,7 @@ def plot_hyperparameters(nsamples, bounds, sigmin=1e-6, rows=5, nbins=20):
     
     names_uni = np.array(["zred_min", "zred_max", "$\mathrm{log_{10}tage}$_min", "$\mathrm{log_{10}tage}$_max",
                       "logzsol_min", "logzsol_max", "dust1_min", "dust1_max", "dust2_min", "dust2_max",
-                      "igm_factor_min", "igm_factor_max", "gas_logu_min", "gas_logu_max", "fagn_min", "fagn_max", "imf1_min", "imf1_max",
+                      "igm_factor_min", "igm_factor_max", "gas_logu_min", "gas_logu_max", "logfagn_min", "logfagn_max", "imf1_min", "imf1_max",
                       "imf2_min", "imf2_max", "imf3_min", "imf3_max", "$\mathrm{log_{10}}tau$_min",
                       "$\mathrm{log_{10}}tau$_max", "$\mathrm{log_{10}}a$_min", "$\mathrm{log_{10}}a$_max", 
                         "$\mathrm{log_{10}}b$_min", "$\mathrm{log_{10}}b$_max", "$\mathrm{log_{10}mass}$_min",
