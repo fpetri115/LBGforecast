@@ -20,6 +20,7 @@ def simulate_photometry(ngalaxies, hyperparams, dust_type, imf_type, zhistory, n
     #draw parameters from priors
     sps_parameters = draw_sps_parameters(ngalaxies, hyperparams)
     np.save('generated_spsparams', sps_parameters)
+    np.save('hyperparameters', hyperparams)
 
     print("SPS Parameters Generated")
     ###################################################
@@ -43,18 +44,18 @@ def simulate_photometry(ngalaxies, hyperparams, dust_type, imf_type, zhistory, n
         photometry_neb.append(sps.simulate_photometry_fsps(sps_model, logmass=source[-1], filters=filters))
 
         i+=1
-        if(i%1000 == 0):
+        if(i%10000 == 0):
             print(i)
 
     photometry_neb = np.vstack(np.asarray(photometry_neb))
     #np.save('generated_photo_neb', photometry_neb)
 
-    print("Run 1/3 Complete")
+    #print("Run 1/3 Complete")
     ###################################################
 
     if(zhistory):
 
-        print("Starting Run 2/3")
+        #print("Starting Run 2/3")
         #Define SPS Model without Nebular emmision
         sps_model = sps.initialise_sps_model(sfh_type=3, neb_em=False, zcont=1, dust_type=dust_type, imf_type=imf_type)
 
@@ -71,7 +72,7 @@ def simulate_photometry(ngalaxies, hyperparams, dust_type, imf_type, zhistory, n
             photometry_no_neb.append(sps.simulate_photometry_fsps(sps_model, logmass=source[-1], filters=filters))
 
             i+=1
-            if(i%1000 == 0):
+            if(i%10000 == 0):
                 print(i)
 
         photometry_no_neb = np.vstack(np.asarray(photometry_no_neb))
@@ -82,7 +83,7 @@ def simulate_photometry(ngalaxies, hyperparams, dust_type, imf_type, zhistory, n
 
         photometric_contribution_from_neb = photometry_neb - photometry_no_neb
         
-        print("Starting Run 3/3")
+        #print("Starting Run 3/3")
         #Define SPS Model without Nebular emmision BUT with zhistory
         sps_model = sps.initialise_sps_model(sfh_type=3, neb_em=False, zcont=3, dust_type=dust_type, imf_type=imf_type)
 
@@ -99,7 +100,7 @@ def simulate_photometry(ngalaxies, hyperparams, dust_type, imf_type, zhistory, n
             photometry_zhis.append(sps.simulate_photometry_fsps(sps_model, logmass=source[-1], filters=filters))
 
             i+=1
-            if(i%1000 == 0):
+            if(i%10000 == 0):
                 print(i)
 
         photometry_zhis = np.vstack(np.asarray(photometry_zhis))
