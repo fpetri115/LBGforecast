@@ -1,6 +1,10 @@
+import sys
+
 import numpy as np
 import lbg_forecast.hyperparams as hyp
 import lbg_forecast.tools as tools
+
+ngals = int(sys.argv[1])
 
 #uniform distribution for all
 hyper_parameter_bounds = hyp.define_hyperparameter_bounds(
@@ -24,4 +28,4 @@ hyper_parameter_bounds = hyp.define_hyperparameter_bounds(
 )
 
 hyperparameters = hyp.sample_hyper_parameters(hyper_parameter_bounds)
-data = tools.simulate_photometry(1, hyperparameters, dust_type=0, imf_type=2, zhistory=True, nebem=True, filters='all')
+data = tools.simulate_photometry(ngals, hyperparameters, dust_type=0, imf_type=2, zhistory=True, nebem=True, filters='all')
