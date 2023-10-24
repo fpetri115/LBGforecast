@@ -50,12 +50,12 @@ def simulate_photometry(ngalaxies, hyperparams, dust_type, imf_type, zhistory, n
     photometry_neb = np.vstack(np.asarray(photometry_neb))
     #np.save('generated_photo_neb', photometry_neb)
 
-    #print("Run 1/3 Complete")
+    print("Run 1/3 Complete")
     ###################################################
 
     if(zhistory):
 
-        #print("Starting Run 2/3")
+        print("Starting Run 2/3")
         #Define SPS Model without Nebular emmision
         sps_model = sps.initialise_sps_model(sfh_type=3, neb_em=False, zcont=1, dust_type=dust_type, imf_type=imf_type)
 
@@ -83,7 +83,7 @@ def simulate_photometry(ngalaxies, hyperparams, dust_type, imf_type, zhistory, n
 
         photometric_contribution_from_neb = photometry_neb - photometry_no_neb
         
-        #print("Starting Run 3/3")
+        print("Starting Run 3/3")
         #Define SPS Model without Nebular emmision BUT with zhistory
         sps_model = sps.initialise_sps_model(sfh_type=3, neb_em=False, zcont=3, dust_type=dust_type, imf_type=imf_type)
 
