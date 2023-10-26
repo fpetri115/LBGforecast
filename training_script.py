@@ -17,9 +17,9 @@ hyper_parameter_bounds = hyp.define_hyperparameter_bounds(
     igm_factor = np.array([0, 0, 2]),#np.array([2, 0, 2]),
     gas_logu = np.array([0, -4, -1]),
     logfagn = np.array([0, -5, 1]),
-    imf1 = np.array([0, 0.2, 2.6]), 
-    imf2 = np.array([0, 1.0, 3.4]), 
-    imf3 = np.array([0, 1.0, 3.4]), 
+    imf1 = np.array([0, 1.3, 1.3]), 
+    imf2 = np.array([0, 2.3, 2.3]), 
+    imf3 = np.array([0, 2.3, 2.3]), 
     logtau = np.array([0, -4, 1]),
     loga = np.array([0, -3, 3]),
     logb = np.array([0, -3, 3]),
@@ -28,4 +28,4 @@ hyper_parameter_bounds = hyp.define_hyperparameter_bounds(
 )
 
 hyperparameters = hyp.sample_hyper_parameters(hyper_parameter_bounds)
-data = tools.simulate_photometry(ngals, hyperparameters, dust_type=0, imf_type=0, zhistory=True, nebem=True, filters='all')
+data = tools.simulate_photometry(ngals, hyperparameters, dust_type=0, imf_type=2, zhistory=True, nebem=True, filters='all')
