@@ -137,26 +137,26 @@ def draw_sps_parameters(ngalaxies, hyperparams, imf_spacing=4):
 
     #round imf parameters to nearest decimal
     #if imf_spacing =4 and decimals =1, then this will be to every 0.4
-    imf_params = np.vstack(sps_parameters[:, 8:11])
-    imf_params = np.round(imf_params*(1/imf_spacing), decimals = 1)*imf_spacing
-    sps_parameters[:, 8:11] = imf_params
+    #imf_params = np.vstack(sps_parameters[:, 8:11])
+    #imf_params = np.round(imf_params*(1/imf_spacing), decimals = 1)*imf_spacing
+    #sps_parameters[:, 8:11] = imf_params
 
     #do a weighted sum of IMF parameters
     #add these sums to in a column to sps params
     #this allows for the sps parameters to be ordered given the weighted sum of imf parameters
     #this should allow for faster computation of photometry in large simulations
-    imf_params = imf_params*np.array([1.02, 1.01, 1.00]) #weights
-    sums = np.sum(imf_params, axis=1)
-    sums = np.reshape(sums, (len(sums), 1))
+    #imf_params = imf_params*np.array([1.02, 1.01, 1.00]) #weights
+    #sums = np.sum(imf_params, axis=1)
+    #sums = np.reshape(sums, (len(sums), 1))
 
     #add to column
-    sps_parameters = np.append(sps_parameters, sums, axis=1)
+    #sps_parameters = np.append(sps_parameters, sums, axis=1)
 
     #sort rows by sums
-    sps_parameters = sps_parameters[sps_parameters[:, -1].argsort()]
 
+    #sps_parameters = sps_parameters[sps_parameters[:, -1].argsort()]
     #remove sum column after sorting
-    sps_parameters = sps_parameters[:, :-1]
+    #sps_parameters = sps_parameters[:, :-1]
 
     if(all(cosmo.age(sps_parameters[:, 0][:]).value > 10**sps_parameters[:, 1][:]) == False):
         raise Exception("Age of galaxy > Age of universe at given redshift!!")
