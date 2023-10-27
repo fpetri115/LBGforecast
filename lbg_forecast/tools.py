@@ -12,15 +12,15 @@ import math
 # returns tuple of 2 arrays
 # first element is a ngalaxies x number of filters array containing photometry for the sample
 # second element is a ngalaxies x number of SPS parameters containing SPS parameters for each source/galaxy
-def simulate_photometry(ngalaxies, hyperparams, dust_type, imf_type, zhistory, nebem, filters):
+def simulate_photometry(ngalaxies, hyperparams, dust_type, imf_type, zhistory, nebem, filters, name="run0"):
     
     if(nebem == False and zhistory == True):
         raise Exception("nebular emission cannot be turned off with zhistory enabled at present")
 
     #draw parameters from priors
     sps_parameters = draw_sps_parameters(ngalaxies, hyperparams)
-    np.save('generated_spsparams', sps_parameters)
-    np.save('hyperparameters', hyperparams)
+    np.save(name + 'generated_spsparams', sps_parameters)
+    np.save(name + 'hyperparameters', hyperparams)
 
     print("SPS Parameters Generated")
     ###################################################
@@ -109,11 +109,11 @@ def simulate_photometry(ngalaxies, hyperparams, dust_type, imf_type, zhistory, n
         print("Run 3/3 Complete")
         photometry_final = photometry_zhis + photometric_contribution_from_neb
         #np.save('generated_photo_zhis_no_neb', photometry_zhis)
-        np.save('generated_photo_final', photometry_final)
+        np.save(name+'generated_photo_final', photometry_final)
     
     else:
         photometry_final = photometry_neb
-        np.save('generated_photo_final', photometry_final)
+        np.save(name+'generated_photo_final', photometry_final)
 
     print("Complete")
 
