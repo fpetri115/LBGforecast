@@ -5,7 +5,7 @@ import fsps
 import matplotlib.pyplot as plt
 import tensorflow as tf
 
-dir = sys.argv[0]
+dir = sys.argv[1]
 
 print("Num GPUs Available: ", len(tf.config.list_physical_devices('GPU')))
 
@@ -37,7 +37,7 @@ batch_size = [1000]#, 10000, 30000, int((1-validation_split) * training_theta.sh
 gradient_accumulation_steps = [1]#, 1, 1, 10]
 
 # early stopping set up
-patience = int(sys.argv[1])
+patience = int(sys.argv[2])
 
 # architecture
 n_layers = 4
