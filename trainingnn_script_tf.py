@@ -32,9 +32,9 @@ print(filter)
 
 # training set up
 validation_split = 0.1
-lr = [1e-3]#, 1e-4, 1e-5, 1e-5]
-batch_size = [1000]#, 10000, 30000, int((1-validation_split) * training_theta.shape[0])]
-gradient_accumulation_steps = [1]#, 1, 1, 10]
+lr = [1e-3, 1e-4, 1e-5, 1e-5]
+batch_size = [1000, 10000, 30000, int((1-validation_split) * training_theta.shape[0])]
+gradient_accumulation_steps = [1, 1, 1, 10]
 
 # early stopping set up
 patience = int(sys.argv[2])
