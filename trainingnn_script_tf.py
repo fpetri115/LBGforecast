@@ -111,7 +111,6 @@ for f in range(len(filters)):
                     loss = photulator.training_step_with_accumulated_gradients(theta, mag, accumulation_steps=gradient_accumulation_steps[i])
 
                 running_loss.append(loss)
-                print(loss)
 
             # compute total loss and validation loss
             validation_loss.append(photulator.compute_loss(training_theta[~training_selection], train_mag[~training_selection]).numpy())
