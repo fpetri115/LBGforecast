@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 import tensorflow as tf
 
 dir = sys.argv[1]
+ndata = sys.argv[4]
 
 print("Num GPUs Available: ", len(tf.config.list_physical_devices('GPU')))
 
@@ -13,8 +14,8 @@ filter_list = fsps.find_filter('lsst') + fsps.find_filter('suprimecam')[1:2]+fsp
 print(filter_list)
 
 #training data
-spsparams = np.load(dir+"/training_params.npy")[:1000000].astype(np.float32)
-photometry = np.load(dir+"/training_data.npy")[:1000000].astype(np.float32)
+spsparams = np.load(dir+"/training_params.npy")[:ndata].astype(np.float32)
+photometry = np.load(dir+"/training_data.npy")[:ndata].astype(np.float32)
 print(spsparams.shape, photometry.shape)
 
 # parameters shift and scale
