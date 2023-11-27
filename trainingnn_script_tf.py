@@ -24,7 +24,7 @@ magnitudes_shift = np.mean(photometry, axis=0)
 magnitudes_scale = np.std(photometry, axis=0)
 
 #select filters
-select = 0
+select = int(sys.argv[3])
 filters = filter_list[select:select+1]
 training_theta = tf.convert_to_tensor(spsparams)
 training_mag = tf.convert_to_tensor(photometry[:,select:select+1])
@@ -48,10 +48,12 @@ verbose = True
 disable_early_stopping=True
 
 #optimiser
-optimiser = tf.keras.optimizers.legacy.Adam()
+optimiser = tf.keras.optimizers.Adam()
 
 #running loss
 running_loss = []
+running_val_loss = []
+running_lr = []
 
 # architecture
 n_hidden = [n_units]*n_layers
@@ -111,6 +113,7 @@ for f in range(len(filters)):
                     loss = photulator.training_step_with_accumulated_gradients(theta, mag, accumulation_steps=gradient_accumulation_steps[i])
 
                 running_loss.append(loss)
+                running_lr.append(photulator.optimizer.lr)
 
             # compute total loss and validation loss
             validation_loss.append(photulator.compute_loss(training_theta[~training_selection], train_mag[~training_selection]).numpy())
@@ -126,6 +129,10 @@ for f in range(len(filters)):
                 photulator.save('model_{}x{}'.format(n_layers, n_units) + filters[f])
                 if verbose is True:
                     print('Validation loss = ' + str(best_loss))
+        
+        for v in validation_loss:
+            running_val_loss.append(v)
 
-np.save("loss.npy", running_loss)
-np.save("valloss.npy", validation_loss)
+np.save("loss_"+filters[f]+".npy", running_loss)
+np.save("valloss_"+filters[f]+".npy", running_val_loss)
+np.save("lr_"+filters[f]+".npy", running_lr)
