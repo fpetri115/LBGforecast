@@ -13,8 +13,8 @@ filter_list = fsps.find_filter('lsst') + fsps.find_filter('suprimecam')[1:2]+fsp
 print(filter_list)
 
 #training data
-spsparams = np.load(dir+"/training_params.npy").astype(np.float32)
-photometry = np.load(dir+"/training_data.npy").astype(np.float32)
+spsparams = np.load(dir+"/training_params.npy")[:1000000].astype(np.float32)
+photometry = np.load(dir+"/training_data.npy")[:1000000].astype(np.float32)
 print(spsparams.shape, photometry.shape)
 
 # parameters shift and scale
