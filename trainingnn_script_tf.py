@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 import tensorflow as tf
 
 dir = sys.argv[1]
-ndata = sys.argv[4]
+ndata = int(sys.argv[4])
 
 print("Num GPUs Available: ", len(tf.config.list_physical_devices('GPU')))
 
