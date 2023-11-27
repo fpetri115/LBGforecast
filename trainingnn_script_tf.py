@@ -48,7 +48,7 @@ verbose = True
 disable_early_stopping=True
 
 #optimiser
-optimiser = tf.keras.optimizers.Adam()
+optimiser = tf.keras.optimizers.legacy.Adam()
 
 #running loss
 running_loss = []
