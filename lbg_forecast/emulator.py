@@ -14,8 +14,6 @@ class fsps_emulator:
         self._models = []
         self._ndata = 1000000
         self._filters = ['u', 'g', 'r', 'i', 'z', 'y']
-        self._sps_params
-        self._training_photometry
 
         # change directory
         os.chdir('/Users/fpetri/repos/LBGforecast/models')
