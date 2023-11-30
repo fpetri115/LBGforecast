@@ -1,3 +1,46 @@
+import numpy as np
+    
+def SelectDropouts(dropout, dropout_data):
+        
+        sps_params, colours = dropout_data
+
+        n_sources = len(sps_params)
+        umg = colours[:, 0]
+        gmr = colours[:, 1]
+        rmi = colours[:, 2]
+        imz = colours[:, 3]
+    
+        u_dropouts = []
+        g_dropouts = []
+        r_dropouts = []
+        
+        if(dropout == 'u'):
+            i=0
+            while i < n_sources:
+                if(u_drop(umg[i], gmr[i])==True):
+                    u_dropouts.append(sps_params[i])              
+                i+=1
+
+            return np.vstack(np.asarray(u_dropouts))
+            
+        if(dropout == 'g'):
+            i=0
+            while i < n_sources:
+                if(g_drop(gmr[i], rmi[i])==True):
+                    g_dropouts.append(sps_params[i])                   
+                i+=1
+
+            return np.vstack(np.asarray(g_dropouts))
+            
+        if(dropout == 'r'):
+            i=0
+            while i < n_sources:
+                if(r_drop(rmi[i], imz[i])==True):
+                    r_dropouts.append(sps_params[i])
+                i+=1
+
+            return np.vstack(np.asarray(r_dropouts))
+
 def u_drop(ug,gr):
     if(ug>1.5 and gr>-1 and gr<1.2 and ug > (1.5*gr+0.75)):
         return True
@@ -87,49 +130,3 @@ def r_cut4(iz):
     for i in iz:
         cutl.append(1.5*i+1.0)
     return cutl    
-    
-    
-    
-def SelectDropouts(dropout, colour_list_full):
-    
-        umg_list_full, gmr_list_full, rmi_list_full, imz_list_full, z_list_full, index_list = colour_list_full
-    
-        u_dropouts = []
-        u_index = []
-        g_dropouts = []
-        g_index = []
-        r_dropouts = []
-        r_index = []
-        
-        if(dropout == 'u'):
-            i=0
-            while i < len(umg_list_full):
-                if(u_drop(umg_list_full[i], gmr_list_full[i])==True):
-                    
-                    u_dropouts.append(z_list_full[i])
-                    u_index.append(i)
-                    
-                i+=1
-            return u_dropouts, u_index
-            
-        if(dropout == 'g'):
-            i=0
-            while i < len(gmr_list_full):
-                if(g_drop(gmr_list_full[i], rmi_list_full[i])==True):
-                    
-                    g_dropouts.append(z_list_full[i])
-                    g_index.append(i)
-                    
-                i+=1
-            return g_dropouts, g_index
-            
-        if(dropout == 'r'):
-            i=0
-            while i < len(rmi_list_full):
-                if(r_drop(rmi_list_full[i], imz_list_full[i])==True):
-                    
-                    r_dropouts.append(z_list_full[i])
-                    r_index.append(i)
-                    
-                i+=1
-            return r_dropouts, r_index
