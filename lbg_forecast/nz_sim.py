@@ -4,33 +4,18 @@ import matplotlib.pyplot as plt
 import lbg_forecast.emulator as em
 import lbg_forecast.selection as sel
 import lbg_forecast.colour_cuts as cuts
+import lbg_forecast.noise as noise
 
 def simulate_nzs(sps_params, model, bins):
 
-    source_index = 0
-    source_photometry = []
-    n_sources = len(sps_params)
-    #while(source_index < n_sources):
-
-    #    source_photometry.append(model.mimic_photometry(sps_params[source_index])) #this should work if I give all sps params at once? avoid loop?
- 
-    #    source_index +=1
-
-    #source_photometry = np.vstack((np.asarray(source_photometry)))
-
     source_photometry = model.mimic_photometry(sps_params)
-    
-    #https://www.lsst.org/scientists/keynumbers    (y10, 5sigma)
-    #detection_limits = np.array([26.1, 27.4, 27.5, 26.8, 26.1, 24.8]) possibly from w&w? source in lsa?
-    detection_limits = np.array([25.6, 26.9, 26.9, 26.4, 25.6, 24.8])
 
     #guess
     brightness_cut = 15 #NOT IN USE (!)
 
-    #########ADD NOISE MODEL HERE############
-    
+
     #apply detection limits and calculate colours
-    all_dropouts = sel.select_magnitudes(sps_params, source_photometry, detection_limits)
+    all_dropouts = noise.get_noisy_magnitudes(sps_params, source_photometry, random_state=42)
     all_dropouts = sel.colours(all_dropouts)
     
     nzs = apply_cuts(all_dropouts, bins)
