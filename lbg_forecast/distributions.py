@@ -1,6 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import lbg_forecast.distributions as dstr
+from scipy.stats import truncnorm
 
 #sample uniform distribution or truncated normal
 def sample_prior(hparams):
@@ -14,17 +15,18 @@ def sample_prior(hparams):
      
      #truncated gaussian with free parameters
      if(distribution == 1):
-          param = np.random.normal(p1, p2)
           bmin = bound[1]
           bmax = bound[2]
-          while(param < bmin or param > bmax):
-               param = np.random.normal(p1, p2)
+
+          a, b = (bmin - p1) / p2, (bmax - p1) / p2
+          param = truncnorm.rvs(a, b, loc=p1, scale=p2)
 
      #(for igm_factor)
      if(distribution == 2):
           param = np.random.normal(1, 0.5)
           bmin = bound[1]
           bmax = bound[2]
+
           while(param < bmin or param > bmax):
                param = np.random.normal(p1, p2)
 

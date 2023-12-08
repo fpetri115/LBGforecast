@@ -3,6 +3,9 @@ import lbg_forecast.distributions as dstr
 import matplotlib.pyplot as plt
 import math
 
+from astropy.cosmology import WMAP9 as cosmo
+import lbg_forecast.distributions as dstr
+
 # sample hyperparameters given bounds from define_hyperparameter_bounds()
 # minimum varaince given by sig_min
 # returns: N x 3 nested array
@@ -12,9 +15,27 @@ import math
 #       if gaussian this will be mu (between a and b) and a variance between sig_min and b-a respectively
 def sample_hyper_parameters(bounds, sig_min=1e-6):
 
+    i = 0
     hyperparams_list = []
     for bound in bounds:
-        hyperparams_list.append(dstr.sample_hyperparams(bound, sig_min))
+
+        #i = 1 is age - check mean age of galaxy not greater than the age of the universe at mean zred
+        if(i == 1):
+            sample = dstr.sample_hyperparams(bound, sig_min)
+            tgal_mean = 10**sample[1]
+            #tgal_sig = 10**sample[2]
+            tuniv_mean = cosmo.age(hyperparams_list[0][1]).value
+            while(tgal_mean > tuniv_mean):
+                sample = dstr.sample_hyperparams(bound, sig_min)
+                tgal_mean = 10**sample[1]
+                #tgal_sig = 10**sample[2]
+            hyperparams_list.append(sample)
+        else:
+            hyperparams_list.append(dstr.sample_hyperparams(bound, sig_min))
+
+        i+=1
+
+
 
     hyperparams = np.asarray(hyperparams_list)
     

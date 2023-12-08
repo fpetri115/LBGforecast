@@ -7,8 +7,8 @@ import lbg_forecast.distributions as dstr
 #draws single galaxy sample given a set of hyper parmeters (hparams)
 #hparams are found using sample_hyper_parameters() in hyperparams.py
 #returns: 1D array with SPS parameters sampled from priors defined by hparams
-def galaxy_population_model(hparams):
-
+def galaxy_population_model(hparams, vec=False):
+    
     i = 0
     realisation_list = []
     for hparam in hparams:
