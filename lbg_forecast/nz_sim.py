@@ -11,11 +11,11 @@ def simulate_nzs(sps_params, model, bins):
     source_photometry = model.mimic_photometry(sps_params)
 
     #guess
-    brightness_cut = 15 #NOT IN USE (!)
+    brightness_cut = 19
 
 
     #apply detection limits and calculate colours
-    all_dropouts = noise.get_noisy_magnitudes(sps_params, source_photometry, random_state=42)
+    all_dropouts = noise.get_noisy_magnitudes(sps_params, source_photometry, brightness_cut, random_state=42)
     all_dropouts = sel.colours(all_dropouts)
     
     nzs = apply_cuts(all_dropouts, bins)

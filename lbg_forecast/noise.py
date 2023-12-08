@@ -3,13 +3,15 @@ import pandas as pd
 import numpy as np
 
 
-def get_noisy_magnitudes(sps_params, noiseless_photometry, random_state=42):
+def get_noisy_magnitudes(sps_params, noiseless_photometry, brightness_cut, random_state=42):
 
     df = pd.DataFrame(noiseless_photometry, columns=['u', 'g', 'r', 'i', 'z', 'y'])
 
     #generate two error models, one at 5sigma detection, one at 2
     errModel5sig = LsstErrorModel(sigLim=5)
     errModel2sig = LsstErrorModel(sigLim=2)
+
+    siglim = errModel5sig.getLimitingMags()
 
     catalog_with_errors5sig = errModel5sig(df, random_state=random_state).filter(['u', 'g', 'r', 'i', 'z', 'y'])
 
@@ -19,13 +21,20 @@ def get_noisy_magnitudes(sps_params, noiseless_photometry, random_state=42):
     #join catalogues
     catalog = catalog_with_errors5sig.join(catalog_with_errors2sig)
 
-    udrop = catalog.replace([np.inf, -np.inf], np.nan, inplace=False).dropna(axis=0, subset=['u', 'g', 'r']).filter(['u','g','r','i','z','y'])
+    # remove photometry brighter than brightness cut
+    for column in ['u','g','r','i','z','y']:
+        catalog = catalog.drop(catalog[catalog[column] < brightness_cut].index)
 
-    gdrop = catalog.replace([np.inf, -np.inf], np.nan, inplace=False).dropna(axis=0, subset=['g', 'r', 'i']).filter(['u2','g','r','i','z','y'])
+    udrop = catalog.replace([np.inf, -np.inf], np.nan, inplace=False).dropna(axis=0, subset=['g', 'r']).filter(['u','g','r','i','z','y'])
+    udrop = udrop.replace([np.nan], siglim['u'], inplace=False)
+
+    gdrop = catalog.replace([np.inf, -np.inf], np.nan, inplace=False).dropna(axis=0, subset=['r', 'i']).filter(['u2','g','r','i','z','y'])
     gdrop = gdrop.drop(gdrop[np.isnan(gdrop.u2) == False].index) #require detections greater than 2sigma to be dropped in g
+    gdrop = gdrop.replace([np.nan], siglim['g'], inplace=False)
 
-    rdrop = catalog.replace([np.inf, -np.inf], np.nan, inplace=False).dropna(axis=0, subset=['r', 'i', 'z']).filter(['u','g2','r','i','z','y'])
+    rdrop = catalog.replace([np.inf, -np.inf], np.nan, inplace=False).dropna(axis=0, subset=['i', 'z']).filter(['u','g2','r','i','z','y'])
     rdrop = rdrop.drop(rdrop[np.isnan(rdrop.g2) == False].index) #require detections greater than 2sigma to be dropped in r
+    rdrop = rdrop.replace([np.nan], siglim['r'], inplace=False)
 
     u_dropouts = udrop.to_numpy()
     g_dropouts = gdrop.to_numpy()
