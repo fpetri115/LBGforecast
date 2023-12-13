@@ -11,7 +11,8 @@ def get_noisy_magnitudes(sps_params, noiseless_photometry, brightness_cut, rando
     errModel5sig = LsstErrorModel(sigLim=5)
     errModel2sig = LsstErrorModel(sigLim=2)
 
-    siglim = errModel5sig.getLimitingMags()
+    siglim5 = errModel5sig.getLimitingMags()
+    siglim2 = errModel2sig.getLimitingMags()
 
     catalog_with_errors5sig = errModel5sig(df, random_state=random_state).filter(['u', 'g', 'r', 'i', 'z', 'y'])
 
@@ -25,16 +26,19 @@ def get_noisy_magnitudes(sps_params, noiseless_photometry, brightness_cut, rando
     for column in ['u','g','r','i','z','y']:
         catalog = catalog.drop(catalog[catalog[column] < brightness_cut].index)
 
-    udrop = catalog.replace([np.inf, -np.inf], np.nan, inplace=False).dropna(axis=0, subset=['g', 'r']).filter(['u','g','r','i','z','y'])
-    udrop = udrop.replace([np.nan], siglim['u'], inplace=False)
+    udrop = catalog.replace([np.inf, -np.inf], np.nan, inplace=False).dropna(axis=0, subset=['g', 'r']).filter(['u2','g','r','i','z','y'])
+    udrop = udrop.drop(udrop[np.isnan(udrop.u2) == False].index)
+    udrop['u2'].replace([np.nan], siglim2['u'], inplace=True)
 
-    gdrop = catalog.replace([np.inf, -np.inf], np.nan, inplace=False).dropna(axis=0, subset=['r', 'i']).filter(['u2','g','r','i','z','y'])
+    gdrop = catalog.replace([np.inf, -np.inf], np.nan, inplace=False).dropna(axis=0, subset=['r', 'i']).filter(['u2','g2','r','i','z','y'])
     gdrop = gdrop.drop(gdrop[np.isnan(gdrop.u2) == False].index) #require detections greater than 2sigma to be dropped in g
-    gdrop = gdrop.replace([np.nan], siglim['g'], inplace=False)
+    gdrop = gdrop.drop(gdrop[np.isnan(gdrop.g2) == False].index)
+    gdrop['g2'].replace([np.nan], siglim2['g'], inplace=True)
 
-    rdrop = catalog.replace([np.inf, -np.inf], np.nan, inplace=False).dropna(axis=0, subset=['i', 'z']).filter(['u','g2','r','i','z','y'])
+    rdrop = catalog.replace([np.inf, -np.inf], np.nan, inplace=False).dropna(axis=0, subset=['i', 'z']).filter(['u','g2','r2','i','z','y'])
     rdrop = rdrop.drop(rdrop[np.isnan(rdrop.g2) == False].index) #require detections greater than 2sigma to be dropped in r
-    rdrop = rdrop.replace([np.nan], siglim['r'], inplace=False)
+    rdrop = rdrop.drop(rdrop[np.isnan(rdrop.r2) == False].index)
+    rdrop['r2'].replace([np.nan], siglim2['r'], inplace=True)
 
     u_dropouts = udrop.to_numpy()
     g_dropouts = gdrop.to_numpy()
