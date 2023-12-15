@@ -35,6 +35,42 @@ def sample_prior(hparams):
 
      return param
 
+#vectorised
+def sample_prior_vec(hparams, nsamples, vectorise_bounds=0):
+
+     bound, p1, p2 = hparams
+     distribution = bound[0]
+
+     #uniform
+     if(distribution == 0):
+
+          if(isinstance(vectorise_bounds, int) == False):
+               p1 = [p1]*nsamples
+               p2 = vectorise_bounds
+               nsamples = [1, nsamples]
+
+          params = np.random.uniform(p1, p2, nsamples)
+     
+     #truncated gaussian with free parameters
+     if(distribution == 1):
+          bmin = bound[1]
+          bmax = bound[2]
+
+          if(isinstance(vectorise_bounds, int) == False):
+               bmin = np.asarray([bmin]*nsamples)
+               bmax = vectorise_bounds
+               p1 = np.asarray([p1]*nsamples)
+               p2 = np.asarray([p2]*nsamples)
+               nsamples = [1, nsamples]
+
+          a, b = (bmin - p1) / p2, (bmax - p1) / p2
+          params = truncnorm.rvs(a, b, loc=p1, scale=p2, size=nsamples)
+
+     if(distribution != 1 and distribution != 0):
+          raise Exception("Unknown Distribution, bound[0] must be int < 2")
+
+     return params
+
 # sample/set prior parameters depending on distribution specified
 def sample_hyperparams(bound, sig_min):
 

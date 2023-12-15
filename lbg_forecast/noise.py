@@ -26,18 +26,19 @@ def get_noisy_magnitudes(sps_params, noiseless_photometry, brightness_cut, rando
     for column in ['u','g','r','i','z','y']:
         catalog = catalog.drop(catalog[catalog[column] < brightness_cut].index)
 
-    udrop = catalog.replace([np.inf, -np.inf], np.nan, inplace=False).dropna(axis=0, subset=['g', 'r']).filter(['u2','g','r','i','z','y'])
-    udrop = udrop.drop(udrop[np.isnan(udrop.u2) == False].index)
+    udrop = catalog.replace([np.inf, -np.inf], np.nan, inplace=False).dropna(axis=0, subset=['g', 'r']).filter(['u','u2','g','r','i','z','y'])
+    udrop = udrop.drop(udrop[np.isnan(udrop.u) == False].index).filter(['u2','g','r','i','z','y'])
+    #udrop = udrop.drop(udrop[np.isnan(udrop.u2) == False].index)
     udrop['u2'].replace([np.nan], siglim2['u'], inplace=True)
 
     gdrop = catalog.replace([np.inf, -np.inf], np.nan, inplace=False).dropna(axis=0, subset=['r', 'i']).filter(['u2','g2','r','i','z','y'])
-    gdrop = gdrop.drop(gdrop[np.isnan(gdrop.u2) == False].index) #require detections greater than 2sigma to be dropped in g
-    gdrop = gdrop.drop(gdrop[np.isnan(gdrop.g2) == False].index)
+    gdrop = gdrop.drop(gdrop[np.isnan(gdrop.u2) == False].index) #require detections greater than 2sigma to be dropped in u
+    #gdrop = gdrop.drop(gdrop[np.isnan(gdrop.g2) == False].index)
     gdrop['g2'].replace([np.nan], siglim2['g'], inplace=True)
 
     rdrop = catalog.replace([np.inf, -np.inf], np.nan, inplace=False).dropna(axis=0, subset=['i', 'z']).filter(['u','g2','r2','i','z','y'])
-    rdrop = rdrop.drop(rdrop[np.isnan(rdrop.g2) == False].index) #require detections greater than 2sigma to be dropped in r
-    rdrop = rdrop.drop(rdrop[np.isnan(rdrop.r2) == False].index)
+    rdrop = rdrop.drop(rdrop[np.isnan(rdrop.g2) == False].index) #require detections greater than 2sigma to be dropped in g
+    #rdrop = rdrop.drop(rdrop[np.isnan(rdrop.r2) == False].index)
     rdrop['r2'].replace([np.nan], siglim2['r'], inplace=True)
 
     u_dropouts = udrop.to_numpy()

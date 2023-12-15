@@ -7,7 +7,7 @@ import lbg_forecast.distributions as dstr
 #draws single galaxy sample given a set of hyper parmeters (hparams)
 #hparams are found using sample_hyper_parameters() in hyperparams.py
 #returns: 1D array with SPS parameters sampled from priors defined by hparams
-def galaxy_population_model(hparams, vec=False):
+def galaxy_population_model(hparams):
     
     i = 0
     realisation_list = []
@@ -26,5 +26,29 @@ def galaxy_population_model(hparams, vec=False):
         i+=1
 
     realisation = np.asarray(realisation_list)
+
+    return realisation
+
+# (VECTORISED)
+def galaxy_population_model_vec(hparams, nsamples):
+    
+    i = 0
+    realisation_list = []
+    for hparam in hparams:
+
+        if(i==0): 
+            realisation_list.append(np.vstack(dstr.sample_prior_vec(hparam, nsamples, vectorise_bounds=0)))
+            tuniv = []
+            for z in realisation_list[0]:
+                tuniv.append(cosmo.age(z).value)
+            tuniv = np.reshape(np.log10(np.asarray(tuniv)), (nsamples,))   
+        elif(i==1):
+            realisation_list.append(np.transpose(dstr.sample_prior_vec(hparam, nsamples, vectorise_bounds=tuniv)))
+        else:
+            realisation_list.append(np.vstack(dstr.sample_prior_vec(hparam, nsamples, vectorise_bounds=0)))
+
+        i+=1
+
+    realisation = np.reshape(np.transpose(np.asarray(realisation_list)), (nsamples, 15))
 
     return realisation

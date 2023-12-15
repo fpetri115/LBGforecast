@@ -163,6 +163,26 @@ def draw_sps_parameters(ngalaxies, hyperparams, imf_spacing=4):
 
     return sps_parameters
 
+#draw population of sps parameters given priors/hyperparameters(VECTORISED)
+def draw_sps_parameters_vec(ngalaxies, hyperparams):
+
+    #main loop over parameters
+    i = 0
+    sps_parameters = []
+    while(i < ngalaxies):
+
+        source = pop.galaxy_population_model(hyperparams)
+        sps_parameters.append(source)
+
+        i+=1
+    
+    sps_parameters = np.vstack(np.asarray(sps_parameters))
+
+    if(all(cosmo.age(sps_parameters[:, 0][:]).value > 10**sps_parameters[:, 1][:]) == False):
+        raise Exception("Age of galaxy > Age of universe at given redshift!!")
+
+    return sps_parameters
+
 #calculate sfh at index for a given set of sps parameters from draw_sps_parameters()
 def calculate_sfh(sps_parameters, index, show_plot=True):
 
