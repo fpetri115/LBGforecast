@@ -255,26 +255,35 @@ def plot_mass_prior_draws(logm_grid, mass_priors, nsamples):
 
 def cdf_inverse(grid, cdf, nsamples):
 
-    cdf = np.tile(cdf, (nsamples, 1))
-    u = np.ones_like(cdf)*np.tile(np.random.uniform(0, 1, (nsamples, 1)), (1, len(grid)))
-    diff = abs(cdf-u)
-    min_vals = np.reshape(np.min(diff, axis=1), (nsamples, 1))
-    indexes = np.where(diff == np.tile(min_vals, (1, len(grid))))
+    #len_grid = len(grid)
+    #cdf = np.tile(cdf, (nsamples, 1))
+    #indexes = np.arange(nsamples)
+    #rand_indexes = np.random.randint(0, len_grid, (nsamples, ))
+    #rand_cdf = np.tile(np.reshape(cdf[indexes, rand_indexes], (nsamples, 1)), (1, len_grid))
+    #samples = np.where(cdf == rand_cdf)
+    #u = np.ones_like(cdf)*np.tile(np.random.uniform(0, 1, (nsamples, 1)), (1, len(grid)))
+    #diff = abs(cdf-u)
+    #min_vals = np.reshape(np.min(diff, axis=1), (nsamples, 1))
+    #indexes = np.where(diff == np.tile(min_vals, (1, len(grid))))
 
-    grid = np.tile(grid, (nsamples, 1))
-    x = grid[indexes]
+    u = np.random.uniform(0, 1, (nsamples,))
+    i=0
+    grid_samples = []
+    while(i < nsamples):
+        grid_samples.append(np.interp(u[i], cdf, grid))
+        i+=1
 
-    return x
+    return np.array(grid_samples)
 
 def setup_grids(grid_params):
 
     dz, dlogm, z_min, z_max, logm_min, logm_max = grid_params
 
-    z1=z_min-dz
-    z2=z_max+dz
+    z1=z_min#-dz
+    z2=z_max#+dz
 
-    logm1=logm_min-dlogm
-    logm2=logm_max+dlogm
+    logm1=logm_min#-dlogm
+    logm2=logm_max#+dlogm
 
     z_grid = np.linspace(z1, z2, int((z2-z1)/dz)+1)
     logm_grid = np.linspace(logm1, logm2, int((logm2-logm1)/dlogm)+1)
@@ -285,16 +294,16 @@ def setup_bins(grid_params):
 
     dz, dlogm, z_min, z_max, logm_min, logm_max = grid_params
 
-    z1=z_min-dz
-    z2=z_max+dz
+    z1=z_min#-dz
+    z2=z_max#+dz
 
-    logm1=logm_min-dlogm
-    logm2=logm_max+dlogm
+    logm1=logm_min#-dlogm
+    logm2=logm_max#+dlogm
 
-    binmin_z = z1-dz/2
-    binmax_z = z2+dz/2
-    binmin_logm = logm1-dlogm/2
-    binmax_logm = logm2+dlogm/2
+    binmin_z = z1#-dz/2
+    binmax_z = z2+dz#/2
+    binmin_logm = logm1#-dlogm/2
+    binmax_logm = logm2+dlogm#/2
 
     mbins = np.linspace(binmin_logm, binmax_logm, int((binmax_logm-binmin_logm)/dlogm)+1)
     zbins = np.linspace(binmin_z, binmax_z, int((binmax_z-binmin_z)/dz)+1)
@@ -326,9 +335,6 @@ def sample_priors(z_grid, logm_grid, priors, grid_params, nsamples, plotting=Fal
 
     z_samples = cdf_inverse(z_grid, c_z, nsamples)
     m_samples = cdf_inverse(logm_grid, c_m, nsamples)
-
-    z_samples = z_samples[np.where(np.logical_and(z_samples >= z_min, z_samples <= z_max))]
-    m_samples = m_samples[np.where(np.logical_and(m_samples >= logm_min, m_samples <= logm_max))]
 
     if(plotting):
         return [z_samples, m_samples, p_z, p_m]
