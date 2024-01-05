@@ -2,44 +2,57 @@ from photerr import LsstErrorModel
 import pandas as pd
 import numpy as np
 
+def select_u_dropouts(observed_catalog, catalog_sig5):
+    
+    udrop = observed_catalog.join(catalog_sig5)
+    udrop = udrop.dropna(axis=0, subset=['r5']).filter(['u','g','r','i','z','y'])
 
-def get_noisy_magnitudes(sps_params, noiseless_photometry, brightness_cut, random_state=42):
+    return udrop
 
-    df = pd.DataFrame(noiseless_photometry, columns=['u', 'g', 'r', 'i', 'z', 'y'])
+def select_g_dropouts(observed_catalog, catalog_sig5, catalog_sig2):
+    
+    gdrop = observed_catalog.join(catalog_sig5).join(catalog_sig2)
+    gdrop = gdrop.dropna(axis=0, subset=['i5'])
+    gdrop = gdrop.drop(gdrop[np.isnan(gdrop.u2) == False].index).filter(['u','g','r','i','z','y'])
+    
+    return gdrop
 
-    #generate two error models, one at 5sigma detection, one at 2
-    errModel5sig = LsstErrorModel(sigLim=5)
-    errModel2sig = LsstErrorModel(sigLim=2)
+def select_r_dropouts(observed_catalog, catalog_sig5, catalog_sig2):
+    
+    rdrop = observed_catalog.join(catalog_sig5).join(catalog_sig2)
+    rdrop = rdrop.dropna(axis=0, subset=['z5'])
+    rdrop = rdrop.drop(rdrop[np.isnan(rdrop.g2) == False].index).filter(['u','g','r','i','z','y'])
+    
+    return rdrop
 
-    siglim5 = errModel5sig.getLimitingMags()
-    siglim2 = errModel2sig.getLimitingMags()
+def get_noisy_magnitudes(sps_params, noiseless_photometry, random_state=42):
 
-    catalog_with_errors5sig = errModel5sig(df, random_state=random_state).filter(['u', 'g', 'r', 'i', 'z', 'y'])
-
-    catalog_with_errors2sig = errModel2sig(df, random_state=random_state).filter(['u', 'g', 'r', 'i', 'z', 'y'])
-    catalog_with_errors2sig.rename(columns={"u": "u2", "g": "g2", "r": "r2", "i": "i2", "z": "z2", "y": "y2" }, inplace=True)
-
-    #join catalogues
-    catalog = catalog_with_errors5sig.join(catalog_with_errors2sig)
+    #noiseless_photometry = np.load("/Users/fpetri/repos/LBGforecast/data/data/training_data.npy")[:1000000, :6]
+    #sps_params = np.load("/Users/fpetri/repos/LBGforecast/data/data/training_params.npy")[:1000000, :]
+    catalog = pd.DataFrame(noiseless_photometry, columns=['u', 'g', 'r', 'i', 'z', 'y'])
 
     # remove photometry brighter than brightness cut
+    brightness_cut = 18
     for column in ['u','g','r','i','z','y']:
         catalog = catalog.drop(catalog[catalog[column] < brightness_cut].index)
 
-    udrop = catalog.replace([np.inf, -np.inf], np.nan, inplace=False).dropna(axis=0, subset=['g', 'r']).filter(['u','u2','g','r','i','z','y'])
-    udrop = udrop.drop(udrop[np.isnan(udrop.u) == False].index).filter(['u2','g','r','i','z','y'])
-    #udrop = udrop.drop(udrop[np.isnan(udrop.u2) == False].index)
-    udrop['u2'].replace([np.nan], siglim2['u'], inplace=True)
 
-    gdrop = catalog.replace([np.inf, -np.inf], np.nan, inplace=False).dropna(axis=0, subset=['r', 'i']).filter(['u2','g2','r','i','z','y'])
-    gdrop = gdrop.drop(gdrop[np.isnan(gdrop.u2) == False].index) #require detections greater than 2sigma to be dropped in u
-    #gdrop = gdrop.drop(gdrop[np.isnan(gdrop.g2) == False].index)
-    gdrop['g2'].replace([np.nan], siglim2['g'], inplace=True)
+    errModel = LsstErrorModel(sigLim=0)
+    sig5detections = LsstErrorModel(sigLim=5)
+    sig2detections = LsstErrorModel(sigLim=2)
 
-    rdrop = catalog.replace([np.inf, -np.inf], np.nan, inplace=False).dropna(axis=0, subset=['i', 'z']).filter(['u','g2','r2','i','z','y'])
-    rdrop = rdrop.drop(rdrop[np.isnan(rdrop.g2) == False].index) #require detections greater than 2sigma to be dropped in g
-    #rdrop = rdrop.drop(rdrop[np.isnan(rdrop.r2) == False].index)
-    rdrop['r2'].replace([np.nan], siglim2['r'], inplace=True)
+    observed_catalog = errModel(catalog, random_state=random_state).filter(['u', 'g', 'r', 'i', 'z', 'y']).replace([np.inf, -np.inf], np.nan, inplace=False)
+    observed_catalog.dropna(axis=0, inplace=True) #remove non detections due to negative fluxes
+
+    catalog_sig5 = sig5detections(observed_catalog, random_state=random_state).filter(['u', 'g', 'r', 'i', 'z', 'y']).replace([np.inf, -np.inf], np.nan, inplace=False)
+    catalog_sig5.rename(columns={"u": "u5", "g": "g5", "r": "r5", "i": "i5", "z": "z5", "y": "y5" }, inplace=True)
+
+    catalog_sig2 = sig2detections(observed_catalog, random_state=random_state).filter(['u', 'g', 'r', 'i', 'z', 'y']).replace([np.inf, -np.inf], np.nan, inplace=False)
+    catalog_sig2.rename(columns={"u": "u2", "g": "g2", "r": "r2", "i": "i2", "z": "z2", "y": "y2" }, inplace=True)
+
+    udrop = select_u_dropouts(observed_catalog, catalog_sig5)
+    gdrop = select_g_dropouts(observed_catalog, catalog_sig5, catalog_sig2)
+    rdrop = select_r_dropouts(observed_catalog, catalog_sig5, catalog_sig2)
 
     u_dropouts = udrop.to_numpy()
     g_dropouts = gdrop.to_numpy()
