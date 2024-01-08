@@ -19,26 +19,26 @@ def sample_hyper_parameters(bounds, sig_min=1e-6):
     hyperparams_list = []
     for bound in bounds:
 
-        #i = 1 is age - check mean age of galaxy not greater than the age of the universe at mean zred
-        if(i == 1):
-            sample = dstr.sample_hyperparams(bound, sig_min)
-            tgal_mean = 10**sample[1]
-            #tgal_sig = 10**sample[2]
-            tuniv_mean = cosmo.age(hyperparams_list[0][1]).value
-            while(tgal_mean > tuniv_mean):
-                sample = dstr.sample_hyperparams(bound, sig_min)
-                tgal_mean = 10**sample[1]
-                #tgal_sig = 10**sample[2]
-            hyperparams_list.append(sample)
+        if(i == 0 or i == 14):
+            hyperparams_list.append(dstr.sample_external_hyperparams(bound))
         else:
             hyperparams_list.append(dstr.sample_hyperparams(bound, sig_min))
 
         i+=1
 
-
-
     hyperparams = np.asarray(hyperparams_list)
     
+    return hyperparams
+
+def sample_nhyperparameters(bounds, nsamples):
+
+    hyperparams_list = []
+    i = 0
+    while(i < nsamples):
+        hyperparams_list.append(sample_hyper_parameters(bounds, sig_min=1e-6))
+        i+=1
+        
+    hyperparams = np.asarray(hyperparams_list)
     return hyperparams
 
 # bounds for hyperparams, each parameter has structure (distr, a, b)
@@ -57,14 +57,14 @@ def define_hyperparameter_bounds(
     dust2 = np.array([1, 0, 2]),
     igm_factor = np.array([0, 1, 1]), 
     gas_logu = np.array([1, -4, -1]),
-    logfagn = np.array([1, 0, 10]),
+    logfagn = np.array([0, 0, 0]),
     imf1 = np.array([0, 1.3, 1.3]), 
     imf2 = np.array([0, 2.3, 2.3]), 
     imf3 = np.array([0, 2.3, 2.3]), 
     logtau = np.array([1, -4, 1]),
     loga = np.array([1, -3, 3]),
     logb = np.array([1, -3, 3]),
-    logmass = np.array([1, 7, 13])):
+    logmass = np.array([0, 7, 13])):
 
     bounds = np.array([zred, logtage, logzsol, dust1, dust2, igm_factor,
                             gas_logu, logfagn, imf1, imf2, imf3,
@@ -72,8 +72,8 @@ def define_hyperparameter_bounds(
 
     return bounds
 
-#for plotting hyperparameters given bounds
-def plot_hyperparameters(nsamples, bounds, sigmin=1e-6, rows=5, nbins=20):
+#for plotting hyperparameters given bounds (NO LONGER WORKS due to changes to zred and logmass)
+def _plot_hyperparameters(nsamples, bounds, sigmin=1e-6, rows=5, nbins=20):
 
     nparams = 2*len(bounds)
     columns = math.ceil(nparams/rows)

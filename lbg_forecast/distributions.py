@@ -97,9 +97,10 @@ def sample_hyperparams(bound, sig_min):
 
           return np.array([bound, mu, sig], dtype=object)
      
-     #(for igm_factor)
-     if(distribution == 2):
-           return np.array([bound, 1, 0.5], dtype=object)
-     
-     if(distribution != 1 and distribution != 0 and distribution != 2):
-          raise Exception("Unknown Distribution, bound[0] must be int < 3")
+     if(distribution != 1 and distribution != 0):
+          raise Exception("Unknown Distribution, bound[0] must be int < 2")
+
+def sample_external_hyperparams(bound_obj):
+
+     npriors, bmin, bmax = bound_obj
+     return np.array([np.random.randint(0, npriors), bmin, bmax])
