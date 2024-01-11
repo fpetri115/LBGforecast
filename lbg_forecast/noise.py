@@ -2,28 +2,36 @@ from photerr import LsstErrorModel
 import pandas as pd
 import numpy as np
 
-def select_u_dropouts(observed_catalog, catalog_sig5):
+def select_u_dropouts(observed_catalog):
     
-    udrop = observed_catalog.join(catalog_sig5)
-    udrop = udrop.dropna(axis=0, subset=['r5']).filter(['u','g','r','i','z','y'])
+    udrop = observed_catalog.copy(deep=True)
+    udrop = udrop.dropna(axis=0, subset=['i5'])
+    #udrop = udrop.dropna(axis=0, subset=['r5'])
+    #udrop = udrop.dropna(axis=0, subset=['g5'])
+    #udrop = udrop.drop(udrop[np.isnan(udrop.u2) == False].index)
 
-    return udrop
+    return udrop.filter(['u','g','r','i','z','y'])
 
-def select_g_dropouts(observed_catalog, catalog_sig5, catalog_sig2):
+def select_g_dropouts(observed_catalog):
     
-    gdrop = observed_catalog.join(catalog_sig5).join(catalog_sig2)
+    gdrop = observed_catalog.copy(deep=True)
     gdrop = gdrop.dropna(axis=0, subset=['i5'])
-    gdrop = gdrop.drop(gdrop[np.isnan(gdrop.u2) == False].index).filter(['u','g','r','i','z','y'])
-    
-    return gdrop
+    #gdrop = gdrop.dropna(axis=0, subset=['r5'])
+    #gdrop = gdrop.drop(gdrop[np.isnan(gdrop.g2) == False].index)
+    gdrop = gdrop.drop(gdrop[np.isnan(gdrop.u2) == False].index)
 
-def select_r_dropouts(observed_catalog, catalog_sig5, catalog_sig2):
     
-    rdrop = observed_catalog.join(catalog_sig5).join(catalog_sig2)
-    rdrop = rdrop.dropna(axis=0, subset=['z5'])
-    rdrop = rdrop.drop(rdrop[np.isnan(rdrop.g2) == False].index).filter(['u','g','r','i','z','y'])
+    return gdrop.filter(['u','g','r','i','z','y'])
+
+def select_r_dropouts(observed_catalog):
+
+    rdrop = observed_catalog.copy(deep=True)
+    #rdrop = rdrop.dropna(axis=0, subset=['z5'])
+    rdrop = rdrop.dropna(axis=0, subset=['i5'])
+    #rdrop = rdrop.drop(rdrop[np.isnan(rdrop.r2) == False].index)
+    rdrop = rdrop.drop(rdrop[np.isnan(rdrop.g2) == False].index)
     
-    return rdrop
+    return rdrop.filter(['u','g','r','i','z','y'])
 
 def get_noisy_magnitudes(sps_params, noiseless_photometry, random_state=42):
 
@@ -37,12 +45,11 @@ def get_noisy_magnitudes(sps_params, noiseless_photometry, random_state=42):
         catalog = catalog.drop(catalog[catalog[column] < brightness_cut].index)
 
 
-    errModel = LsstErrorModel(sigLim=0)
+    errModel = LsstErrorModel(sigLim=0, absFlux=True)
     sig5detections = LsstErrorModel(sigLim=5)
     sig2detections = LsstErrorModel(sigLim=2)
 
     observed_catalog = errModel(catalog, random_state=random_state).filter(['u', 'g', 'r', 'i', 'z', 'y']).replace([np.inf, -np.inf], np.nan, inplace=False)
-    observed_catalog.dropna(axis=0, inplace=True) #remove non detections due to negative fluxes
 
     catalog_sig5 = sig5detections(observed_catalog, random_state=random_state).filter(['u', 'g', 'r', 'i', 'z', 'y']).replace([np.inf, -np.inf], np.nan, inplace=False)
     catalog_sig5.rename(columns={"u": "u5", "g": "g5", "r": "r5", "i": "i5", "z": "z5", "y": "y5" }, inplace=True)
@@ -50,9 +57,13 @@ def get_noisy_magnitudes(sps_params, noiseless_photometry, random_state=42):
     catalog_sig2 = sig2detections(observed_catalog, random_state=random_state).filter(['u', 'g', 'r', 'i', 'z', 'y']).replace([np.inf, -np.inf], np.nan, inplace=False)
     catalog_sig2.rename(columns={"u": "u2", "g": "g2", "r": "r2", "i": "i2", "z": "z2", "y": "y2" }, inplace=True)
 
-    udrop = select_u_dropouts(observed_catalog, catalog_sig5)
-    gdrop = select_g_dropouts(observed_catalog, catalog_sig5, catalog_sig2)
-    rdrop = select_r_dropouts(observed_catalog, catalog_sig5, catalog_sig2)
+    observed_catalog = observed_catalog.join(catalog_sig5).join(catalog_sig2)
+    
+    #observed_catalog.dropna(axis=0, subset=['i5'], inplace=True) #require 5sigma detection in i band
+
+    udrop = select_u_dropouts(observed_catalog)
+    gdrop = select_g_dropouts(observed_catalog)
+    rdrop = select_r_dropouts(observed_catalog)
 
     u_dropouts = udrop.to_numpy()
     g_dropouts = gdrop.to_numpy()
