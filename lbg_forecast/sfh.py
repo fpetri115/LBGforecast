@@ -7,9 +7,9 @@ def tau_model(tau, t):
 def dpl(tau, a, b, t):
     return ((t/tau)**(a) + (t/tau)**(-b))**(-1)
 
-def normed_sfh(logtau, loga, logb, t):
+def normed_sfh(tau, loga, logb, t):
 
-    sfh = dpl(10**logtau, 10**loga, 10**logb, t)
+    sfh = dpl(tau, 10**loga, 10**logb, t)
     
     #if sfh is very small inside age of galaxy, replace with uniform
     if((sfh < 1e-30).all()):

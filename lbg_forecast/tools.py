@@ -263,7 +263,7 @@ def plot_galaxy_population(sps_parameters, rows=5, nbins=20):
 
     names = np.array(["zred", "$\mathrm{log_{10}tage}$", "logzsol", "dust1", "dust2", 
                       "igm_factor", "gas_logu", "logfagn", "imf1",
-                        "imf2", "imf3", "$\mathrm{log_{10}}tau$", "$\mathrm{log_{10}}a$", 
+                        "imf2", "imf3", "$tau$", "$\mathrm{log_{10}}a$", 
                         "$\mathrm{log_{10}}b$", "$\mathrm{log_{10}mass}$"])
     
     if(len(names) != nparams):

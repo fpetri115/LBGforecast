@@ -61,18 +61,18 @@ def define_hyperparameter_bounds(
     imf1 = np.array([0, 1.3, 1.3]), 
     imf2 = np.array([0, 2.3, 2.3]), 
     imf3 = np.array([0, 2.3, 2.3]), 
-    logtau = np.array([1, -4, 1]),
-    loga = np.array([1, -3, 3]),
-    logb = np.array([1, -3, 3]),
+    tau = np.array([1, -3, 1]),
+    loga = np.array([1, -3, 1]),
+    logb = np.array([1, -3, 1]),
     logmass = np.array([0, 7, 13])):
 
     bounds = np.array([zred, logtage, logzsol, dust1, dust2, igm_factor,
                             gas_logu, logfagn, imf1, imf2, imf3,
-                             logtau, loga, logb, logmass])
+                             tau, loga, logb, logmass])
 
     return bounds
 
-#for plotting hyperparameters given bounds (NO LONGER WORKS due to changes to zred and logmass)
+#for plotting hyperparameters given bounds (NO LONGER WORKS due to changes to zred and logmass and tau)
 def _plot_hyperparameters(nsamples, bounds, sigmin=1e-6, rows=5, nbins=20):
 
     nparams = 2*len(bounds)

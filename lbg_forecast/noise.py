@@ -6,9 +6,9 @@ def select_u_dropouts(observed_catalog):
     
     udrop = observed_catalog.copy(deep=True)
     udrop = udrop.dropna(axis=0, subset=['i5'])
-    #udrop = udrop.dropna(axis=0, subset=['r5'])
-    #udrop = udrop.dropna(axis=0, subset=['g5'])
-    #udrop = udrop.drop(udrop[np.isnan(udrop.u2) == False].index)
+    udrop = udrop.dropna(axis=0, subset=['r5'])
+    udrop = udrop.dropna(axis=0, subset=['g5'])
+    udrop = udrop.drop(udrop[np.isnan(udrop.u2) == False].index)
 
     return udrop.filter(['u','g','r','i','z','y'])
 
@@ -16,8 +16,8 @@ def select_g_dropouts(observed_catalog):
     
     gdrop = observed_catalog.copy(deep=True)
     gdrop = gdrop.dropna(axis=0, subset=['i5'])
-    #gdrop = gdrop.dropna(axis=0, subset=['r5'])
-    #gdrop = gdrop.drop(gdrop[np.isnan(gdrop.g2) == False].index)
+    gdrop = gdrop.dropna(axis=0, subset=['r5'])
+    gdrop = gdrop.drop(gdrop[np.isnan(gdrop.g2) == False].index)
     gdrop = gdrop.drop(gdrop[np.isnan(gdrop.u2) == False].index)
 
     
@@ -26,9 +26,9 @@ def select_g_dropouts(observed_catalog):
 def select_r_dropouts(observed_catalog):
 
     rdrop = observed_catalog.copy(deep=True)
-    #rdrop = rdrop.dropna(axis=0, subset=['z5'])
+    rdrop = rdrop.dropna(axis=0, subset=['z5'])
     rdrop = rdrop.dropna(axis=0, subset=['i5'])
-    #rdrop = rdrop.drop(rdrop[np.isnan(rdrop.r2) == False].index)
+    rdrop = rdrop.drop(rdrop[np.isnan(rdrop.r2) == False].index)
     rdrop = rdrop.drop(rdrop[np.isnan(rdrop.g2) == False].index)
     
     return rdrop.filter(['u','g','r','i','z','y'])
@@ -59,7 +59,7 @@ def get_noisy_magnitudes(sps_params, noiseless_photometry, random_state=42):
 
     observed_catalog = observed_catalog.join(catalog_sig5).join(catalog_sig2)
     
-    #observed_catalog.dropna(axis=0, subset=['i5'], inplace=True) #require 5sigma detection in i band
+    observed_catalog.dropna(axis=0, subset=['i5'], inplace=True) #require 5sigma detection in i band
 
     udrop = select_u_dropouts(observed_catalog)
     gdrop = select_g_dropouts(observed_catalog)
