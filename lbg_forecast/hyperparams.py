@@ -53,8 +53,8 @@ def define_hyperparameter_bounds(
     zred = np.array([0, 0, 7]),
     logtage = np.array([1, -3, 1]),
     logzsol = np.array([1, -2.5, 0.5]),
-    dust1 = np.array([0, 0, 0]),
-    dust2 = np.array([1, 0, 2]),
+    dust1_frac = np.array([1, 0, 2]),
+    dust2 = np.array([1, 0, 4]),
     igm_factor = np.array([0, 1, 1]), 
     gas_logu = np.array([1, -4, -1]),
     logfagn = np.array([0, 0, 0]),
@@ -66,7 +66,7 @@ def define_hyperparameter_bounds(
     logb = np.array([1, -3, 1]),
     logmass = np.array([0, 7, 13])):
 
-    bounds = np.array([zred, logtage, logzsol, dust1, dust2, igm_factor,
+    bounds = np.array([zred, logtage, logzsol, dust1_frac, dust2, igm_factor,
                             gas_logu, logfagn, imf1, imf2, imf3,
                              tau, loga, logb, logmass])
 

@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 from astropy.cosmology import WMAP9 as cosmo
 import lbg_forecast.distributions as dstr
 import lbg_forecast.priors as pr
+from scipy.stats import truncnorm
 
 #draws single galaxy sample given a set of hyper parmeters (hparams)
 #hparams are found using sample_hyper_parameters() in hyperparams.py
@@ -49,7 +50,20 @@ def galaxy_population_model_vec(hparams, prior_params, nsamples):
                 
         elif(i == 1):
             realisation_list.append(np.transpose(dstr.sample_prior_vec(hparam, nsamples, vectorise_bounds=tuniv)))
-
+        elif(i == 3):
+            p1 = 1.0
+            p2 = 0.3
+            a, b = (0 - p1) / p2, (2 - p1) / p2
+            dust1_frac = np.vstack(truncnorm.rvs(a, b, loc=p1, scale=p2, size=nsamples))
+            realisation_list.append(dust1_frac)
+        elif(i == 4):
+            #dust2 = np.vstack(dstr.sample_prior_vec(hparam, nsamples, vectorise_bounds=0))
+            p1 = 0.3
+            p2 = 1.0
+            a, b = (0 - p1) / p2, (2 - p1) / p2
+            dust2 =  np.vstack(truncnorm.rvs(a, b, loc=p1, scale=p2, size=nsamples))
+            realisation_list[-1] = realisation_list[-1]*dust2 #convert dust1_frac into dust 1
+            realisation_list.append(dust2)
         elif(i == 14):
             realisation_list.append(np.vstack(m_samples))
         
