@@ -64,6 +64,12 @@ def galaxy_population_model_vec(hparams, prior_params, nsamples):
             dust2 =  np.vstack(truncnorm.rvs(a, b, loc=p1, scale=p2, size=nsamples))
             realisation_list[-1] = realisation_list[-1]*dust2 #convert dust1_frac into dust 1
             realisation_list.append(dust2)
+        elif(i == 5):
+            p1 = 1.0
+            p2 = 0.3
+            a, b = (0 - p1) / p2, (2 - p1) / p2
+            igm_factor =  np.vstack(truncnorm.rvs(a, b, loc=p1, scale=p2, size=nsamples))
+            realisation_list.append(igm_factor)
         elif(i == 14):
             realisation_list.append(np.vstack(m_samples))
         
