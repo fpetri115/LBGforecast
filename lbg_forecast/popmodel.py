@@ -6,6 +6,17 @@ import lbg_forecast.distributions as dstr
 import lbg_forecast.priors as pr
 from scipy.stats import truncnorm
 
+
+def tuniv_grid(zgrid):
+    tuniv = []
+    for z in zgrid:
+        tuniv.append(cosmo.age(z).value)
+
+    return np.asarray(tuniv)
+
+def get_tuniv(z, zgrid, tuniv):
+    return tuniv[np.where(zgrid == z)]
+
 #draws single galaxy sample given a set of hyper parmeters (hparams)
 #hparams are found using sample_hyper_parameters() in hyperparams.py
 #returns: 1D array with SPS parameters sampled from priors defined by hparams
@@ -37,6 +48,8 @@ def galaxy_population_model_vec(hparams, prior_params, nsamples):
     z_grid, logm_grid, priors, grid_params = prior_params
     z_samples, m_samples = pr.sample_priors(z_grid, logm_grid, priors, grid_params, nsamples, plotting=False)
     
+    t_universe_grid = tuniv_grid(z_grid)
+
     i = 0
     realisation_list = []
     for hparam in hparams:
@@ -44,8 +57,7 @@ def galaxy_population_model_vec(hparams, prior_params, nsamples):
         if(i == 0):
             realisation_list.append(np.vstack(z_samples))
             tuniv = []
-            for z in z_samples:
-                tuniv.append(cosmo.age(z).value)
+            tuniv = np.interp(z_samples, z_grid, t_universe_grid)
             tuniv = np.reshape(np.log10(np.asarray(tuniv)), (nsamples,)) 
                 
         elif(i == 1):
