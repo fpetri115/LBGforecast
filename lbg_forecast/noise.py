@@ -20,7 +20,7 @@ def select_g_dropouts(observed_catalog):
     gdrop = gdrop.dropna(axis=0, subset=['i5'])
     gdrop = gdrop.dropna(axis=0, subset=['r5'])
     gdrop = gdrop.dropna(axis=0, subset=['g5'])
-    #gdrop = gdrop.drop(gdrop[np.isnan(gdrop.u2) == False].index)
+    gdrop = gdrop.drop(gdrop[np.isnan(gdrop.u2) == False].index)
 
     
     return gdrop.filter(['u','g','r','i','z','y'])
@@ -31,7 +31,7 @@ def select_r_dropouts(observed_catalog):
     rdrop = rdrop.dropna(axis=0, subset=['z5'])
     rdrop = rdrop.dropna(axis=0, subset=['i5'])
     rdrop = rdrop.dropna(axis=0, subset=['r5'])
-    #rdrop = rdrop.drop(rdrop[np.isnan(rdrop.g2) == False].index)
+    rdrop = rdrop.drop(rdrop[np.isnan(rdrop.g2) == False].index)
     
     return rdrop.filter(['u','g','r','i','z','y'])
 

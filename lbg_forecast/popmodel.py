@@ -49,6 +49,7 @@ def galaxy_population_model_vec(hparams, prior_params, nsamples):
     z_samples, m_samples = pr.sample_priors(z_grid, logm_grid, priors, grid_params, nsamples, plotting=False)
     
     t_universe_grid = tuniv_grid(z_grid)
+    tuniv0 = cosmo.age(0).value
 
     i = 0
     realisation_list = []
@@ -56,10 +57,8 @@ def galaxy_population_model_vec(hparams, prior_params, nsamples):
 
         if(i == 0):
             realisation_list.append(np.vstack(z_samples))
-            tuniv = []
             tuniv = np.interp(z_samples, z_grid, t_universe_grid)
             tuniv = np.reshape(np.log10(np.asarray(tuniv)), (nsamples,)) 
-                
         elif(i == 1):
             realisation_list.append(np.transpose(dstr.sample_prior_vec(hparam, nsamples, vectorise_bounds=tuniv)))
         elif(i == 3):
@@ -82,6 +81,10 @@ def galaxy_population_model_vec(hparams, prior_params, nsamples):
             a, b = (0 - p1) / p2, (2 - p1) / p2
             igm_factor =  np.vstack(truncnorm.rvs(a, b, loc=p1, scale=p2, size=nsamples))
             realisation_list.append(igm_factor)
+        #elif(i == 11):
+        #    tau = dstr.sample_prior_vec(hparam, nsamples, vectorise_bounds=0)
+        #    lookbacktime = tuniv0 - 10**tuniv
+        #    realisation_list.append(np.vstack(tau*lookbacktime))
         elif(i == 14):
             realisation_list.append(np.vstack(m_samples))
         

@@ -61,7 +61,7 @@ def define_hyperparameter_bounds(
     imf1 = np.array([0, 1.3, 1.3]), 
     imf2 = np.array([0, 2.3, 2.3]), 
     imf3 = np.array([0, 2.3, 2.3]), 
-    logtau = np.array([1, -3, 1]),
+    logtau = np.array([1, 0.007, 1]),
     loga = np.array([1, -3, 1]),
     logb = np.array([1, -3, 1]),
     logmass = np.array([0, 7, 13])):
