@@ -7,8 +7,9 @@ import lbg_forecast.priors as pr
 import lbg_forecast.popmodel as pop
 import lbg_forecast.emulator as em
 
-nrealisations = int(sys.argv[1])
-ngals = int(sys.argv[2])
+path = sys.argv[1]
+nrealisations = int(sys.argv[2])
+ngals = int(sys.argv[3])
 
 # initalise fsps emulator
 model = em.fsps_emulator()
