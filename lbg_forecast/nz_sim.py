@@ -35,12 +35,7 @@ def apply_cuts(dropout_data):
 
     return redshift_array
 
-def visualise_redshifts(redshift_array, minz=0, maxz=7, alpha=0.5, density=True):
-
-    dz = 0.1
-    minz = 0.0
-    maxz = 7.0
-    bins = np.arange(minz, maxz, dz)
+def visualise_redshifts(redshift_array, bins, minz=0, maxz=7, alpha=0.5, density=True):
 
     u_redshifts = redshift_array[0]
     g_redshifts = redshift_array[1]

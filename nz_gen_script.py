@@ -1,12 +1,20 @@
 import sys
 
 import numpy as np
+from mpi4py import MPI
 import os
 import lbg_forecast.hyperparams as hyp
 import lbg_forecast.nz_sim as nz
 import lbg_forecast.priors as pr
 import lbg_forecast.popmodel as pop
 import lbg_forecast.emulator as em
+
+comm = MPI.COMM_WORLD
+rank = comm.Get_rank()
+size = comm.Get_size()
+
+if(rank == 0):
+    print("nprocesses: ", size)
 
 path = sys.argv[1]
 nrealisations = int(sys.argv[2])
@@ -68,5 +76,6 @@ while(i<nrealisations):
 nz_data = np.asarray(nz_data)
 sps_params = np.asarray(sps_params_list)
 os.chdir(path+"/redshifts")
-np.save("emulated_redshifts.npy", np.asarray(nz_data))
-np.save("emulated_redshifts_spsparams.npy", np.asarray(sps_params_list))
+
+np.save("emulated_redshifts_"+str(rank)+".npy", np.asarray(nz_data))
+np.save("emulated_redshifts_spsparams_"+str(rank)+".npy", np.asarray(sps_params_list))
