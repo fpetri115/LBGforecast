@@ -4,7 +4,7 @@ from sklearn.decomposition import PCA
 from sklearn.preprocessing import StandardScaler
 
 
-def load_redshift_distributions():
+def load_redshift_distributions(path):
     """
     Loads simulated u, g, r dropouts and returns them as a list of numpy arrays.
     Each element of returned list is an array of redshift distributions, where
@@ -12,9 +12,9 @@ def load_redshift_distributions():
 
     """
 
-    nzus = np.load("lbg_forecast/nzus.npy")
-    nzgs = np.load("lbg_forecast/nzgs.npy")
-    nzrs = np.load("lbg_forecast/nzrs.npy")
+    nzus = np.load(path+"/redshifts/nzus.npy")
+    nzgs = np.load(path+"/redshifts/nzgs.npy")
+    nzrs = np.load(path+"/redshifts/nzrs.npy")
 
     return [nzus, nzgs, nzrs]
 
@@ -194,8 +194,8 @@ class NzModel:
 
     """
 
-    def __init__(self, z_space):
-        nzs = load_redshift_distributions()
+    def __init__(self, z_space, path):
+        nzs = load_redshift_distributions(path)
 
         if (
             nzs[0].shape != nzs[1].shape
