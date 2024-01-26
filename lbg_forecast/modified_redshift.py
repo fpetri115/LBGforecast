@@ -9,6 +9,7 @@ from jax_cosmo.jax_utils import container
 from jax_cosmo.scipy.integrate import simps
 
 steradian_to_arcmin2 = 11818102.86004228
+path = "./"
 
 __all__ = ["smail_nz", "kde_nz", "delta_nz"]
 
@@ -20,13 +21,13 @@ class redshift_distribution(container):
         self._gals_per_arcmin2 = gals_per_arcmin2
         super(redshift_distribution, self).__init__(*args, zmax=zmax, **kwargs)
 
-        self.u_4pca_components = np.load("./4pca_data/4pca_components_u.npy")
-        self.g_4pca_components = np.load("./4pca_data/4pca_components_g.npy")
-        self.r_4pca_components = np.load("./4pca_data/4pca_components_r.npy")
+        self.u_4pca_components = np.load(path+"/4pca_data/4pca_components_u.npy")
+        self.g_4pca_components = np.load(path+"/4pca_data/4pca_components_g.npy")
+        self.r_4pca_components = np.load(path+"/4pca_data/4pca_components_r.npy")
 
-        self.u_4pca_mean = np.load("./4pca_data/4pca_mean_u.npy")
-        self.g_4pca_mean = np.load("./4pca_data/4pca_mean_g.npy")
-        self.r_4pca_mean = np.load("./4pca_data/4pca_mean_r.npy")
+        self.u_4pca_mean = np.load(path+"/4pca_data/4pca_mean_u.npy")
+        self.g_4pca_mean = np.load(path+"/4pca_data/4pca_mean_g.npy")
+        self.r_4pca_mean = np.load(path+"/4pca_data/4pca_mean_r.npy")
 
     @abstractmethod
     def pz_fn(self, z):
