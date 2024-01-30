@@ -341,3 +341,19 @@ def sample_priors(z_grid, logm_grid, priors, grid_params, nsamples, plotting=Fal
     
     else:
         return [z_samples, m_samples]
+    
+def setup_redshift_and_mass_priors(z_max):
+
+    #setup grids
+    dz, dlogm = 0.1, 0.05
+    z_min = 0.0
+    logm_min, logm_max = 7.0, 13.0
+    grid_params = np.array([dz, dlogm, z_min, z_max, logm_min, logm_max])
+    z_grid, logm_grid = setup_grids(grid_params)
+
+    #load mass and redshift priors
+    n_priors_samples = 1000
+    priors = load_priors(z_grid, logm_grid, n_priors_samples, init_sample=100000)
+    prior_params = [z_grid, logm_grid, priors, grid_params]
+
+    return prior_params

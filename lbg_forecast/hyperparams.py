@@ -19,6 +19,7 @@ def sample_hyper_parameters(bounds, sig_min=1e-6):
     hyperparams_list = []
     for bound in bounds:
 
+        #special condition for z and mass - priors are pre calculated
         if(i == 0 or i == 14):
             hyperparams_list.append(dstr.sample_external_hyperparams(bound))
         else:

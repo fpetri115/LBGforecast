@@ -41,7 +41,7 @@ def simulate_photometry(ngalaxies, hyperparams, dust_type, imf_type, zhistory, n
         sps.update_sps_model_dpl(sps_model, source, zhis=False)
 
         #generate photometry for source
-        photometry_neb.append(sps.simulate_photometry_fsps(sps_model, logmass=source[-1], filters=filters))
+        photometry_neb.append(sps.fsps_get_magnitudes(sps_model, logmass=source[-1], filters=filters))
 
         i+=1
         if(i%10000 == 0):
@@ -69,7 +69,7 @@ def simulate_photometry(ngalaxies, hyperparams, dust_type, imf_type, zhistory, n
             sps.update_sps_model_dpl(sps_model, source, zhis=False)
 
             #generate photometry for source
-            photometry_no_neb.append(sps.simulate_photometry_fsps(sps_model, logmass=source[-1], filters=filters))
+            photometry_no_neb.append(sps.fsps_get_magnitudes(sps_model, logmass=source[-1], filters=filters))
 
             i+=1
             if(i%10000 == 0):
@@ -97,7 +97,7 @@ def simulate_photometry(ngalaxies, hyperparams, dust_type, imf_type, zhistory, n
             sps.update_sps_model_dpl(sps_model, source, zhis=True)
 
             #generate photometry for source
-            photometry_zhis.append(sps.simulate_photometry_fsps(sps_model, logmass=source[-1], filters=filters))
+            photometry_zhis.append(sps.fsps_get_magnitudes(sps_model, logmass=source[-1], filters=filters))
 
             i+=1
             if(i%10000 == 0):

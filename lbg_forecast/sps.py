@@ -12,6 +12,7 @@ from astropy.constants import L_sun
 
 from sedpy import observate
 
+#Function to initialise sps model
 #If dust_type=2, dust1 must be zero!
 def initialise_sps_model(sfh_type, neb_em, zcont, imf_type, dust_type):
 
@@ -26,6 +27,7 @@ def initialise_sps_model(sfh_type, neb_em, zcont, imf_type, dust_type):
 
     return sps_model 
 
+#Set galaxy parameters
 def update_sps_model_dpl(sps_model, sps_parameters, zhis):
 
     #############################################################
@@ -56,6 +58,90 @@ def update_sps_model_dpl(sps_model, sps_parameters, zhis):
         sps_model.set_tabular_sfh(time_grid, sfr)        
     #############################################################
 
+def simulate_photometry(ngalaxies, sps_parameters, filters, nebem=True, zhistory=True):
+
+    if(nebem == False and zhistory == True):
+        raise Exception("nebular emission cannot be turned off with zhistory enabled at present")
+
+    #Generate photometry with Nebular emmision###################
+    print("Starting Run 1/3")
+    sps_model = initialise_sps_model(sfh_type=3, neb_em=nebem, zcont=1, dust_type=0, imf_type=2)
+    print("libraries: ", sps_model.libraries)
+
+    i = 0
+    photometry_neb = []
+    while(i < ngalaxies):
+
+        source = sps_parameters[i]
+        update_sps_model_dpl(sps_model, source, zhis=False)
+
+        #generate photometry for source
+        photometry_neb.append(fsps_get_magnitudes(sps_model, logmass=source[-1], filters=filters))
+
+        i+=1
+        if(i%10000 == 0):
+            print(i)
+
+    photometry_neb = np.vstack(np.asarray(photometry_neb))
+    print("Run 1/3 Complete")
+
+    if(zhistory):
+
+        #Generate photometry without nebular emmision################
+        print("Starting Run 2/3")
+        sps_model = initialise_sps_model(sfh_type=3, neb_em=False, zcont=1, dust_type=0, imf_type=2)
+        i = 0
+        photometry_no_neb = []
+        while(i < ngalaxies):
+
+            source = sps_parameters[i]
+            update_sps_model_dpl(sps_model, source, zhis=False)
+
+            #generate photometry for source
+            photometry_no_neb.append(fsps_get_magnitudes(sps_model, logmass=source[-1], filters=filters))
+
+            i+=1
+            if(i%10000 == 0):
+                print(i)
+
+        photometry_no_neb = np.vstack(np.asarray(photometry_no_neb))
+        print("Run 2/3 Complete")
+
+        #Nebular emmission contribution
+        photometric_contribution_from_neb = photometry_neb - photometry_no_neb
+        
+        #Define SPS Model without Nebular emmision BUT with zhistory############
+        print("Starting Run 3/3")
+        sps_model = initialise_sps_model(sfh_type=3, neb_em=False, zcont=3, dust_type=0, imf_type=2)
+
+        i = 0
+        photometry_zhis = []
+        while(i < ngalaxies):
+
+            source = sps_parameters[i]
+            update_sps_model_dpl(sps_model, source, zhis=True)
+
+            #generate photometry for source
+            photometry_zhis.append(fsps_get_magnitudes(sps_model, logmass=source[-1], filters=filters))
+
+            i+=1
+            if(i%10000 == 0):
+                print(i)
+
+        photometry_zhis = np.vstack(np.asarray(photometry_zhis))
+        ###################################################
+        
+        print("Run 3/3 Complete")
+        photometry_final = photometry_zhis + photometric_contribution_from_neb
+    
+    else:
+        photometry_final = photometry_neb
+
+    print("Complete")
+
+    return photometry_final
+
+
 def simulate_sed(sps_model, sps_parameters):
     
     tage, logmass, zred = sps_model.params['tage'], sps_parameters[-1], sps_model.params['zred']
@@ -66,7 +152,7 @@ def simulate_sed(sps_model, sps_parameters):
 
     return spectrum_cgs_redshifted, aa_redshifted
 
-def simulate_photometry_fsps(sps_model, logmass, filters):
+def fsps_get_magnitudes(sps_model, logmass, filters):
 
     if(filters=='lsst'):
         bands = fsps.find_filter('lsst')
