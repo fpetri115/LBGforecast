@@ -2,6 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from astropy.cosmology import WMAP9 as cosmo
 from scipy.stats import dirichlet
+from scipy.stats import t
 
 def dirichlet_prior(agebins, alpha, mass_norm):
     """Calculates non-parametric SFH given a Dirichlet
@@ -31,6 +32,39 @@ def dirichlet_prior(agebins, alpha, mass_norm):
     alphas = np.ones(nbins)*alpha
     fractions = dirichlet(alphas).rvs(size=1).reshape((nbins,))
     masses = frac_to_masses(mass_norm, fractions, agebins)
+    tabulatedsfh = convert_sfh(agebins, masses, epsilon=1e-4)
+    
+    return tabulatedsfh, masses
+
+def continuity_prior(agebins, nu, sigma, mass_norm):
+    """Calculates non-parametric continuity prior SFH using 
+    Student's t distributions in tabulated fsps format
+
+    :param agebins: 
+        An array of bin edges, log(yrs).  This method assumes that the
+        upper edge of one bin is the same as the lower edge of another bin.
+        ndarray of shape ``(nbin, 2)``
+    
+    :param nu:
+        Student-t parameter (float). Controls heaviness of tails
+
+    :param sigma:
+        Width parameter (float)
+    
+    :param mass_norm:
+        Total stellar mass formed across all age bins (float) in solar
+        masses
+
+    :returns tabulatedsfh:
+        Output SFH in tabulated fsps format
+    
+    :returns masses:
+        Mass formed in each age bin in solar masses
+
+    """
+    nbins = len(agebins)
+    log_sf_ratios = t.rvs(nu, size=nbins)*sigma
+    masses = logsfr_ratios_to_masses(np.log10(mass_norm), log_sf_ratios, agebins)
     tabulatedsfh = convert_sfh(agebins, masses, epsilon=1e-4)
     
     return tabulatedsfh, masses
@@ -109,6 +143,21 @@ def zred_to_agebins(zred=0.0, agebins=[], **extras):
     ncomp = len(agebins)
     agelims = list(agebins[0]) + np.linspace(agebins[1][1], np.log10(tbinmax), ncomp-2).tolist() + [np.log10(tuniv)]
     return np.array([agelims[:-1], agelims[1:]]).T
+
+def logsfr_ratios_to_masses(logmass=None, logsfr_ratios=None, agebins=None,
+                            **extras):
+    """This converts from an array of log_10(SFR_j / SFR_{j+1}) and a value of
+    log10(\Sum_i M_i) to values of M_i.  j=0 is the most recent bin in lookback
+    time.
+    """
+    nbins = agebins.shape[0]
+    sratios = 10**np.clip(logsfr_ratios, -10, 10)  # numerical issues...
+    dt = (10**agebins[:, 1] - 10**agebins[:, 0])
+    coeffs = np.array([ (1. / np.prod(sratios[:i])) * (np.prod(dt[1: i+1]) / np.prod(dt[: i]))
+                        for i in range(nbins)])
+    m1 = (10**logmass) / coeffs.sum()
+
+    return m1 * coeffs
 
 def frac_to_masses(total_mass, fracs, agebins):
     t = np.diff(10**agebins, axis=-1)[:, 0]
