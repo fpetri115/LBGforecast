@@ -3,17 +3,36 @@ import matplotlib.pyplot as plt
 from astropy.cosmology import WMAP9 as cosmo
 from scipy.stats import dirichlet
 
-def dirichlet_prior(age_bins, alpha, mass_norm):
+def dirichlet_prior(agebins, alpha, mass_norm):
+    """Calculates non-parametric SFH given a Dirichlet
+    prior in fsps format.
 
-    nbins = len(age_bins)
+    :param agebins: 
+        An array of bin edges, log(yrs).  This method assumes that the
+        upper edge of one bin is the same as the lower edge of another bin.
+        ndarray of shape ``(nbin, 2)``
+    
+    :param alpha:
+        Float describing the concentration parameter for a symmetric
+        Dirirchlet distribution
+    
+    :param mass_norm:
+        Total stellar mass formed across all age bins (float) in solar
+        masses
+
+    :returns tabulatedsfh:
+        Output SFH in tabulated fsps format
+    
+    :returns masses:
+        Mass formed in each age bin in solar masses
+
+    """
+    nbins = len(agebins)
     alphas = np.ones(nbins)*alpha
-    fractions = dirichlet(alphas).rvs(size=1).reshape((nbins,))[:]
-    masses = frac_to_masses(mass_norm, fractions, age_bins)
-    tabulatedsfh = convert_sfh(age_bins, masses, epsilon=1e-4, maxage=None)
-    #plt.plot(tabulatedsfh[0], tabulatedsfh[1])
-    #print(np.sum(masses), np.trapz(tabulatedsfh[1], tabulatedsfh[0]))
-    #print(frac_to_sfr(fractions, age_bins, mass_norm))
-
+    fractions = dirichlet(alphas).rvs(size=1).reshape((nbins,))
+    masses = frac_to_masses(mass_norm, fractions, agebins)
+    tabulatedsfh = convert_sfh(agebins, masses, epsilon=1e-4)
+    
     return tabulatedsfh, masses
 
 def convert_sfh(agebins, mformed, epsilon=1e-4, maxage=None):
