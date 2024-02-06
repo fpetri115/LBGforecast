@@ -12,51 +12,57 @@ from astropy.constants import L_sun
 
 from sedpy import observate
 
-#Function to initialise sps model
-#If dust_type=2, dust1 must be zero!
-def initialise_sps_model(sfh_type, neb_em, zcont, imf_type, dust_type):
-
+def initialise_sps_model(neb_em, sfh_type=3, zcont=1, imf_type=2, dust_type=0, igm=True):
+    
     sps_model = fsps.StellarPopulation(compute_vega_mags=False, zcontinuous=zcont, imf_type=imf_type, sfh=sfh_type, dust_type=dust_type)
 
     sps_model.params['add_neb_emission'] = neb_em
     sps_model.params['add_neb_continuum'] = neb_em
     sps_model.params['nebemlineinspec'] = neb_em
     
-    sps_model.params['add_igm_absorption'] = True
+    sps_model.params['add_igm_absorption'] = igm
     sps_model.params['imf_type'] = imf_type
 
     return sps_model 
 
-#Set galaxy parameters
-def update_sps_model_dpl(sps_model, sps_parameters, zhis):
-
-    #############################################################
-    #set parameters
+def update_model(sps_model, sps_parameters, z_history):
+    
     sps_model.params['zred'] = sps_parameters[0]
-    sps_model.params['tage'] = 10**(sps_parameters[1])
+    sps_model.params['tage'] = sps_parameters[1]
     sps_model.params['logzsol'] = sps_parameters[2]
     sps_model.params['dust1'] = sps_parameters[3]
     sps_model.params['dust2'] = sps_parameters[4]
-    sps_model.params['igm_factor'] = sps_parameters[5]
-    sps_model.params['gas_logu'] = sps_parameters[6]
-    sps_model.params['fagn'] = 10**sps_parameters[7]
-    sps_model.params['imf1'] = sps_parameters[8]
-    sps_model.params['imf2'] = sps_parameters[9]
-    sps_model.params['imf3'] = sps_parameters[10]
+    sps_model.params['dust_index'] = sps_parameters[5]
+    sps_model.params['igm_factor'] = sps_parameters[6]
+    sps_model.params['gas_logu'] = sps_parameters[7]
+    sps_model.params['fagn'] = sps_parameters[8]
 
-    time_grid = np.logspace(-7, np.log10(sps_model.params['tage']), 1000)
-    sfr = sfh.normed_sfh(sps_parameters[11], sps_parameters[12], sps_parameters[13], time_grid)
+    nu = sps_model[9]
+    sigma = sps_model[10]
+    total_mass_formed = sps_model[11]
 
-    if(zhis):
+
+    agebins = np.log10(np.array([[10**-9, 30*0.001],
+                [30*0.001, 100*0.001],
+                [100*0.001, 330*0.001],  
+                [330*0.001, 1.1], 
+                [1.1, 3.6],
+                [3.6, 11.7],
+                [11.7, 13.7]])*10**9)
+    
+    shifted_age_bins = sfh.zred_to_agebins(sps_model.params['zred'], agebins)
+    time, star_formation_history = sfh.continuity_prior(shifted_age_bins, nu, sigma, total_mass_formed)[0]
+
+    if(z_history):
         Z_MIST = 0.0142 #solar metallicity for MIST
         sps_model.params['logzsol'] = 0.0
         sps_model.params['gas_logz'] = 0.0
-        zhis = zh.sfr_to_zh(sfr, time_grid, (10**sps_parameters[2])*Z_MIST)
-        sps_model.set_tabular_sfh(time_grid, sfr, zhis)
+        metallicity_history = zh.sfr_to_zh(star_formation_history, time, (10**sps_model.params['logzsol'])*Z_MIST)
+        sps_model.set_tabular_sfh(time, star_formation_history, metallicity_history)
     else:
         sps_model.params['gas_logz'] = sps_model.params['logzsol']
-        sps_model.set_tabular_sfh(time_grid, sfr)        
-    #############################################################
+        sps_model.set_tabular_sfh(time, star_formation_history) 
+
 
 def simulate_photometry(ngalaxies, sps_parameters, filters, nebem=True, zhistory=True):
 
