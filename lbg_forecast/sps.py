@@ -36,10 +36,11 @@ def update_model(sps_model, sps_parameters, z_history):
     sps_model.params['igm_factor'] = sps_parameters[6]
     sps_model.params['gas_logu'] = sps_parameters[7]
     sps_model.params['fagn'] = sps_parameters[8]
+    sps_model.params['agn_tau'] = sps_parameters[9]
 
-    nu = sps_model[9]
-    sigma = sps_model[10]
-    total_mass_formed = sps_model[11]
+    nu = sps_model[10]
+    sigma = sps_model[11]
+    total_mass_formed = sps_model[12]
 
 
     agebins = np.log10(np.array([[10**-9, 30*0.001],
