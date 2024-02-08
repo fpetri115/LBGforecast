@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 from astropy import units as u
 import lbg_forecast.sfh as sfh
 import lbg_forecast.zhistory as zh
-import lbg_forecast.popmodel as pop
+import lbg_forecast.population_model as pop
 
 from astropy.cosmology import WMAP9
 from astropy.coordinates import Distance
