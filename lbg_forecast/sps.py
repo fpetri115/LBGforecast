@@ -65,7 +65,7 @@ def update_model(sps_model, sps_parameters, z_history):
         sps_model.set_tabular_sfh(time, star_formation_history) 
 
 
-def simulate_photometry(sps_parameters, filters, nebem=True, zhistory=True):
+def simulate_photometry(sps_parameters, filters, imf, dust, nebem=True, zhistory=True):
 
     if(nebem == False and zhistory == True):
         raise Exception("nebular emission cannot be turned off with zhistory enabled at present")
@@ -74,7 +74,7 @@ def simulate_photometry(sps_parameters, filters, nebem=True, zhistory=True):
 
     #Generate photometry with Nebular emmision###################
     print("Starting Run 1/3")
-    sps_model = initialise_sps_model(neb_em=nebem, sfh_type=3, zcont=1, dust_type=0, imf_type=2)
+    sps_model = initialise_sps_model(neb_em=nebem, sfh_type=3, zcont=1, dust_type=dust, imf_type=imf)
     print("libraries: ", sps_model.libraries)
 
     i = 0
@@ -98,7 +98,7 @@ def simulate_photometry(sps_parameters, filters, nebem=True, zhistory=True):
 
         #Generate photometry without nebular emmision################
         print("Starting Run 2/3")
-        sps_model = initialise_sps_model(sfh_type=3, neb_em=False, zcont=1, dust_type=0, imf_type=2)
+        sps_model = initialise_sps_model(sfh_type=3, neb_em=False, zcont=1, dust_type=dust, imf_type=imf)
         i = 0
         photometry_no_neb = []
         while(i < ngalaxies):
@@ -121,7 +121,7 @@ def simulate_photometry(sps_parameters, filters, nebem=True, zhistory=True):
         
         #Define SPS Model without Nebular emmision BUT with zhistory############
         print("Starting Run 3/3")
-        sps_model = initialise_sps_model(neb_em=False, sfh_type=3, zcont=3, dust_type=0, imf_type=2)
+        sps_model = initialise_sps_model(neb_em=False, sfh_type=3, zcont=3, dust_type=dust, imf_type=imf)
 
         i = 0
         photometry_zhis = []
