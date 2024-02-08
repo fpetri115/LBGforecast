@@ -1,6 +1,8 @@
 import numpy as np
 from astropy.cosmology import WMAP9 as cosmo
 import lbg_forecast.priors as pr
+import math
+import matplotlib.pyplot as plt
 from scipy.stats import truncnorm
 
 def generate_sps_parameters(nsamples, prior_parameters, redshift_mass_prior_parameters):
@@ -98,11 +100,11 @@ def generate_sps_parameters(nsamples, prior_parameters, redshift_mass_prior_para
     sps_parameters.append(agn_tau)
     
     #Student's t parameter for SFH - nu
-    nu = np.random.randint(nu_min, nu_max+1, nsamples)
+    nu = np.ones(nsamples)*np.random.randint(nu_min, nu_max+1)
     sps_parameters.append(nu)
 
     #Student's t width for SFH - sig
-    sig = np.random.uniform(sig_min, sig_max, nsamples)
+    sig = np.ones(nsamples)*np.random.uniform(sig_min, sig_max)
     sps_parameters.append(sig)
 
     #Total stellar mass formed in solar masses - mass
@@ -126,3 +128,54 @@ def tuniv_grid(zgrid):
         tuniv.append(cosmo.age(z).value)
 
     return np.asarray(tuniv)
+
+def plot_galaxy_population(sps_parameters, rows=5, nbins=20):
+    
+    realisations = sps_parameters
+    nparams = len(realisations)
+
+    names = np.array(["zred", "tage", "logzsol", "dust1", "dust2", "dust_index", 
+                      "igm_factor", "gas_logu", "logfagn", "agn_tau",
+                       "nu", "sig", "logmass"])
+    
+    if(len(names) != nparams):
+        raise Exception("Number of parameters and parameter labels don't match")
+
+    columns = math.ceil(nparams/rows)
+    total_plots = nparams
+    grid = rows*columns
+
+    fig1, axes1 = plt.subplots(rows, columns, figsize=(20,20), sharex=False, sharey=False)
+
+    i = 0
+    j = 0
+    plot_no = 0
+    name_count = 0
+    col = 0
+    while(col < nparams):
+
+        if(i > rows - 1):
+            j+=1
+            i=0
+
+        if(plot_no > total_plots):
+            axes1[i, j].set_axis_off()
+
+        else:
+            if(names[name_count] == "logmass" or names[name_count] == "logfagn"):
+                axes1[i, j].hist(np.log10(realisations[col]), density = True, bins=nbins)
+            else:
+                axes1[i, j].hist(realisations[col], density = True, bins=nbins)
+                axes1[i, j].set_xlabel(names[name_count])
+                axes1[i, j].set_ylabel("$p(z)$")
+        i+=1
+        plot_no += 1
+        name_count += 1
+        col += 1
+
+    #clear blank figures
+    no_empty_plots = grid - nparams
+    i = 0
+    while(i < no_empty_plots):
+        axes1[rows - i - 1, columns - 1].set_axis_off()
+        i+=1
