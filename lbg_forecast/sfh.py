@@ -36,6 +36,20 @@ def dirichlet_prior(agebins, alpha, mass_norm):
     
     return tabulatedsfh, masses
 
+def dpl(tau, a, b, t):
+    """Calculates double power law SFH
+
+    :param tau:
+        Turnover
+    :param a:
+        Falling
+    :param b:
+        Rising
+    :param t:
+        time (Gyr)
+    """
+    return ((t/tau)**(a) + (t/tau)**(-b))**(-1)
+
 def continuity_prior(agebins, nu, sigma, mass_norm):
     """Calculates non-parametric continuity prior SFH using 
     Student's t distributions in tabulated fsps format
@@ -228,9 +242,6 @@ def non_parametric_sfh(agebins, massformed, alpha):
 
 def tau_model(tau, t):
     return np.exp(-t/tau)
-
-def dpl(tau, a, b, t):
-    return ((t/tau)**(a) + (t/tau)**(-b))**(-1)
 
 def normed_sfh(logtau, loga, logb, t):
 
