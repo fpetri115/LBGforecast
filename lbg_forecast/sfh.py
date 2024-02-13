@@ -2,41 +2,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 from astropy.cosmology import WMAP9 as cosmo
 from scipy.stats import dirichlet
-from scipy.stats import t
 
-def dirichlet_prior(agebins, alpha, mass_norm):
-    """Calculates non-parametric SFH given a Dirichlet
-    prior in fsps format.
-
-    :param agebins: 
-        An array of bin edges, log(yrs).  This method assumes that the
-        upper edge of one bin is the same as the lower edge of another bin.
-        ndarray of shape ``(nbin, 2)``
-    
-    :param alpha:
-        Float describing the concentration parameter for a symmetric
-        Dirirchlet distribution
-    
-    :param mass_norm:
-        Total stellar mass formed across all age bins (float) in solar
-        masses
-
-    :returns tabulatedsfh:
-        Output SFH in tabulated fsps format
-    
-    :returns masses:
-        Mass formed in each age bin in solar masses
-
-    """
-    nbins = len(agebins)
-    alphas = np.ones(nbins)*alpha
-    fractions = dirichlet(alphas).rvs(size=1).reshape((nbins,))
-    masses = frac_to_masses(mass_norm, fractions, agebins)
-    tabulatedsfh = convert_sfh(agebins, masses, epsilon=1e-4)
-    
-    return tabulatedsfh, masses
-
-def continuity_prior(agebins, nu, mu, sigma, mass_norm):
+def continuity_sfh(agebins, logsfr_ratios, mass_normalisation):
     """Calculates non-parametric continuity prior SFH using 
     Student's t distributions in tabulated fsps format
 
@@ -44,17 +11,12 @@ def continuity_prior(agebins, nu, mu, sigma, mass_norm):
         An array of bin edges, log(yrs).  This method assumes that the
         upper edge of one bin is the same as the lower edge of another bin.
         ndarray of shape ``(nbin, 2)``
-
-    :param nu:
-        Student's t degrees of freedom parameter (float). Controls heaviness of tails
-
-    :param mu:
-        (nbins,) shape array giving mean of student's t for each bin
-
-    :param sigma:
-        (nbins,) shape array giving width of student's t for each bin
     
-    :param mass_norm:
+    :param logsfr_ratios:
+        (nbins,) shape array with log star formation ratios given by
+        population_model.continuity_prior()
+
+    :param mass_normalisation:
         Total stellar mass formed across all age bins (float) in solar
         masses
 
@@ -65,12 +27,15 @@ def continuity_prior(agebins, nu, mu, sigma, mass_norm):
         Mass formed in each age bin in solar masses
 
     """
-    nbins = len(agebins)
-    log_sf_ratios = t.rvs(nu, size=nbins)*sigma + mu
-    masses = logsfr_ratios_to_masses(np.log10(mass_norm), log_sf_ratios, agebins)
+    
+    if(len(agebins)-1 != len(logsfr_ratios)):
+        raise Exception("Require nbins-1 logsfr ratios")
+    
+    masses = logsfr_ratios_to_masses(np.log10(mass_normalisation), logsfr_ratios, agebins)
     tabulatedsfh = convert_sfh(agebins, masses, epsilon=1e-4)
     
     return tabulatedsfh, masses
+
 
 def convert_sfh(agebins, mformed, epsilon=1e-4, maxage=None):
         """Given arrays of agebins and formed masses with each bin, calculate a
@@ -194,6 +159,38 @@ def mwa(sfr, agebins, total_mass_formed):
     dtsq = (ages[:, 1]**2 - ages[:, 0]**2) / 2
     mwa = (dtsq * sfr).sum() / total_mass_formed
     return mwa / 1e9
+
+def dirichlet_prior(agebins, alpha, mass_norm):
+    """Calculates non-parametric SFH given a Dirichlet
+    prior in fsps format.
+
+    :param agebins: 
+        An array of bin edges, log(yrs).  This method assumes that the
+        upper edge of one bin is the same as the lower edge of another bin.
+        ndarray of shape ``(nbin, 2)``
+    
+    :param alpha:
+        Float describing the concentration parameter for a symmetric
+        Dirirchlet distribution
+    
+    :param mass_norm:
+        Total stellar mass formed across all age bins (float) in solar
+        masses
+
+    :returns tabulatedsfh:
+        Output SFH in tabulated fsps format
+    
+    :returns masses:
+        Mass formed in each age bin in solar masses
+
+    """
+    nbins = len(agebins)
+    alphas = np.ones(nbins)*alpha
+    fractions = dirichlet(alphas).rvs(size=1).reshape((nbins,))
+    masses = frac_to_masses(mass_norm, fractions, agebins)
+    tabulatedsfh = convert_sfh(agebins, masses, epsilon=1e-4)
+    
+    return tabulatedsfh, masses
 
 def non_parametric_sfh(agebins, massformed, alpha):
     """Sample non parametric star formation histories from symmetric

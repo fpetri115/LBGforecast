@@ -4,14 +4,19 @@ import lbg_forecast.priors as pr
 import math
 import matplotlib.pyplot as plt
 from scipy.stats import truncnorm
+from scipy.stats import t
 
-def generate_sps_parameters(nsamples, prior_parameters, redshift_mass_prior_parameters):
+def generate_sps_parameters(nsamples, prior_parameters, sf_parameters, redshift_mass_prior_parameters):
     """Sample sps parameters given some prior parameters.
 
     :param nsamples: 
         Number of samples
 
     :param prior_parameters:
+        Hyperparameters for model of shape (nhyperparameters,). These are 
+        the rows returned by hyperparameters.sample_prior_parameters()
+
+    :param sf_parameters:
         Hyperparameters for model of shape (nhyperparameters,). These are 
         the rows returned by hyperparameters.sample_prior_parameters()
     
@@ -29,8 +34,9 @@ def generate_sps_parameters(nsamples, prior_parameters, redshift_mass_prior_para
     logzsol_mu, logzsol_sigma, dust1_mu, dust1_sigma, dust2_mu, \
     dust2_sigma, dust_index_mu, dust_index_sigma, igm_factor_mu, \
     igm_factor_sigma, gas_logu_mu, gas_logu_sigma, fagn_mu, \
-    fagn_sigma, agn_tau_mu, agn_tau_sigma, nu_min, nu_max, \
-    sig_min, sig_max = prior_parameters
+    fagn_sigma, agn_tau_mu, agn_tau_sigma = prior_parameters
+
+    sf_mu, sf_sig, nu = sf_parameters
 
     #Setup redshift and mass priors
     z_grid, logm_grid, priors, grid_params = redshift_mass_prior_parameters
@@ -90,13 +96,9 @@ def generate_sps_parameters(nsamples, prior_parameters, redshift_mass_prior_para
     agn_tau = truncated_normal(agn_tau_mu, agn_tau_sigma, agn_tau_min, agn_tau_max, nsamples) 
     sps_parameters.append(agn_tau)
     
-    #Student's t parameter for SFH - nu
-    nu = np.ones(nsamples)*np.random.randint(nu_min, nu_max+1)
-    sps_parameters.append(nu)
-
-    #Student's t width for SFH - sig
-    sig = np.ones(nsamples)*np.random.uniform(sig_min, sig_max)
-    sps_parameters.append(sig)
+    #Log SFR ratios
+    log_sfr_ratios = continuity_prior(nsamples, nu, sf_mu, sf_sig)
+    sps_parameters.append(log_sfr_ratios)
 
     #Total stellar mass formed in solar masses - mass
     mass = 10**m_samples
@@ -109,6 +111,32 @@ def truncated_normal(mu, sigma, min, max, samples):
     """
     a, b = (min - mu) / sigma, (max - mu) / sigma
     return truncnorm.rvs(a, b, loc=mu, scale=sigma, size=samples)
+
+
+def continuity_prior(nsamples, nu, mu, sigma):
+    """Samples log sfr ratios from student's t distributions
+    for continuity SFH
+    
+    :param nsamples:
+        Number of samples to from prior (int)
+
+    :param nu:
+        Student's t degrees of freedom parameter (int). Controls heaviness of tails
+
+    :param mu:
+        (nbins,) shape array giving mean of student's t for each bin
+
+    :param sigma:
+        (nbins,) shape array giving width of student's t for each bin
+
+    :returns log_sf_ratios:
+        (nbins,) shape array containing log star formation
+        ratios. These can be passed to sfh.continuity_sfh()
+    """
+    nsfrs = len(mu)
+    log_sf_ratios = t.rvs(nu, size=(nsamples, nsfrs))*sigma + np.tile(mu, (1, nsamples))
+
+    return log_sf_ratios
 
 def plot_galaxy_population(sps_parameters, rows=5, nbins=20):
     
