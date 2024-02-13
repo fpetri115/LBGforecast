@@ -36,7 +36,7 @@ def dirichlet_prior(agebins, alpha, mass_norm):
     
     return tabulatedsfh, masses
 
-def continuity_prior(agebins, nu, sigma, mass_norm):
+def continuity_prior(agebins, nu, mu, sigma, mass_norm):
     """Calculates non-parametric continuity prior SFH using 
     Student's t distributions in tabulated fsps format
 
@@ -44,12 +44,15 @@ def continuity_prior(agebins, nu, sigma, mass_norm):
         An array of bin edges, log(yrs).  This method assumes that the
         upper edge of one bin is the same as the lower edge of another bin.
         ndarray of shape ``(nbin, 2)``
-    
+
     :param nu:
-        Student-t parameter (float). Controls heaviness of tails
+        Student's t degrees of freedom parameter (float). Controls heaviness of tails
+
+    :param mu:
+        (nbins,) shape array giving mean of student's t for each bin
 
     :param sigma:
-        Width parameter (float)
+        (nbins,) shape array giving width of student's t for each bin
     
     :param mass_norm:
         Total stellar mass formed across all age bins (float) in solar
@@ -63,7 +66,7 @@ def continuity_prior(agebins, nu, sigma, mass_norm):
 
     """
     nbins = len(agebins)
-    log_sf_ratios = t.rvs(nu, size=nbins)*sigma
+    log_sf_ratios = t.rvs(nu, size=nbins)*sigma + mu
     masses = logsfr_ratios_to_masses(np.log10(mass_norm), log_sf_ratios, agebins)
     tabulatedsfh = convert_sfh(agebins, masses, epsilon=1e-4)
     
