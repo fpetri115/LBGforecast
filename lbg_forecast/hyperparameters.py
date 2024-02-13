@@ -34,9 +34,10 @@ def sample_prior_parameters(nsamples, bounds, sigma_bounds):
         (min1, max1, min2, max2 ... )
     
     """
-    n_gaussian_priors = len(sigma_bounds)
     n_priors = len(bounds)
-    n_prior_parameters = int(2*n_priors)
+    n_gaussian_priors = len(sigma_bounds)
+    n_uniform_priors = n_priors - n_gaussian_priors
+    n_prior_parameters = int(2*n_gaussian_priors + n_uniform_priors)
     prior_parameters = np.empty((nsamples, n_prior_parameters))
 
     indx = 0
@@ -51,13 +52,12 @@ def sample_prior_parameters(nsamples, bounds, sigma_bounds):
         indx+=1
 
     #loop over uniform priors
-    while(indx < n_priors):
+    indx2 = 0
+    while(indx2 < n_uniform_priors):
 
-        parameter_bounds = bounds[indx, :]
-        prior_parameters[:, int(2*indx)] = np.ones((nsamples,))*parameter_bounds[0]
-        prior_parameters[:, int(2*indx+1)] = np.ones((nsamples,))*parameter_bounds[1]
-
-        indx+=1
+        parameter_bounds = bounds[indx+indx2, :]
+        prior_parameters[:, int(2*indx)+indx2] = np.random.uniform(parameter_bounds[0], parameter_bounds[1], (nsamples,))
+        indx2+=1
 
     return prior_parameters
 
@@ -73,8 +73,19 @@ def default_hyperparameter_bounds():
                                     [-4.0, -1.0],    #gas_log_u
                                     [-5.0, 1.0],     #log10(fagn)
                                     [5, 150],        #agn_tau
-                                    [2, 10],         #nu
-                                    [0.1, 1.0]       #sig
+                                    [-2, 2],         #logsfmu1
+                                    [-2, 2],         #logsfmu2
+                                    [-2, 2],         #logsfmu3
+                                    [-2, 2],         #logsfmu4
+                                    [-2, 2],         #logsfmu5
+                                    [-2, 2],         #logsfmu6
+                                    [0.3, 0.3],      #logsfsig1
+                                    [0.3, 0.3],      #logsfsig2
+                                    [0.3, 0.3],      #logsfsig3
+                                    [0.3, 0.3],      #logsfsig4
+                                    [0.3, 0.3],      #logsfsig5
+                                    [0.3, 0.3],      #logsfsig6
+                                    [2, 2]           #nu   
     ])
 
     hyperparameter_sigma_max = np.array([[0.01, 3.0], #logzsol
@@ -100,7 +111,8 @@ def plot_hyperparameters(prior_parameters, rows=5, nbins=20):
 
     names = np.array(["logzsol_mu", "logzsol_sig", "dust1_mu", "dust1_sig", "dust2_mu", "dust2_sig", "dust_index_mu", "dust_index_sig",
                       "igm_factor_mu", "igm_factor_sig", "gas_logu_mu", "gas_logu_sig", "logfagn_mu", "logfagn_sig", "agn_tau_mu", "agn_tau_sig", 
-                        "nu_min", "nu_max", "sig_min", "sig_max"])
+                        "logsfmu1", "logsfmu2", "logsfmu3", "logsfmu4", "logsfmu5", "logsfmu6", "logsfsig1",
+                          "logsfsig2", "logsfsig3", "logsfsig4", "logsfsig5", "logsfsig6", "nu"])
 
 
     fig1, axes1 = plt.subplots(rows, columns, figsize=(20,20), sharex=False, sharey=False)

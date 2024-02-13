@@ -6,17 +6,13 @@ import matplotlib.pyplot as plt
 from scipy.stats import truncnorm
 from scipy.stats import t
 
-def generate_sps_parameters(nsamples, prior_parameters, sf_parameters, redshift_mass_prior_parameters):
+def generate_sps_parameters(nsamples, prior_parameters, redshift_mass_prior_parameters):
     """Sample sps parameters given some prior parameters.
 
     :param nsamples: 
         Number of samples
 
     :param prior_parameters:
-        Hyperparameters for model of shape (nhyperparameters,). These are 
-        the rows returned by hyperparameters.sample_prior_parameters()
-
-    :param sf_parameters:
         Hyperparameters for model of shape (nhyperparameters,). These are 
         the rows returned by hyperparameters.sample_prior_parameters()
     
@@ -34,9 +30,9 @@ def generate_sps_parameters(nsamples, prior_parameters, sf_parameters, redshift_
     logzsol_mu, logzsol_sigma, dust1_mu, dust1_sigma, dust2_mu, \
     dust2_sigma, dust_index_mu, dust_index_sigma, igm_factor_mu, \
     igm_factor_sigma, gas_logu_mu, gas_logu_sigma, fagn_mu, \
-    fagn_sigma, agn_tau_mu, agn_tau_sigma = prior_parameters
-
-    sf_mu, sf_sig, nu = sf_parameters
+    fagn_sigma, agn_tau_mu, agn_tau_sigma, logsfmu1, logsfmu2, logsfmu3, \
+    logsfmu4, logsfmu5, logsfmu6, logsfsig1, logsfsig2, logsfsig3, logsfsig4, \
+    logsfsig5, logsfsig6, nu = prior_parameters
 
     #Setup redshift and mass priors
     z_grid, logm_grid, priors, grid_params = redshift_mass_prior_parameters
@@ -97,8 +93,13 @@ def generate_sps_parameters(nsamples, prior_parameters, sf_parameters, redshift_
     sps_parameters.append(agn_tau)
     
     #Log SFR ratios
+    sf_mu = np.array([logsfmu1, logsfmu2, logsfmu3, logsfmu4, logsfmu5, logsfmu6])
+    sf_sig = np.array([logsfsig1, logsfsig2, logsfsig3, logsfsig4, logsfsig5, logsfsig6])
     log_sfr_ratios = continuity_prior(nsamples, nu, sf_mu, sf_sig)
-    sps_parameters.append(log_sfr_ratios)
+
+    ncols = log_sfr_ratios.shape[1]
+    for column in range(ncols):
+        sps_parameters.append(log_sfr_ratios[:, column])
 
     #Total stellar mass formed in solar masses - mass
     mass = 10**m_samples
@@ -134,7 +135,7 @@ def continuity_prior(nsamples, nu, mu, sigma):
         ratios. These can be passed to sfh.continuity_sfh()
     """
     nsfrs = len(mu)
-    log_sf_ratios = t.rvs(nu, size=(nsamples, nsfrs))*sigma + np.tile(mu, (1, nsamples))
+    log_sf_ratios = t.rvs(nu, size=(nsamples, nsfrs))*sigma + mu
 
     return log_sf_ratios
 
@@ -145,7 +146,7 @@ def plot_galaxy_population(sps_parameters, rows=5, nbins=20):
 
     names = np.array(["zred", "logzsol", "dust1", "dust2", "dust_index", 
                       "igm_factor", "gas_logu", "logfagn", "agn_tau",
-                       "nu", "sig", "logmass"])
+                       "logf1", "logf2", "logf3", "logf4", "logf5","logf6", "logmass"])
     
     if(len(names) != nparams):
         raise Exception("Number of parameters and parameter labels don't match")

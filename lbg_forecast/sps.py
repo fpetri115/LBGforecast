@@ -37,9 +37,9 @@ def update_model(sps_model, sps_parameters, z_history):
     sps_model.params['fagn'] = sps_parameters[7]
     sps_model.params['agn_tau'] = sps_parameters[8]
 
-    nu = sps_parameters[9]
-    sigma = sps_parameters[10]
-    total_mass_formed = sps_parameters[11]
+    log_sfr_ratios = sps_parameters[9:-1]
+
+    total_mass_formed = sps_parameters[-1]
 
 
     agebins = np.log10(np.array([[10**-9, 30*0.001],
@@ -51,7 +51,7 @@ def update_model(sps_model, sps_parameters, z_history):
                 [11.7, 13.7]])*10**9)
     
     shifted_age_bins = sfh.zred_to_agebins(sps_model.params['zred'], agebins)
-    time, star_formation_history, tage = sfh.continuity_prior(shifted_age_bins, nu, sigma, total_mass_formed)[0]
+    time, star_formation_history, tage = sfh.continuity_sfh(shifted_age_bins, log_sfr_ratios, total_mass_formed)[0]
     sps_model.params['tage'] = tage
 
     if(z_history):
