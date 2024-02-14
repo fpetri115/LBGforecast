@@ -25,7 +25,7 @@ def initialise_sps_model(neb_em, sfh_type=3, zcont=1, imf_type=2, dust_type=0, i
 
     return sps_model 
 
-def update_model(sps_model, sps_parameters, z_history):
+def update_model(sps_model, sps_parameters, z_history, agebins):
     
     sps_model.params['zred'] = sps_parameters[0]
     sps_model.params['logzsol'] = sps_parameters[1]
@@ -40,15 +40,6 @@ def update_model(sps_model, sps_parameters, z_history):
     log_sfr_ratios = sps_parameters[9:-1]
 
     total_mass_formed = sps_parameters[-1]
-
-
-    agebins = np.log10(np.array([[10**-9, 30*0.001],
-                [30*0.001, 100*0.001],
-                [100*0.001, 330*0.001],  
-                [330*0.001, 1.1], 
-                [1.1, 3.6],
-                [3.6, 11.7],
-                [11.7, 13.7]])*10**9)
     
     shifted_age_bins = sfh.zred_to_agebins(sps_model.params['zred'], agebins)
     time, star_formation_history, tage = sfh.continuity_sfh(shifted_age_bins, log_sfr_ratios, total_mass_formed)[0]
@@ -65,10 +56,19 @@ def update_model(sps_model, sps_parameters, z_history):
         sps_model.set_tabular_sfh(time, star_formation_history) 
 
 
-def simulate_photometry(sps_parameters, filters, imf, dust, nebem=True, zhistory=True):
+def simulate_photometry(sps_parameters, filters, imf, dust, nebem=True, zhistory=True, agebins=None):
 
     if(nebem == False and zhistory == True):
         raise Exception("nebular emission cannot be turned off with zhistory enabled at present")
+    
+    if agebins is None:
+        agebins = np.log10(np.array([[10**-9, 30*0.001],
+                [30*0.001, 100*0.001],
+                [100*0.001, 330*0.001],  
+                [330*0.001, 1.1], 
+                [1.1, 3.6],
+                [3.6, 11.7],
+                [11.7, 13.7]])*10**9)
 
     ngalaxies = sps_parameters.shape[0]
 
@@ -82,7 +82,7 @@ def simulate_photometry(sps_parameters, filters, imf, dust, nebem=True, zhistory
     while(i < ngalaxies):
 
         source = sps_parameters[i, :]
-        update_model(sps_model, source, z_history=False)
+        update_model(sps_model, source, z_history=False, agebins=agebins)
 
         #generate photometry for source
         photometry_neb.append(fsps_get_magnitudes(sps_model, filters=filters))
@@ -104,7 +104,7 @@ def simulate_photometry(sps_parameters, filters, imf, dust, nebem=True, zhistory
         while(i < ngalaxies):
 
             source = sps_parameters[i, :]
-            update_model(sps_model, source, z_history=False)
+            update_model(sps_model, source, z_history=False, agebins=agebins)
 
             #generate photometry for source
             photometry_no_neb.append(fsps_get_magnitudes(sps_model, filters=filters))
@@ -128,7 +128,7 @@ def simulate_photometry(sps_parameters, filters, imf, dust, nebem=True, zhistory
         while(i < ngalaxies):
 
             source = sps_parameters[i, :]
-            update_model(sps_model, source, z_history=True)
+            update_model(sps_model, source, z_history=True, agebins=agebins)
 
             #generate photometry for source
             photometry_zhis.append(fsps_get_magnitudes(sps_model, filters=filters))
