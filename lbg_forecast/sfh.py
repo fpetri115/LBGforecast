@@ -3,6 +3,33 @@ import matplotlib.pyplot as plt
 from astropy.cosmology import WMAP9 as cosmo
 from scipy.stats import dirichlet
 
+
+def default_agebins():
+    """Returns default SFH age bins
+    """
+    return np.log10(np.array([[10**-9, 30*0.001],
+                [30*0.001, 100*0.001],
+                [100*0.001, 330*0.001],  
+                [330*0.001, 1.1], 
+                [1.1, 3.6],
+                [3.6, 11.7],
+                [11.7, 13.7]])*10**9)
+
+def sps_parameters_to_sfh(sps_parameters, agebins):
+    """Plots tabulated SFH given some SPS parameters
+    """
+    tabulated_sfh, masses = continuity_sfh(zred_to_agebins(sps_parameters[0], agebins), 
+                                           sps_parameters[9:-1], sps_parameters[-1])
+    plt.plot(tabulated_sfh[0], tabulated_sfh[1])
+    plt.xlabel("Time Since the Beginning of the Universe [$\mathrm{Gyr}$]",
+            fontsize=12)
+    plt.ylabel("Star Formation Rate [$\mathrm{M}_{\odot}\mathrm{yr}^{-1}$]",
+            fontsize=12)
+    
+    plt.tick_params(axis="x", width = 2, labelsize=12*0.8)
+    plt.tick_params(axis="y", width = 2, labelsize=12*0.8)
+
+
 def continuity_sfh(agebins, logsfr_ratios, mass_normalisation):
     """Calculates non-parametric continuity prior SFH using 
     Student's t distributions in tabulated fsps format

@@ -49,7 +49,8 @@ def update_model(sps_model, sps_parameters, z_history, agebins):
         Z_MIST = 0.0142 #solar metallicity for MIST
         sps_model.params['logzsol'] = 0.0
         sps_model.params['gas_logz'] = 0.0
-        metallicity_history = zh.sfr_to_zh(star_formation_history, time, (10**sps_model.params['logzsol'])*Z_MIST)
+        metallicity_history = zh.sfr_to_zh(star_formation_history, time,
+                                            (10**sps_model.params['logzsol'])*Z_MIST, sps_parameters[-1])
         sps_model.set_tabular_sfh(time, star_formation_history, metallicity_history)
     else:
         sps_model.params['gas_logz'] = sps_model.params['logzsol']
@@ -62,13 +63,7 @@ def simulate_photometry(sps_parameters, filters, imf, dust, nebem=True, zhistory
         raise Exception("nebular emission cannot be turned off with zhistory enabled at present")
     
     if agebins is None:
-        agebins = np.log10(np.array([[10**-9, 30*0.001],
-                [30*0.001, 100*0.001],
-                [100*0.001, 330*0.001],  
-                [330*0.001, 1.1], 
-                [1.1, 3.6],
-                [3.6, 11.7],
-                [11.7, 13.7]])*10**9)
+        agebins = sfh.default_agebins()
 
     ngalaxies = sps_parameters.shape[0]
 
