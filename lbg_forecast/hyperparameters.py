@@ -92,7 +92,7 @@ def default_hyperparameter_bounds():
                                         [0.01, 2.0], #dust1
                                         [0.01, 4.0], #dust2
                                         [0.01, 0.5], #dust_index
-                                        [0.01, 2.0], #igm_factor 
+                                        [0.1, 0.1], #igm_factor 
                                         [0.01, 3.0], #gas_log_u
                                         [0.01, 6.0], #log10(fagn)
                                         [0.1, 145]   #agn_tau

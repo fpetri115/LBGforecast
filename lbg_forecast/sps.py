@@ -83,7 +83,7 @@ def simulate_photometry(sps_parameters, filters, imf, dust, nebem=True, zhistory
         photometry_neb.append(fsps_get_magnitudes(sps_model, filters=filters))
 
         i+=1
-        if(i%10000 == 0):
+        if(i%1000 == 0):
             print(i)
 
     photometry_neb = np.vstack(np.asarray(photometry_neb))

@@ -17,7 +17,7 @@ def simulate_nzs(sps_params, model):
 
     return nzs
 
-def apply_cuts(dropout_data):
+def apply_cuts(dropout_data, return_all_params=False):
 
     u_dropouts, g_dropouts, r_dropouts = dropout_data
 
@@ -33,7 +33,10 @@ def apply_cuts(dropout_data):
     redshift_array = np.empty(3, object)
     redshift_array[:] = [u_redshifts, g_redshifts, r_redshifts]     
 
-    return redshift_array
+    if(return_all_params):
+        return (selected_u_dropouts, selected_g_dropouts, selected_r_dropouts)
+    else:
+        return redshift_array
 
 def visualise_redshifts(redshift_array, bins, minz=0, maxz=7, alpha=0.5, density=True):
 
