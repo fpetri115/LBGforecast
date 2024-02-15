@@ -114,9 +114,9 @@ def truncated_normal(mu, sigma, min, max, samples):
     return truncnorm.rvs(a, b, loc=mu, scale=sigma, size=samples)
 
 
-def continuity_prior(nsamples, nu, mu, sigma):
+def continuity_prior(nsamples, nu, mu, sigma, min=-5, max=5):
     """Samples log sfr ratios from student's t distributions
-    for continuity SFH
+    for continuity SFH, TRUNCATED at [min, max]
     
     :param nsamples:
         Number of samples to from prior (int)
@@ -130,14 +130,28 @@ def continuity_prior(nsamples, nu, mu, sigma):
     :param sigma:
         (nbins,) shape array giving width of student's t for each bin
 
+    :param min:
+        minumum value of logsfr allowed
+    
+    :param max:
+        minumum value of logsfr allowed
+
     :returns log_sf_ratios:
         (nbins,) shape array containing log star formation
         ratios. These can be passed to sfh.continuity_sfh()
     """
     nsfrs = len(mu)
-    log_sf_ratios = t.rvs(nu, size=(nsamples, nsfrs))*sigma + mu
+    all_log_sfr_ratios = []
 
-    return log_sf_ratios
+    #inverse transform sampling for each logsfrratio parameter
+    for sfrs in range(nsfrs):
+        cdf_samples = np.random.uniform(t.cdf(min, nu, loc=mu[sfrs], scale=sigma[sfrs]), t.cdf(max, nu, loc=mu[sfrs], scale=sigma[sfrs]), size=(nsamples,))
+        log_sfr_ratios = t.ppf(cdf_samples, nu, loc=mu[sfrs], scale=sigma[sfrs])
+        all_log_sfr_ratios.append(np.reshape(log_sfr_ratios, (nsamples, 1)))
+
+    all_log_sfr_ratios = np.hstack(all_log_sfr_ratios)
+
+    return all_log_sfr_ratios
 
 def plot_galaxy_population(sps_parameters, rows=5, nbins=20):
     
