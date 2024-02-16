@@ -1,3 +1,6 @@
+import os
+os.environ["SPS_HOME"] = "/Users/fpetri/packages/fsps" 
+
 import fsps
 import numpy as np
 import matplotlib.pyplot as plt
@@ -57,15 +60,15 @@ def update_model(sps_model, sps_parameters, z_history, agebins):
         sps_model.set_tabular_sfh(time, star_formation_history) 
 
 
-def simulate_photometry(sps_parameters, filters, imf, dust, nebem=True, zhistory=True, agebins=None):
+def simulate_photometry(sps_parameters, filters, imf, dust, nebem=True, zhistory=True, agebins=None, enable_mpi=False, mpi_rank=0):
+
+    ngalaxies = sps_parameters.shape[0]
 
     if(nebem == False and zhistory == True):
         raise Exception("nebular emission cannot be turned off with zhistory enabled at present")
     
     if agebins is None:
         agebins = sfh.default_agebins()
-
-    ngalaxies = sps_parameters.shape[0]
 
     #Generate photometry with Nebular emmision###################
     print("Starting Run 1/3")
@@ -83,7 +86,7 @@ def simulate_photometry(sps_parameters, filters, imf, dust, nebem=True, zhistory
         photometry_neb.append(fsps_get_magnitudes(sps_model, filters=filters))
 
         i+=1
-        if(i%1000 == 0):
+        if(i%100 == 0 and mpi_rank==0):
             print(i)
 
     photometry_neb = np.vstack(np.asarray(photometry_neb))
@@ -105,7 +108,7 @@ def simulate_photometry(sps_parameters, filters, imf, dust, nebem=True, zhistory
             photometry_no_neb.append(fsps_get_magnitudes(sps_model, filters=filters))
 
             i+=1
-            if(i%10000 == 0):
+            if(i%100 == 0 and mpi_rank==0):
                 print(i)
 
         photometry_no_neb = np.vstack(np.asarray(photometry_no_neb))
@@ -129,7 +132,7 @@ def simulate_photometry(sps_parameters, filters, imf, dust, nebem=True, zhistory
             photometry_zhis.append(fsps_get_magnitudes(sps_model, filters=filters))
 
             i+=1
-            if(i%10000 == 0):
+            if(i%100 == 0 and mpi_rank==0):
                 print(i)
 
         photometry_zhis = np.vstack(np.asarray(photometry_zhis))
@@ -142,6 +145,13 @@ def simulate_photometry(sps_parameters, filters, imf, dust, nebem=True, zhistory
         photometry_final = photometry_neb
 
     print("Complete")
+
+    if(enable_mpi):
+        np.save("simulation_data/simulated_photometry_"+str(mpi_rank)+".npy", photometry_final)
+        np.save("simulation_data/sps_parameters_"+str(mpi_rank)+".npy", sps_parameters)
+    else:
+        np.save("simulation_data/simulated_photometry.npy", photometry_final)
+        np.save("simulation_data/sps_parameters.npy", sps_parameters)
 
     return photometry_final
 

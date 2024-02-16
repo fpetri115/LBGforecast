@@ -100,6 +100,45 @@ def default_hyperparameter_bounds():
 
     return hyperparameter_mu_bounds, hyperparameter_sigma_max
 
+def uniform_hyperparameter_bounds():
+    """uniform parameters for sample_prior_parameters()
+    """
+
+    hyperparameter_mu_bounds = np.array([[-1.0, -1.0],  #logzsol
+                                    [1.0, 1.0],      #dust1
+                                    [2.0, 2.0],      #dust2
+                                    [-0.7, -0.7],     #dust_index
+                                    [1.0, 1.0],      #igm_factor 
+                                    [-2.0, -2.0],    #gas_log_u
+                                    [-3.0, -3.0],     #log10(fagn)
+                                    [50, 50],        #agn_tau
+                                    [-2, 2],         #logsfmu1
+                                    [-2, 2],         #logsfmu2
+                                    [-2, 2],         #logsfmu3
+                                    [-2, 2],         #logsfmu4
+                                    [-2, 2],         #logsfmu5
+                                    [-2, 2],         #logsfmu6
+                                    [0.3, 0.3],      #logsfsig1
+                                    [0.3, 0.3],      #logsfsig2
+                                    [0.3, 0.3],      #logsfsig3
+                                    [0.3, 0.3],      #logsfsig4
+                                    [0.3, 0.3],      #logsfsig5
+                                    [0.3, 0.3],      #logsfsig6
+                                    [2, 2]           #nu   
+    ])
+
+    hyperparameter_sigma_max = np.array([[3.0, 3.0], #logzsol
+                                        [2.0, 2.0], #dust1
+                                        [4.0, 4.0], #dust2
+                                        [1.4, 1.4], #dust_index
+                                        [2.0, 2.0], #igm_factor 
+                                        [3.0, 3.0], #gas_log_u
+                                        [6.0, 6.0], #log10(fagn)
+                                        [145, 145]   #agn_tau
+    ])
+
+    return hyperparameter_mu_bounds, hyperparameter_sigma_max
+
 def plot_hyperparameters(prior_parameters, rows=5, nbins=20):
     """Plots output of sample_prior_parameters()
     
