@@ -181,13 +181,10 @@ def fsps_get_magnitudes(sps_model, filters):
 
 def get_magnitudes(sps_model, filters):
 
-    if(filters=='lsst'):
-        spectrum = sps_model.get_spectrum(tage=sps_model.params['tage'], peraa=False)
-        redshifted_spectrum = redshift_fsps_spectrum(spectrum[1], spectrum[0], sps_model.params['zred'])
-        photometry = simulate_photometry_lsst(redshifted_spectrum)
-        return photometry
-    if(filters=='suprimecam'):
-        raise NotImplementedError()
+    spectrum = sps_model.get_spectrum(tage=sps_model.params['tage'], peraa=False)
+    redshifted_spectrum = redshift_fsps_spectrum(spectrum[1], spectrum[0], sps_model.params['zred'])
+    photometry = get_photometry(redshifted_spectrum, filters)
+    return photometry
 
 def get_sed(sps_model, filters):
 
@@ -199,11 +196,16 @@ def get_sed(sps_model, filters):
         raise NotImplementedError()
 
 #my own version of fsps get_mags using sedpy
-def simulate_photometry_lsst(redshifted_spectrum):
+def get_photometry(redshifted_spectrum, filters):
 
     redshifted_spectrum_cgs, aa_redshifted = redshifted_spectrum
-    lsst_filters = get_lsst_filters()
-    mags = observate.getSED(aa_redshifted, redshifted_spectrum_cgs, filterlist=lsst_filters, linear_flux=False)
+
+    if(filters == 'lsst'):
+        bands = get_lsst_filters()
+    if(filters == 'suprimecam'):
+        bands = get_suprimecam_filters()
+    
+    mags = observate.getSED(aa_redshifted, redshifted_spectrum_cgs, filterlist=bands, linear_flux=False)
 
     return mags
 
@@ -256,6 +258,19 @@ def get_lsst_filters():
 
     filters = np.array([u_filt, g_filt, r_filt, i_filt, z_filt, y_filt])
     
+    return filters
+
+#for homebrew get_mags
+def get_suprimecam_filters():
+
+    gfltr = observate.Filter("hsc_g")
+    rfltr = observate.Filter("hsc_r")
+    ifltr = observate.Filter("hsc_i")
+    zfltr = observate.Filter("hsc_z")
+    #yfltr = observate.Filter("hsc_z")
+
+    filters = np.array([gfltr, rfltr, ifltr, zfltr])
+
     return filters
 
 def plot_lsst_filters(factor):
