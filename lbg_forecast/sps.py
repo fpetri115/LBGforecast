@@ -9,9 +9,10 @@ import lbg_forecast.sfh as sfh
 import lbg_forecast.zhistory as zh
 import lbg_forecast.population_model as pop
 
-from astropy.cosmology import WMAP9
-from astropy.coordinates import Distance
+from astropy.cosmology import WMAP7 as cosmo
+#from astropy.coordinates import Distance
 from astropy.constants import L_sun
+from astropy.constants import c
 
 from sedpy import observate
 
@@ -83,7 +84,7 @@ def simulate_photometry(sps_parameters, filters, imf, dust, nebem=True, zhistory
         update_model(sps_model, source, z_history=False, agebins=agebins)
 
         #generate photometry for source
-        photometry_neb.append(fsps_get_magnitudes(sps_model, filters=filters))
+        photometry_neb.append(get_magnitudes(sps_model, filters=filters))
 
         i+=1
         if(i%100 == 0 and mpi_rank==0):
@@ -105,7 +106,7 @@ def simulate_photometry(sps_parameters, filters, imf, dust, nebem=True, zhistory
             update_model(sps_model, source, z_history=False, agebins=agebins)
 
             #generate photometry for source
-            photometry_no_neb.append(fsps_get_magnitudes(sps_model, filters=filters))
+            photometry_no_neb.append(get_magnitudes(sps_model, filters=filters))
 
             i+=1
             if(i%100 == 0 and mpi_rank==0):
@@ -129,7 +130,7 @@ def simulate_photometry(sps_parameters, filters, imf, dust, nebem=True, zhistory
             update_model(sps_model, source, z_history=True, agebins=agebins)
 
             #generate photometry for source
-            photometry_zhis.append(fsps_get_magnitudes(sps_model, filters=filters))
+            photometry_zhis.append(get_magnitudes(sps_model, filters=filters))
 
             i+=1
             if(i%100 == 0 and mpi_rank==0):
@@ -156,15 +157,15 @@ def simulate_photometry(sps_parameters, filters, imf, dust, nebem=True, zhistory
     return photometry_final
 
 
-def simulate_sed(sps_model, sps_parameters):
+def fsps_simulate_sed(sps_model):
     
-    tage, logmass, zred = sps_model.params['tage'], sps_parameters[-1], sps_model.params['zred']
+    tage = sps_model.params['tage']
 
     #get SED
-    angstroms, spectrum = sps_model.get_spectrum(tage=tage, peraa=True)
-    spectrum_cgs_redshifted, aa_redshifted = redshift_fsps_spectrum(spectrum, angstroms, logmass, zred)
+    angstroms, spectrum = sps_model.get_spectrum(tage=tage, peraa=False)
+    #spectrum_cgs_redshifted, aa_redshifted = redshift_fsps_spectrum(spectrum, angstroms, zred)
 
-    return spectrum_cgs_redshifted, aa_redshifted
+    return spectrum, angstroms
 
 def fsps_get_magnitudes(sps_model, filters):
 
@@ -175,35 +176,49 @@ def fsps_get_magnitudes(sps_model, filters):
     if(filters=='all'):
         bands = fsps.find_filter('lsst') + fsps.find_filter('suprimecam')[1:2]+fsps.find_filter('suprimecam')[3:]
 
-    mags = sps_model.get_mags(tage=sps_model.params['tage'], bands=bands, redshift=sps_model.params['zred'])
+    mags = sps_model.get_mags(tage=sps_model.params['tage'], bands=bands)
     return mags# - 2.5*logmass
 
+def get_magnitudes(sps_model, filters):
+
+    if(filters=='lsst'):
+        spectrum = sps_model.get_spectrum(tage=sps_model.params['tage'], peraa=False)
+        redshifted_spectrum = redshift_fsps_spectrum(spectrum[1], spectrum[0], sps_model.params['zred'])
+        photometry = simulate_photometry_lsst(redshifted_spectrum)
+        return photometry
+    if(filters=='suprimecam'):
+        raise NotImplementedError()
+
+def get_sed(sps_model, filters):
+
+    if(filters=='lsst'):
+        spectrum = sps_model.get_spectrum(tage=sps_model.params['tage'], peraa=False)
+        redshifted_spectrum = redshift_fsps_spectrum(spectrum[1], spectrum[0], sps_model.params['zred'])
+        return redshifted_spectrum
+    if(filters=='suprimecam'):
+        raise NotImplementedError()
+
 #my own version of fsps get_mags using sedpy
-def simulate_photometry_lsst(aa_redshifted, redshifted_spectrum_cgs):
+def simulate_photometry_lsst(redshifted_spectrum):
 
+    redshifted_spectrum_cgs, aa_redshifted = redshifted_spectrum
     lsst_filters = get_lsst_filters()
-
-    mag_u = lsst_filters[0].ab_mag(aa_redshifted, redshifted_spectrum_cgs)
-    mag_g = lsst_filters[1].ab_mag(aa_redshifted, redshifted_spectrum_cgs)
-    mag_r = lsst_filters[2].ab_mag(aa_redshifted, redshifted_spectrum_cgs)
-    mag_i = lsst_filters[3].ab_mag(aa_redshifted, redshifted_spectrum_cgs)
-    mag_z = lsst_filters[4].ab_mag(aa_redshifted, redshifted_spectrum_cgs)
-    mag_y = lsst_filters[5].ab_mag(aa_redshifted, redshifted_spectrum_cgs)
-
-    mags = np.array([mag_u, mag_g, mag_r, mag_i, mag_z, mag_y])
+    mags = observate.getSED(aa_redshifted, redshifted_spectrum_cgs, filterlist=lsst_filters, linear_flux=False)
 
     return mags
 
-def redshift_fsps_spectrum(spectrum, angstroms, logmass, redshift):
+def redshift_fsps_spectrum(spectrum, angstroms, redshift):
 
     L_sol_cgs = L_sun.cgs.value
-    spectrum = spectrum*10**(logmass)
-    DL = Distance(z=redshift, cosmology=WMAP9).cgs.value
-
-    f_cgs_aa = spectrum/(4*(1+redshift)*np.pi*DL**2) * (L_sol_cgs)
+    luminosity_distance = cosmo.luminosity_distance(z=redshift).cgs.value
+    c_light = c.value*1e10
     aa_red = angstroms*(1+redshift)
-    
-    return  f_cgs_aa, aa_red
+
+    spec_cgs = spectrum*(1+redshift)*L_sol_cgs
+    f_cgs = spec_cgs/(4*np.pi*(luminosity_distance)**2)
+    f_cgs = f_cgs*((c_light)/((aa_red)**2))
+    f_cgs = np.interp(angstroms, aa_red, f_cgs)
+    return [f_cgs, angstroms]
 
 def plot_sed(spectrum, scaley, xmin, xmax, ymin, ymax, xsize=10, ysize=5, fontsize=32, log=False, **kwargs):
     
