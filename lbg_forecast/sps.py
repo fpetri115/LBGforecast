@@ -9,7 +9,7 @@ import lbg_forecast.sfh as sfh
 import lbg_forecast.zhistory as zh
 import lbg_forecast.population_model as pop
 
-from astropy.cosmology import WMAP7 as cosmo
+from astropy.cosmology import WMAP9 as cosmo
 #from astropy.coordinates import Distance
 from astropy.constants import L_sun
 from astropy.constants import c
@@ -199,15 +199,26 @@ def get_sed(sps_model, filters):
 def get_photometry(redshifted_spectrum, filters):
 
     redshifted_spectrum_cgs, aa_redshifted = redshifted_spectrum
+    c_light = c.value*1e10
 
     if(filters == 'lsst'):
         bands = get_lsst_filters()
     if(filters == 'suprimecam'):
         bands = get_suprimecam_filters()
     
-    mags = observate.getSED(aa_redshifted, redshifted_spectrum_cgs, filterlist=bands, linear_flux=False)
 
-    return mags
+    magnitudes = []
+    for filter in bands:
+        transmission = filter[1]#/np.trapz(filter[1], filter[0])
+        lambdas = np.interp(filter[0], aa_redshifted, aa_redshifted)
+        fluxes = np.interp(lambdas, aa_redshifted, redshifted_spectrum_cgs)
+        magnitude = -2.5*np.log10(np.trapz((fluxes*transmission*lambdas), lambdas)/np.trapz((transmission*lambdas), lambdas))-48.60#/np.trapz((3.631e-20*lambdas*c_light*transmission*(lambdas**-2)), lambdas))
+        magnitudes.append(magnitude)
+
+
+    #mags = observate.getSED(aa_redshifted, redshifted_spectrum_cgs, filterlist=bands, linear_flux=False)
+
+    return np.array(magnitudes)
 
 def redshift_fsps_spectrum(spectrum, angstroms, redshift):
 
@@ -249,14 +260,14 @@ def get_lsst_filters():
     zfltr = fsps.filters.Filter(148, 'lsst_z', 'lsst')
     yfltr = fsps.filters.Filter(149, 'lsst_y', 'lsst')
     
-    u_filt = observate.Filter("lsst_u", data=(ufltr.transmission[0], ufltr.transmission[1]))
-    g_filt = observate.Filter("lsst_g", data=(gfltr.transmission[0], gfltr.transmission[1]))
-    r_filt = observate.Filter("lsst_r", data=(rfltr.transmission[0], rfltr.transmission[1]))
-    i_filt = observate.Filter("lsst_i", data=(ifltr.transmission[0], ifltr.transmission[1]))
-    z_filt = observate.Filter("lsst_z", data=(zfltr.transmission[0], zfltr.transmission[1]))
-    y_filt = observate.Filter("lsst_z", data=(yfltr.transmission[0], yfltr.transmission[1]))
+    u_filt = np.array([ufltr.transmission[0], ufltr.transmission[1]])#= observate.Filter("lsst_u", data=(ufltr.transmission[0], ufltr.transmission[1]))
+    g_filt = np.array([gfltr.transmission[0], gfltr.transmission[1]])#= observate.Filter("lsst_g", data=(gfltr.transmission[0], gfltr.transmission[1]))
+    r_filt = np.array([rfltr.transmission[0], rfltr.transmission[1]])#= observate.Filter("lsst_r", data=(rfltr.transmission[0], rfltr.transmission[1]))
+    i_filt = np.array([ifltr.transmission[0], ifltr.transmission[1]])#= observate.Filter("lsst_i", data=(ifltr.transmission[0], ifltr.transmission[1]))
+    z_filt = np.array([zfltr.transmission[0], zfltr.transmission[1]])#= observate.Filter("lsst_z", data=(zfltr.transmission[0], zfltr.transmission[1]))
+    y_filt = np.array([yfltr.transmission[0], yfltr.transmission[1]])#= observate.Filter("lsst_z", data=(yfltr.transmission[0], yfltr.transmission[1]))
 
-    filters = np.array([u_filt, g_filt, r_filt, i_filt, z_filt, y_filt])
+    filters = [u_filt, g_filt, r_filt, i_filt, z_filt, y_filt]
     
     return filters
 
@@ -267,9 +278,9 @@ def get_suprimecam_filters():
     rfltr = observate.Filter("hsc_r")
     ifltr = observate.Filter("hsc_i")
     zfltr = observate.Filter("hsc_z")
-    #yfltr = observate.Filter("hsc_z")
+    yfltr = observate.Filter("hsc_y")
 
-    filters = np.array([gfltr, rfltr, ifltr, zfltr])
+    filters = np.array([gfltr, rfltr, ifltr, zfltr, yfltr])
 
     return filters
 
@@ -288,3 +299,15 @@ def plot_lsst_filters(factor):
     plt.plot(ifltr.transmission[0], ifltr.transmission[1]*factor)
     plt.plot(zfltr.transmission[0], zfltr.transmission[1]*factor)
     plt.plot(yfltr.transmission[0], yfltr.transmission[1]*factor)
+
+def plot_suprimecam_filters(factor):
+
+    gfltr = fsps.filters.Filter(134, 'suprimecam_g', 'suprimecam')
+    rfltr = fsps.filters.Filter(136, 'suprimecam_r', 'suprimecam')
+    ifltr = fsps.filters.Filter(137, 'suprimecam_i', 'suprimecam')
+    zfltr = fsps.filters.Filter(138, 'suprimecam_z', 'suprimecam')
+
+    plt.plot(gfltr.transmission[0], gfltr.transmission[1]*factor)
+    plt.plot(rfltr.transmission[0], rfltr.transmission[1]*factor)
+    plt.plot(ifltr.transmission[0], ifltr.transmission[1]*factor)
+    plt.plot(zfltr.transmission[0], zfltr.transmission[1]*factor)
