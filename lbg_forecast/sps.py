@@ -224,23 +224,21 @@ def get_photometry(redshifted_spectrum, filters):
 
 def redshift_fsps_spectrum(spectrum, angstroms, redshift):
 
-    L_sol_cgs = 3.839E33 #L_sun.cgs.value
-    luminosity_distance = cosmo.luminosity_distance(z=redshift).cgs.value
+    L_sol_cgs = 3.839E33#L_sun.cgs.value
+    #luminosity_distance = cosmo.luminosity_distance(z=redshift).cgs.value
     c_light = 2.9979E18#c.value*1e10
     aa_red = angstroms*(1+redshift)
 
-    #print(luminosity_distance)
     zz = np.linspace(0, redshift, 1000)
     hub = np.sqrt(0.27*(1+zz)**3+0.73)
     dhub = c_light/1E13/72*1E6
     luminosity_distance = np.trapz(1/hub, zz) * (1+redshift) * dhub * 3.08568E18
-    #print(luminosity_distance)
 
     spec_cgs = spectrum*(1+redshift)*L_sol_cgs
-    f_cgs = spec_cgs/(4*3.14159265*(luminosity_distance)**2)
+    f_cgs = spec_cgs/(4*np.pi*(luminosity_distance)**2)
     f_cgs = f_cgs*((c_light)/((aa_red)**2))
-    #f_cgs = np.interp(angstroms, aa_red, f_cgs)
-    return [f_cgs, aa_red]
+    f_cgs = np.interp(angstroms, aa_red, f_cgs)
+    return [f_cgs, angstroms]
 
 def plot_sed(spectrum, scaley, xmin, xmax, ymin, ymax, xsize=10, ysize=5, fontsize=32, log=False, **kwargs):
     
@@ -274,6 +272,7 @@ def get_lsst_filters():
         filter_data = np.genfromtxt('./lbg_forecast/lsst_filters_old/total_'+band+'.dat', skip_header=7, delimiter=' ')
         filter_data[:, 0] = filter_data[:, 0]*10 #covert to angstroms
         filters.append(observate.Filter("lsst_"+band, data=(filter_data[:, 0], filter_data[:, 1])))
+        #filters.append(filter_data)
     
     #u_filt = np.array([ufltr.transmission[0], ufltr.transmission[1]])#= observate.Filter("lsst_u", data=(ufltr.transmission[0], ufltr.transmission[1]))
     #g_filt = np.array([gfltr.transmission[0], gfltr.transmission[1]])#= observate.Filter("lsst_g", data=(gfltr.transmission[0], gfltr.transmission[1]))
