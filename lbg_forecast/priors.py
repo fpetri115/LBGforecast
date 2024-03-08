@@ -2,8 +2,10 @@
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
-from astropy.cosmology import WMAP9
+from astropy.cosmology import WMAP9 as cosmo
 from scipy import integrate
+import emcee
+from getdist import plots, MCSamples
 
 def generate_observed_params(nsamples, truth=False):
 
@@ -87,6 +89,237 @@ def select_allowed_parameter_curves(z_grid, curves):
 
     return selected_curves
 
+def preload_parameter_curves(nprior_draws, z_grid, init_nsamples, truth=False):
+    """preloads a set of logphi1, logphi2, logm*, alpha1, alpha2 curves
+    as function of redshift
+    """
+    if(truth):
+        preloaded_curves = mass_function_parameter_curves(z_grid, 1, truth=truth)
+    else:
+        curves = mass_function_parameter_curves(z_grid, init_nsamples, truth=truth)
+        allowed_curves = select_allowed_parameter_curves(z_grid, curves)
+        preloaded_curves = sample_allowed_parameter_curves(z_grid, nprior_draws, allowed_curves)
+
+    return preloaded_curves
+
+def draw_parameter_curves(preloaded_curves):
+    """samples a single set of curves from preloaded 
+    set of logphi1, logphi2, logm*, alpha1, alpha2 curves taken
+    from preload_parameter_curves()
+    
+    """
+    nsampled_curves = preloaded_curves[0].shape[0]
+    curve_index = np.random.randint(0, nsampled_curves)
+    sampled_curves = []
+    for param in preloaded_curves:
+        sampled_curves.append(param[curve_index, :])
+    
+    sampled_curves = np.vstack(sampled_curves)
+
+    return sampled_curves
+
+def plot_parameter_curves(z_grid, sampled_curves, **kwargs):
+    """Plots output of draw_parameter_curves() only
+    
+    """
+    fig, axes = plt.subplots(1, 5)
+    fig.set_figheight(10)
+    fig.set_figwidth(30)
+    ylabels = ['log$_{10}\phi_{1}$', 'log$_{10}\phi_{2}$', 'log$_{10}\mathrm{M}_{*}$',r'$\alpha_{1}$', r'$\alpha_{2}$']
+
+    indx = 0
+    while(indx < 5):
+        axes[indx].plot(z_grid, sampled_curves[indx, :], c='purple', **kwargs)
+        axes[indx].set_xlabel('$z$', fontsize=20)
+        axes[indx].set_ylabel(ylabels[indx], fontsize=20)
+        indx+=1
+
+def schechter_function(logm, logphi, logm_star, alpha):
+    
+    return np.log(10)*(10**logphi)*10**((logm-logm_star)*(alpha+1))*np.exp(-10**(logm-logm_star))
+
+def mass_function(z, logm, z_dependence, z_grid):
+
+    z_dependent_parameters = []
+    indx = 0
+    while(indx < 5):
+        z_dependent_parameters.append(np.interp(z, z_grid, z_dependence[indx, :]))
+        indx+=1
+
+    logphi1, logphi2, logm_star, alpha1, alpha2 = z_dependent_parameters
+    mfunc = schechter_function(logm, logphi1, logm_star, alpha1) + schechter_function(logm, logphi2, logm_star, alpha2)
+
+    if(mfunc < 1e-100):
+        mfunc = 1e-100
+
+    return mfunc
+
+def log_n(x, z_dependence, z_grid, v_grid, prior_bounds=[0.0,3.0,9.99,10.01]):
+
+    z, logm = x
+
+    if(z < prior_bounds[0] or z > prior_bounds[1]):
+        return -np.inf
+    
+    if(logm < prior_bounds[2] or logm > prior_bounds[3]):
+        return -np.inf
+    
+    phi = mass_function(z, logm, z_dependence, z_grid)
+    volumes = np.interp(z, z_grid, v_grid)
+    ngalaxies = phi*volumes
+
+    return np.log(ngalaxies)
+
+def reproduce_plots(nwalkers=50, steps=5000):
+    """takes approx 2mins
+    """
+    #setup
+    z_grid = np.linspace(0.0, 3.0, 50)
+    v_grid = volume_elements(z_grid)
+    preloaded_z_dependent_curves = preload_parameter_curves(1000, z_grid, 1000000, truth=True)
+    sampled_curves = draw_parameter_curves(preloaded_z_dependent_curves)
+    plot_parameter_curves(z_grid, sampled_curves)
+
+    #sampling
+    ndim = 2
+    pz = np.random.uniform(1.01, 1.02, (nwalkers, 1))
+    plogm = np.random.uniform(9.9999, 10.0001, (nwalkers, 1))
+    p0 = np.hstack((pz, plogm))
+    prior_bounds=[0.0,3.0,9.99,10.01]
+
+    sampler = emcee.EnsembleSampler(nwalkers, ndim, log_n, args=[sampled_curves, z_grid, v_grid, prior_bounds])
+
+    state = sampler.run_mcmc(p0, 100)
+    sampler.reset()
+
+    sampler.run_mcmc(state, steps)
+
+    #plotting
+
+    samples = sampler.get_chain(flat=True)
+    s = MCSamples(samples=samples, names=["z", "logm"])
+    plotter = plots.get_subplot_plotter()
+    plotter.triangle_plot([s], Filled=True, contour_lws=2)
+    print(samples.shape)
+
+    figure, axes = plt.subplots(1,1)
+    axes.hist(samples[:, 0], bins=50, density=True)
+    plot_observed_nz()
+
+def plot_observed_nz():
+    
+    z_grid = np.linspace(0.0, 3.0, 100)
+    logm_grid = np.linspace(10, 10, 1)
+    observed_parameter_curves = mass_function_parameter_curves(z_grid, 1, truth=True)
+    mass_func = np.reshape(10**mass_function(logm_grid, observed_parameter_curves), (100,))
+    nz = mass_func*volume_elements(z_grid)
+    nz = nz/np.trapz(nz, z_grid)
+
+    plt.plot(z_grid, nz)
+    plt.xlabel('z')
+    plt.ylabel('p(z|logm)')
+
+def sample(nwalkers=50, steps=5000):
+    """
+    """
+    #setup
+    z_grid = np.linspace(0.0, 15.0, 50)
+    v_grid = volume_elements(z_grid)
+    preloaded_z_dependent_curves = preload_parameter_curves(1000, z_grid, 1000000, truth=False)
+    sampled_curves = draw_parameter_curves(preloaded_z_dependent_curves)
+    plot_parameter_curves(z_grid, sampled_curves)
+
+    #sampling
+    ndim = 2
+    pz = np.random.uniform(1.01, 1.02, (nwalkers, 1))
+    plogm = np.random.uniform(9.9, 10.1, (nwalkers, 1))
+    p0 = np.hstack((pz, plogm))
+    prior_bounds=[0.0,10.0,7,13]
+
+    sampler = emcee.EnsembleSampler(nwalkers, ndim, log_n, args=[sampled_curves, z_grid, v_grid, prior_bounds])
+
+    state = sampler.run_mcmc(p0, 100)
+    sampler.reset()
+
+    sampler.run_mcmc(state, steps)
+
+    #plotting
+
+    samples = sampler.get_chain(flat=True)
+    s = MCSamples(samples=samples, names=["z", "logm"])
+    plotter = plots.get_subplot_plotter()
+    plotter.triangle_plot([s], Filled=True, contour_lws=2)
+    print(samples.shape)
+
+def sample_redshift_mass_prior(nsamples, prior_data, prior_bounds=[0.0,10.0,7,13], plotting=False):
+    """
+    """
+
+    nwalkers = 50
+    steps = int(nsamples/nwalkers)
+
+    #setup
+    preloaded_z_dependent_curves, z_grid, v_grid = prior_data
+    sampled_curves = draw_parameter_curves(preloaded_z_dependent_curves)
+
+    #sampling
+    ndim = 2
+    pz = np.random.uniform(1.01, 1.02, (nwalkers, 1))
+    plogm = np.random.uniform(9.9, 10.1, (nwalkers, 1))
+    p0 = np.hstack((pz, plogm))
+
+    sampler = emcee.EnsembleSampler(nwalkers, ndim, log_n, args=[sampled_curves, z_grid, v_grid, prior_bounds])
+
+    state = sampler.run_mcmc(p0, 100)
+    sampler.reset()
+
+    sampler.run_mcmc(state, steps)
+
+    #plotting
+    samples = sampler.get_chain(flat=True)
+    redshift_samples = samples[:, 0]
+    mass_samples = samples[:, 1]
+    if(plotting):
+        plot_parameter_curves(z_grid, sampled_curves)
+        plot_redshift_mass_prior(redshift_samples, mass_samples)
+
+    return redshift_samples, mass_samples
+
+def plot_redshift_mass_prior(redshift_samples, mass_samples):
+        
+        samples = np.hstack((np.reshape(redshift_samples, (len(redshift_samples), 1)), np.reshape(mass_samples,  (len(mass_samples), 1))))
+        print(samples.shape)
+        s = MCSamples(samples=samples, names=["z", "logm"])
+        plotter = plots.get_subplot_plotter()
+        plotter.triangle_plot([s], Filled=True, contour_lws=2)
+
+        fig, ax = plt.subplots(1, 2)
+        fig.set_figheight(10)
+        fig.set_figwidth(30)
+        ax[0].hist(redshift_samples, bins=50)
+        ax[1].hist(mass_samples, bins=50)
+
+def preload_prior_data(zmax=7.0):
+    z_grid = np.linspace(0.0, zmax, 100)
+    v_grid = volume_elements(z_grid)
+    preloaded_z_dependent_curves = preload_parameter_curves(1000, z_grid, 1000000, truth=False)
+
+    return preloaded_z_dependent_curves, z_grid, v_grid
+
+
+def volume_elements(z_grid):
+
+    dz = z_grid[-1]-z_grid[-2]
+    volumes = []
+    for z in z_grid:
+        volumes.append(volume_element(z, dz))
+
+    return np.array(volumes)
+
+def volume_element(z, dz):
+    return cosmo.comoving_volume(z+dz).value - cosmo.comoving_volume(z).value
+
+
 def plot_mass_function_parameter_curves(z_grid, curves, **kwargs):
 
     fig, axes = plt.subplots(1, 5)
@@ -118,242 +351,3 @@ def sample_allowed_parameter_curves(z_grid, nsamples, allowed_curves):
         sampled_curves.append(param_df.to_numpy())
 
     return sampled_curves
-
-def schechter(logm, logphi, logm_star, alpha):
-
-    ones = np.ones_like(alpha)
-    
-    return np.log(10)*(10**logphi)*10**((logm-logm_star)*(alpha+ones))*np.exp(-10**(logm-logm_star))
-
-def mass_function(logm, sampled_mass_parameter_curves):
-
-    nmasses = len(logm)
-    logphi1, logphi2, logm_star, alpha1, alpha2 = sampled_mass_parameter_curves
-
-    logphi1 = np.tile(logphi1, (nmasses, 1, 1))
-    logphi2 = np.tile(logphi2, (nmasses, 1, 1))
-    logm_star = np.tile(logm_star, (nmasses, 1, 1))
-    alpha1 = np.tile(alpha1, (nmasses, 1, 1))
-    alpha2 = np.tile(alpha2, (nmasses, 1, 1))
-
-    logm = np.reshape(logm, (nmasses, 1, 1))
-
-    mfunc = schechter(logm, logphi1, logm_star, alpha1) + schechter(logm, logphi2, logm_star, alpha2)
-    mfunc = np.where(mfunc < 1e-6, 1e-6, mfunc)
-    return np.log10(mfunc)
-
-def plot_observed_mass_function():
-    
-    z_grid = np.linspace(0.0, 2.0, 5)
-    logm_grid = np.linspace(8, 12, 100)
-    observed_parameter_curves = mass_function_parameter_curves(z_grid, 1, truth=True)
-    mass_func = np.split(mass_function(logm_grid, observed_parameter_curves), 5, axis=2) #axis=0, is logm, axis=1 is samples, axis=2 is z
-
-    colours = plt.cm.Reds(np.linspace(0,1,len(z_grid)))
-
-    i = 0
-    for fun in mass_func:
-        plt.plot(logm_grid, np.reshape(fun, (100,)), color=colours[i], label=str(z_grid[i]))
-        i+=1
-
-    plt.ylim(-5, -1)
-    plt.xlabel('log(M/M*)')
-    plt.ylabel('log($\Phi$/Mpc-3/dex)')
-    plt.legend()
-
-def volume_element(z, dz):
-    return WMAP9.comoving_volume(z+dz).value - WMAP9.comoving_volume(z).value
-
-def volume_elements(z_grid):
-
-    dz = z_grid[-1]-z_grid[-2]
-    volumes = []
-    for z in z_grid:
-        volumes.append(volume_element(z, dz))
-
-    return np.array(volumes)
-
-def plot_observed_nz():
-    
-    z_grid = np.linspace(0.0, 3.0, 100)
-    logm_grid = np.linspace(10, 10, 1)
-    observed_parameter_curves = mass_function_parameter_curves(z_grid, 1, truth=True)
-    mass_func = np.reshape(10**mass_function(logm_grid, observed_parameter_curves), (100,))
-    nz = mass_func*volume_elements(z_grid)
-    nz = nz/np.trapz(nz, z_grid)
-
-    plt.plot(z_grid, nz)
-    plt.xlabel('z')
-    plt.ylabel('p(z|logm)')
-
-def draw_allowed_parameter_curves(z_grid, init_sample, nsamples):
-
-    curves = mass_function_parameter_curves(z_grid, init_sample, truth=False)
-    allowed_curves = select_allowed_parameter_curves(z_grid, curves)
-    sampled_curves = sample_allowed_parameter_curves(z_grid, nsamples, allowed_curves)
-
-    return sampled_curves
-
-def draw_nz_prior(z_grid, logm_grid, sampled_curves):
-
-    logm_len = len(logm_grid)
-    z_len = len(z_grid)
-    nsamples = sampled_curves[0].shape[0]
-    volume_grid = volume_elements(z_grid)
-    volume_grid = np.tile(volume_grid, (nsamples, 1))
-    z_grid = np.tile(z_grid, (nsamples, 1))
-    phi_z_logm = 10**mass_function(logm_grid, sampled_curves)
-    
-    i = 0
-    nz = np.zeros_like(phi_z_logm[0,:,:])
-    while(i < logm_len):
-        nz_samples_at_logm = np.reshape(phi_z_logm[i,:,:]*volume_grid, (nsamples, z_len))
-        nz_samples_at_logm = nz_samples_at_logm/np.tile(np.reshape(np.trapz(nz_samples_at_logm, z_grid), (nsamples, 1)), (1, z_len))
-        nz += nz_samples_at_logm
-        i+=1
-
-    
-    nz = np.reshape(nz, (nsamples, z_len))
-    nz = nz/np.tile(np.reshape(np.trapz(nz, z_grid), (nsamples, 1)), (1, z_len))
-
-    return nz
-
-def draw_mass_prior(z_grid, logm_grid, sampled_curves):
-
-    logm_len = len(logm_grid)
-    z_len = len(z_grid)
-    nsamples = sampled_curves[0].shape[0]
-    volume_grid = volume_elements(z_grid)
-    phi_z_logm = 10**mass_function(logm_grid, sampled_curves)
-    
-    i = 0
-    logm_grid = np.tile(logm_grid, (nsamples, 1))
-    massprior = np.reshape(np.zeros_like(phi_z_logm[:,:,0]), (nsamples, logm_len)) #samples=rows, logm=columns
-    while(i < z_len):
-        massprior_at_z = np.transpose(phi_z_logm[:,:,i]*volume_grid[i])
-        massprior_at_z = massprior_at_z/np.tile(np.reshape(np.trapz(massprior_at_z, logm_grid), (nsamples, 1)), (1, logm_len))
-        massprior += massprior_at_z
-        i+=1
-
-    
-    massprior = np.reshape(massprior, (nsamples, logm_len))
-    massprior = massprior/np.tile(np.reshape(np.trapz(massprior, logm_grid), (nsamples, 1)), (1, logm_len))
-
-    return massprior
-
-def plot_nz_prior_draws(z_grid, nzs, nsamples):
-    i = 0
-    while(i < nsamples):
-        plt.plot(z_grid, nzs[i,:], alpha=0.1, c='purple')
-        i+=1
-
-def plot_mass_prior_draws(logm_grid, mass_priors, nsamples):
-    i = 0
-    while(i < nsamples):
-        plt.plot(logm_grid, mass_priors[i,:], alpha=0.1, c='purple')
-        i+=1
-
-def cdf_inverse(grid, cdf, nsamples):
-
-    #len_grid = len(grid)
-    #cdf = np.tile(cdf, (nsamples, 1))
-    #indexes = np.arange(nsamples)
-    #rand_indexes = np.random.randint(0, len_grid, (nsamples, ))
-    #rand_cdf = np.tile(np.reshape(cdf[indexes, rand_indexes], (nsamples, 1)), (1, len_grid))
-    #samples = np.where(cdf == rand_cdf)
-    #u = np.ones_like(cdf)*np.tile(np.random.uniform(0, 1, (nsamples, 1)), (1, len(grid)))
-    #diff = abs(cdf-u)
-    #min_vals = np.reshape(np.min(diff, axis=1), (nsamples, 1))
-    #indexes = np.where(diff == np.tile(min_vals, (1, len(grid))))
-
-    u = np.random.uniform(0, 1, (nsamples,))
-    i=0
-    grid_samples = []
-    while(i < nsamples):
-        grid_samples.append(np.interp(u[i], cdf, grid))
-        i+=1
-
-    return np.array(grid_samples)
-
-def setup_grids(grid_params):
-
-    dz, dlogm, z_min, z_max, logm_min, logm_max = grid_params
-
-    z1=z_min#-dz
-    z2=z_max#+dz
-
-    logm1=logm_min#-dlogm
-    logm2=logm_max#+dlogm
-
-    z_grid = np.linspace(z1, z2, int((z2-z1)/dz)+1)
-    logm_grid = np.linspace(logm1, logm2, int((logm2-logm1)/dlogm)+1)
-
-    return z_grid, logm_grid
-
-def setup_bins(grid_params):
-
-    dz, dlogm, z_min, z_max, logm_min, logm_max = grid_params
-
-    z1=z_min#-dz
-    z2=z_max#+dz
-
-    logm1=logm_min#-dlogm
-    logm2=logm_max#+dlogm
-
-    binmin_z = z1#-dz/2
-    binmax_z = z2+dz#/2
-    binmin_logm = logm1#-dlogm/2
-    binmax_logm = logm2+dlogm#/2
-
-    mbins = np.linspace(binmin_logm, binmax_logm, int((binmax_logm-binmin_logm)/dlogm)+1)
-    zbins = np.linspace(binmin_z, binmax_z, int((binmax_z-binmin_z)/dz)+1)
-
-    return zbins, mbins
-
-def load_priors(z_grid, logm_grid, npriors, init_sample=1000000):
-
-    sampled_curves = draw_allowed_parameter_curves(z_grid, init_sample, npriors)
-    nz_priors = draw_nz_prior(z_grid, logm_grid, sampled_curves)
-    mass_priors = draw_mass_prior(z_grid, logm_grid, sampled_curves)
-
-    return [nz_priors, mass_priors]
-
-def sample_priors(z_grid, logm_grid, priors, grid_params, nsamples, plotting=False):
-
-    z_min, z_max, logm_min, logm_max = grid_params[2:]
-
-    nz_priors = priors[0]
-    mass_priors = priors[1]
-
-    npriors_z = nz_priors.shape[0]
-    npriors_m = mass_priors.shape[0]
-    p_z = nz_priors[np.random.randint(0,npriors_z), :]
-    p_m = mass_priors[np.random.randint(0,npriors_m), :]
-
-    c_z = integrate.cumulative_trapezoid(p_z, z_grid, initial=0)
-    c_m = integrate.cumulative_trapezoid(p_m, logm_grid, initial=0)
-
-    z_samples = cdf_inverse(z_grid, c_z, nsamples)
-    m_samples = cdf_inverse(logm_grid, c_m, nsamples)
-
-    if(plotting):
-        return [z_samples, m_samples, p_z, p_m]
-    
-    else:
-        return [z_samples, m_samples]
-    
-def setup_redshift_and_mass_priors(z_max):
-
-    #setup grids
-    dz, dlogm = 0.1, 0.05
-    z_min = 0.0
-    logm_min, logm_max = 7.0, 13.0
-    grid_params = np.array([dz, dlogm, z_min, z_max, logm_min, logm_max])
-    z_grid, logm_grid = setup_grids(grid_params)
-
-    #load mass and redshift priors
-    n_priors_samples = 1000
-    priors = load_priors(z_grid, logm_grid, n_priors_samples, init_sample=100000)
-    prior_params = [z_grid, logm_grid, priors, grid_params]
-
-    return prior_params
