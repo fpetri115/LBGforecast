@@ -255,9 +255,12 @@ def sample_redshift_mass_prior(nsamples, prior_data, prior_bounds=[0.0,10.0,7,13
     """
     """
 
-    nwalkers = 50
-    steps = int(nsamples/nwalkers)
-
+    nwalkers = 100
+    steps = 10000
+    burnin = 5000
+    if(nsamples >= steps*nwalkers - burnin):
+        raise Exception("Requesting too many samples")
+    
     #setup
     preloaded_z_dependent_curves, z_grid, v_grid = prior_data
     sampled_curves = draw_parameter_curves(preloaded_z_dependent_curves)
@@ -270,10 +273,10 @@ def sample_redshift_mass_prior(nsamples, prior_data, prior_bounds=[0.0,10.0,7,13
 
     sampler = emcee.EnsembleSampler(nwalkers, ndim, log_n, args=[sampled_curves, z_grid, v_grid, prior_bounds])
 
-    state = sampler.run_mcmc(p0, 100)
-    sampler.reset()
+    #state = sampler.run_mcmc(p0, 100)
+    #sampler.reset()
 
-    sampler.run_mcmc(state, steps)
+    sampler.run_mcmc(p0, steps)
 
     #plotting
     samples = sampler.get_chain(flat=True)
@@ -283,7 +286,7 @@ def sample_redshift_mass_prior(nsamples, prior_data, prior_bounds=[0.0,10.0,7,13
         plot_parameter_curves(z_grid, sampled_curves)
         plot_redshift_mass_prior(redshift_samples, mass_samples)
 
-    return redshift_samples, mass_samples
+    return redshift_samples[burnin:nsamples+burnin], mass_samples[burnin:nsamples+burnin]
 
 def plot_redshift_mass_prior(redshift_samples, mass_samples):
         
