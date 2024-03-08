@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 from scipy.stats import truncnorm
 from scipy.stats import t
 
-def generate_sps_parameters(nsamples, prior_parameters, redshift_mass_prior_parameters, uniform_redshift_mass=False, uniform_logf=False):
+def generate_sps_parameters(nsamples, prior_parameters, redshift_mass_prior_data, uniform_redshift_mass=False, uniform_logf=False):
     """Sample sps parameters given some prior parameters.
 
     :param nsamples: 
@@ -42,14 +42,11 @@ def generate_sps_parameters(nsamples, prior_parameters, redshift_mass_prior_para
     logsfmu4, logsfmu5, logsfmu6, logsfsig1, logsfsig2, logsfsig3, logsfsig4, \
     logsfsig5, logsfsig6, nu = prior_parameters
 
-    #Setup redshift and mass priors
-    z_grid, logm_grid, priors, grid_params = redshift_mass_prior_parameters
-
     if(uniform_redshift_mass):
         z_samples = np.random.uniform(0.0, 15.0, nsamples)
         m_samples = np.random.uniform(7, 13, nsamples)
     else:
-        z_samples, m_samples = pr.sample_priors(z_grid, logm_grid, priors, grid_params, nsamples, plotting=False)
+        z_samples, m_samples = pr.sample_redshift_mass_prior(nsamples, redshift_mass_prior_data, prior_bounds=[0.0,7.0,7,13], plotting=False)
 
     sps_parameters = []
 
