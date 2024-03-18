@@ -270,14 +270,16 @@ def fsps_cloned_get_magnitudes(sps_model, filters):
     
     return np.array(magnitudes)
 
-def get_magnitudes(sps_model, filters):
+def get_magnitudes(sps_model, filters, use_fsps_cosmology=False):
     
     lambdas, spectrum = sps_model.get_spectrum(tage=sps_model.params['tage'], peraa=False)
     redshift = sps_model.params['zred']
     redshifted_spectrum = np.interp(lambdas, lambdas*(1+redshift), spectrum)#/(1+redshift)
 
-    luminosity_distance = _fsps_lumdist(redshift)
-    #luminosity_distance = cosmo.luminosity_distance(redshift).value
+    if(use_fsps_cosmology):
+        luminosity_distance = _fsps_lumdist(redshift)
+    else:
+        luminosity_distance = cosmo.luminosity_distance(redshift).value
 
     lsun = 3.839E33
     pc2cm = 3.08568E18
@@ -290,44 +292,18 @@ def get_magnitudes(sps_model, filters):
 
     if(filters == 'lsst'):
         bands = get_lsst_filters()
-    if(filters == 'fsps'):
-        bands = get_lsst_filters_fsps()
     if(filters == 'suprimecam'):
         bands = get_suprimecam_filters()
-
 
     magnitudes = []
     for band in bands:
 
-        if(filters == 'fsps'):
-            i = 1
-            imax = 50000
-            trans_lambdas = np.zeros(imax)
-            trans = np.zeros(imax)
-            j=0
-            
-            while(i < imax+1):
-                trans_lambdas[i-1] = i
-                trans[i-1] = 0.0
-                if(j < len(band[0])):
-                    if(i == band[0][j]):
-                        trans[i-1] = band[1][j]
-                        j+=1
-                i+=1
+        trans = band[1]
+        trans_lambdas = band[0]
 
-            trans_v = trans#/(c_light/trans_lambdas)
-            trans_v = np.maximum(trans_v, np.zeros_like(trans_v))
-            trans_v = np.interp(lambdas, trans_lambdas, trans_v)
-
-            #trans = trans[1:]
-            #trans_lambdas = trans_lambdas[1:]
-        else:
-            trans = band[1]
-            trans_lambdas = band[0]
-
-            trans_v = trans#/(c_light/trans_lambdas)
-            trans_v = np.maximum(trans_v, np.zeros_like(trans_v))
-            trans_v = np.interp(lambdas, trans_lambdas, trans_v)
+        trans_v = trans#/(c_light/trans_lambdas)
+        trans_v = np.maximum(trans_v, np.zeros_like(trans_v))
+        trans_v = np.interp(lambdas, trans_lambdas, trans_v)
 
         trans_v = trans_v/np.trapz(trans_v/lambdas, lambdas)
         trans_v = np.maximum(trans_v, np.zeros_like(trans_v))
