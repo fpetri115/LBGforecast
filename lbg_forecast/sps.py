@@ -14,8 +14,7 @@ from astropy.cosmology import WMAP1 as cosmo
 from astropy.constants import L_sun
 from astropy.constants import c
 
-#from sedpy import observate
-import lbg_forecast.modified_observate as observate
+from sedpy import observate
 
 def initialise_sps_model(neb_em, sfh_type=3, zcont=1, imf_type=2, dust_type=0, igm=True):
     
@@ -270,131 +269,28 @@ def fsps_cloned_get_magnitudes(sps_model, filters):
     
     return np.array(magnitudes)
 
-def get_magnitudes(sps_model, filters, use_fsps_cosmology=False):
+def get_magnitudes(sps_model, filters):
     
-    lambdas, spectrum = sps_model.get_spectrum(tage=sps_model.params['tage'], peraa=False)
+    lsun = L_sun.cgs.value
+    c_light = c.value*1e10 #aa s-1
+
+    lambdas, spectrum = sps_model.get_spectrum(tage=sps_model.params['tage'], peraa=True)
     redshift = sps_model.params['zred']
-    redshifted_spectrum = np.interp(lambdas, lambdas*(1+redshift), spectrum)#/(1+redshift)
 
-    if(use_fsps_cosmology):
-        luminosity_distance = _fsps_lumdist(redshift)
-    else:
-        luminosity_distance = cosmo.luminosity_distance(redshift).value
+    luminosity_distance = cosmo.luminosity_distance(redshift).cgs.value
 
-    lsun = 3.839E33
-    pc2cm = 3.08568E18
-    mypi = 3.14159265
-    c_light = 2.9979E18
-
-    dm = 5.0*np.log10(luminosity_distance/10)
-    const = dm - 2.5*np.log10(1+redshift)
-    mag2cgs = np.log10(lsun/(4.0*mypi*pc2cm*pc2cm*100))
+    redshifted_spectrum = np.interp(lambdas, lambdas*(1+redshift), spectrum)/(1+redshift) #lsun aa-1
+    redshifted_spectrum_cgs = redshifted_spectrum*(lsun/(4.0*np.pi*(luminosity_distance**2))) #erg s-1 cm-2 Hz-1
+    redshifted_spectrum_sedpy = redshifted_spectrum_cgs #erg s-1 cm-2 aa-1
 
     if(filters == 'lsst'):
         bands = get_lsst_filters()
     if(filters == 'suprimecam'):
         bands = get_suprimecam_filters()
 
-    magnitudes = []
-    for band in bands:
-
-        trans = band[1]
-        trans_lambdas = band[0]
-
-        trans_v = trans#/(c_light/trans_lambdas)
-        trans_v = np.maximum(trans_v, np.zeros_like(trans_v))
-        trans_v = np.interp(lambdas, trans_lambdas, trans_v)
-
-        trans_v = trans_v/np.trapz(trans_v/lambdas, lambdas)
-        trans_v = np.maximum(trans_v, np.zeros_like(trans_v))
-
-        mags = np.trapz(redshifted_spectrum*trans_v/lambdas, lambdas)
-        mags = -2.5*np.log10(mags) - 48.60 - 2.5*mag2cgs + const
-        magnitudes.append(mags)
+    magnitudes = observate.getSED(lambdas, redshifted_spectrum_sedpy, filterlist=bands, linear_flux=False)
     
     return magnitudes
-
-def get_sed(sps_model, filters):
-
-    if(filters=='lsst'):
-        spectrum = sps_model.get_spectrum(tage=sps_model.params['tage'], peraa=False)
-        redshifted_spectrum = redshift_fsps_spectrum(spectrum[1], spectrum[0], sps_model.params['zred'])
-        return redshifted_spectrum
-    if(filters=='suprimecam'):
-        raise NotImplementedError()
-
-#my own version of fsps get_mags using sedpy
-def get_photometry(redshifted_spectrum, filters):
-
-    redshifted_spectrum_cgs, aa_redshifted = redshifted_spectrum
-    #c_light = 2.9979E18#c.value*1e10
-
-    if(filters == 'lsst'):
-        bands = get_lsst_filters()
-    if(filters == 'suprimecam'):
-        bands = get_suprimecam_filters()
-
-    #magnitudes = []
-    #for filter in bands:
-    #    transmission = filter[:, 1]
-    #    lambdas = filter[:, 0]
-    #    fluxes = np.interp(lambdas, aa_redshifted, redshifted_spectrum_cgs)
-    #    avflux = np.trapz(fluxes*lambdas*transmission, lambdas)#/np.trapz(transmission, lambdas)
-    #    refflux = np.trapz((3.631e-20*lambdas*c_light*transmission*(lambdas**-2)), lambdas)
-    #    magnitude = -2.5*np.log10(avflux/refflux)
-    #    magnitudes.append(magnitude)
-
-
-    mags = observate.getSED(aa_redshifted, redshifted_spectrum_cgs, filterlist=bands, linear_flux=False)
-
-    return mags#np.array(magnitudes)
-
-def redshift_fsps_spectrum(spectrum, angstroms, redshift):
-
-    lsun = 3.839E33
-    pc2cm = 3.08568E18
-    mypi = 3.14159265
-    c_light = 2.9979E18
-
-
-    a = (np.linspace(1, 500, 500)-1)/499.*(1-1/1001.)+1/1001
-    redshift_grid = 1/a-1
-
-    luminosity_distances = []
-    for red in redshift_grid:
-        luminosity_distances.append(_fsps_lumdist(red))
-
-    luminosity_distances = np.flip(np.array(luminosity_distances))
-
-    luminosity_distance = _fsps_lumdist(redshift)
-    L_sol_cgs = 3.839E33#L_sun.cgs.value
-    #luminosity_distance = cosmo.luminosity_distance(z=redshift).cgs.value
-
-    aa_red = angstroms*(1+redshift)
-
-    a = (np.linspace(1, 500, 500)-1)/499.*(1-1/1001.)+1/1001
-    redshift_grid = 1/a-1
-
-
-    luminosity_distances = []
-    for red in redshift_grid:
-        luminosity_distances.append(_fsps_lumdist(red))
-
-    luminosity_distances = np.flip(np.array(luminosity_distances))
-
-    luminosity_distance = np.interp(redshift, np.flip(redshift_grid), luminosity_distances)
-
-
-    #zz = zz[np.where(zz < redshift)]#np.linspace(0, redshift, 1000)
-    #hub = np.sqrt(0.27*(1+zz)**3+0.73)
-    #dhub = c_light/1E13/72*1E6
-    #luminosity_distance = np.trapz(1/hub, zz) * (1+redshift) * dhub * 3.08568E18
-
-    spec_cgs = spectrum*(1+redshift)*L_sol_cgs
-    f_cgs = spec_cgs/(4*np.pi*(luminosity_distance)**2)
-    f_cgs = f_cgs*((c_light)/((aa_red)**2))
-    f_cgs = np.interp(angstroms, aa_red, f_cgs)
-    return [f_cgs, angstroms]
 
 def plot_sed(spectrum, scaley, xmin, xmax, ymin, ymax, xsize=10, ysize=5, fontsize=32, log=False, **kwargs):
     
@@ -427,8 +323,8 @@ def get_lsst_filters():
     for band in ['u', 'g', 'r', 'i', 'z', 'y']:
         filter_data = np.genfromtxt('./lbg_forecast/lsst_filters_old/total_'+band+'.dat', skip_header=7, delimiter=' ')
         filter_data[:, 0] = filter_data[:, 0]*10 #covert to angstroms
-        #filters.append(observate.Filter("lsst_"+band, data=(filter_data[:, 0], filter_data[:, 1])))
-        filters.append([filter_data[:, 0], filter_data[:, 1]])
+        filters.append(observate.Filter("lsst_"+band, data=(filter_data[:, 0], filter_data[:, 1])))
+        #filters.append([filter_data[:, 0], filter_data[:, 1]])
         #filters.append(filter_data)
     
     #u_filt = np.array([ufltr.transmission[0], ufltr.transmission[1]])#= observate.Filter("lsst_u", data=(ufltr.transmission[0], ufltr.transmission[1]))
