@@ -166,14 +166,22 @@ def continuity_prior(nsamples, nu, mu, sigma, min=-5, max=5):
 
     return all_log_sfr_ratios
 
+def sps_parameter_names():
+    """Returns array of strings containing names of sps parameters.
+    """
+
+    names = np.array(["zred", "logzsol", "dust1", "dust2", "dust_index", 
+                    "igm_factor", "gas_logu", "logfagn", "agn_tau",
+                    "logf1", "logf2", "logf3", "logf4", "logf5","logf6", "logmass"])
+    
+    return names
+
 def plot_galaxy_population(sps_parameters, rows=5, nbins=20):
     
     realisations = sps_parameters
     nparams = realisations.shape[1]
 
-    names = np.array(["zred", "logzsol", "dust1", "dust2", "dust_index", 
-                      "igm_factor", "gas_logu", "logfagn", "agn_tau",
-                       "logf1", "logf2", "logf3", "logf4", "logf5","logf6", "logmass"])
+    names = sps_parameter_names()
     
     if(len(names) != nparams):
         raise Exception("Number of parameters and parameter labels don't match")
