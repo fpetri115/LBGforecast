@@ -8,6 +8,7 @@ from astropy import units as u
 import lbg_forecast.sfh as sfh
 import lbg_forecast.zhistory as zh
 import lbg_forecast.population_model as pop
+import lbg_forecast.lyalpha as ly
 
 from astropy.cosmology import WMAP1 as cosmo
 #from astropy.coordinates import Distance
@@ -61,7 +62,7 @@ def update_model(sps_model, sps_parameters, z_history, agebins):
         sps_model.set_tabular_sfh(time, star_formation_history) 
 
 
-def simulate_photometry(sps_parameters, filters, imf, dust, nebem=True, zhistory=True, agebins=None, enable_mpi=False, mpi_rank=0):
+def simulate_photometry(sps_parameters, filters, imf, dust, nebem=True, zhistory=True, agebins=None, enable_mpi=False, lya_uncertainity=False, mpi_rank=0):
 
     ngalaxies = sps_parameters.shape[0]
 
@@ -84,7 +85,7 @@ def simulate_photometry(sps_parameters, filters, imf, dust, nebem=True, zhistory
         update_model(sps_model, source, z_history=False, agebins=agebins)
 
         #generate photometry for source
-        photometry_neb.append(get_magnitudes(sps_model, filters=filters))
+        photometry_neb.append(get_magnitudes(sps_model, filters=filters, lya_uncertainity=lya_uncertainity))
 
         i+=1
         if(i%100 == 0 and mpi_rank==0):
@@ -106,7 +107,7 @@ def simulate_photometry(sps_parameters, filters, imf, dust, nebem=True, zhistory
             update_model(sps_model, source, z_history=False, agebins=agebins)
 
             #generate photometry for source
-            photometry_no_neb.append(get_magnitudes(sps_model, filters=filters))
+            photometry_no_neb.append(get_magnitudes(sps_model, filters=filters, lya_uncertainity=lya_uncertainity))
 
             i+=1
             if(i%100 == 0 and mpi_rank==0):
@@ -130,7 +131,7 @@ def simulate_photometry(sps_parameters, filters, imf, dust, nebem=True, zhistory
             update_model(sps_model, source, z_history=True, agebins=agebins)
 
             #generate photometry for source
-            photometry_zhis.append(get_magnitudes(sps_model, filters=filters))
+            photometry_zhis.append(get_magnitudes(sps_model, filters=filters, lya_uncertainity=lya_uncertainity))
 
             i+=1
             if(i%100 == 0 and mpi_rank==0):
@@ -177,12 +178,17 @@ def fsps_get_magnitudes(sps_model, filters):
     return mags# - 2.5*logmass
 
 
-def get_magnitudes(sps_model, filters):
+def get_magnitudes(sps_model, filters, lya_uncertainity=False):
     
     lsun = L_sun.cgs.value
 
     lambdas, spectrum = sps_model.get_spectrum(tage=sps_model.params['tage'], peraa=True)
     redshift = sps_model.params['zred']
+
+    if(lya_uncertainity):
+        lya_width = np.random.uniform(30, 100)
+        lya_bias = 0
+        spectrum = ly.modify_peak(lambdas, spectrum, redshift, 100, lya_width, lya_bias, diagnostics=False)
 
     luminosity_distance = cosmo.luminosity_distance(redshift).cgs.value
 
