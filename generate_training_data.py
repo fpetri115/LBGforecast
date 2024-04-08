@@ -12,6 +12,9 @@ from mpi4py import MPI
 comm = MPI.COMM_WORLD
 rank = comm.Get_rank()
 size = comm.Get_size()
+
+np.random.seed(42)
+
 if(rank == 0):
     print("nprocesses: ", size)
 
@@ -20,6 +23,6 @@ ngals = int(sys.argv[1])
 hyperparameter_mu_bounds, hyperparameter_sigma_max = hyp.uniform_hyperparameter_bounds()
 prior_parameters = hyp.sample_prior_parameters(1, hyperparameter_mu_bounds, hyperparameter_sigma_max)
 redshift_mass_prior_parameters = pr.preload_prior_data()
-sps_parameters = pop.generate_sps_parameters(ngals, prior_parameters[0,:], redshift_mass_prior_parameters, uniform_redshift_mass=True, uniform_logf=True)
+sps_parameters = pop.generate_sps_parameters(ngals, prior_parameters[0,:], redshift_mass_prior_parameters, uniform_redshift_mass=False, uniform_logf=False)
 
-photometry = sps.simulate_photometry(sps_parameters, "lsst", imf=1, dust=0, nebem=False, zhistory=False, enable_mpi=True, mpi_rank=rank)
+photometry = sps.simulate_photometry(sps_parameters, "lsst", imf=1, dust=0, nebem=True, zhistory=False, enable_mpi=True, lya_uncertainity=True, mpi_rank=rank)
