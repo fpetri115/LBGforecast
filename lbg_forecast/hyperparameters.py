@@ -70,7 +70,8 @@ def default_hyperparameter_bounds():
                                     [0.0, 4.0],      #dust2
                                     [-1.0, 0.4],     #dust_index
                                     [1.0, 1.0],      #igm_factor 
-                                    [-4.0, -1.0],    #gas_log_u
+                                    [-4.0, -1.0],    #gas_logu
+                                    [-2.0, 0.5],     #gas_logz
                                     [-5.0, 1.0],     #log10(fagn)
                                     [5, 150],        #agn_tau
                                     [-2, 2],         #logsfmu1
@@ -93,7 +94,8 @@ def default_hyperparameter_bounds():
                                         [0.01, 4.0], #dust2
                                         [0.01, 0.5], #dust_index
                                         [0.1, 0.1], #igm_factor 
-                                        [0.01, 3.0], #gas_log_u
+                                        [0.01, 3.0], #gas_logu
+                                        [0.01, 2.5], #gas_logz
                                         [0.01, 6.0], #log10(fagn)
                                         [0.1, 145]   #agn_tau
     ])
@@ -107,10 +109,11 @@ def uniform_hyperparameter_bounds():
     hyperparameter_mu_bounds = np.array([[-1.0, -1.0],  #logzsol
                                     [1.0, 1.0],      #dust1
                                     [2.0, 2.0],      #dust2
-                                    [-0.7, -0.7],     #dust_index
+                                    [-0.7, -0.7],    #dust_index
                                     [1.0, 1.0],      #igm_factor 
-                                    [-2.0, -2.0],    #gas_log_u
-                                    [-3.0, -3.0],     #log10(fagn)
+                                    [-2.0, -2.0],    #gas_logu
+                                    [0.0, 0.0],      #gas_logz
+                                    [-3.0, -3.0],    #log10(fagn)
                                     [50, 50],        #agn_tau
                                     [-2, 2],         #logsfmu1
                                     [-2, 2],         #logsfmu2
@@ -132,7 +135,8 @@ def uniform_hyperparameter_bounds():
                                         [4.0, 4.0], #dust2
                                         [1.4, 1.4], #dust_index
                                         [2.0, 2.0], #igm_factor 
-                                        [3.0, 3.0], #gas_log_u
+                                        [3.0, 3.0], #gas_logu
+                                        [2.5, 2.5], #gas_logz
                                         [6.0, 6.0], #log10(fagn)
                                         [145, 145]   #agn_tau
     ])
@@ -149,7 +153,7 @@ def plot_hyperparameters(prior_parameters, rows=5, nbins=20):
     grid = rows*columns
 
     names = np.array(["logzsol_mu", "logzsol_sig", "dust1_mu", "dust1_sig", "dust2_mu", "dust2_sig", "dust_index_mu", "dust_index_sig",
-                      "igm_factor_mu", "igm_factor_sig", "gas_logu_mu", "gas_logu_sig", "logfagn_mu", "logfagn_sig", "agn_tau_mu", "agn_tau_sig", 
+                      "igm_factor_mu", "igm_factor_sig", "gas_logu_mu", "gas_logu_sig", "gas_logz_mu", "gas_logz_sig", "logfagn_mu", "logfagn_sig", "agn_tau_mu", "agn_tau_sig", 
                         "logsfmu1", "logsfmu2", "logsfmu3", "logsfmu4", "logsfmu5", "logsfmu6", "logsfsig1",
                           "logsfsig2", "logsfsig3", "logsfsig4", "logsfsig5", "logsfsig6", "nu"])
 

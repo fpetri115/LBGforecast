@@ -39,10 +39,10 @@ def update_model(sps_model, sps_parameters, z_history, agebins):
     sps_model.params['dust_index'] = sps_parameters[4]
     sps_model.params['igm_factor'] = sps_parameters[5]
     sps_model.params['gas_logu'] = sps_parameters[6]
-    sps_model.params['fagn'] = sps_parameters[7]
-    sps_model.params['agn_tau'] = sps_parameters[8]
+    sps_model.params['fagn'] = sps_parameters[8]
+    sps_model.params['agn_tau'] = sps_parameters[9]
 
-    log_sfr_ratios = sps_parameters[9:-1]
+    log_sfr_ratios = sps_parameters[10:-1]
 
     total_mass_formed = sps_parameters[-1]
     
@@ -58,7 +58,7 @@ def update_model(sps_model, sps_parameters, z_history, agebins):
                                             (10**sps_model.params['logzsol'])*Z_MIST, sps_parameters[-1])
         sps_model.set_tabular_sfh(time, star_formation_history, metallicity_history)
     else:
-        sps_model.params['gas_logz'] = sps_model.params['logzsol']
+        sps_model.params['gas_logz'] = sps_parameters[7]
         sps_model.set_tabular_sfh(time, star_formation_history) 
 
 
@@ -73,7 +73,7 @@ def simulate_photometry(sps_parameters, filters, imf, dust, nebem=True, zhistory
         agebins = sfh.default_agebins()
 
     #Generate photometry with Nebular emmision###################
-    print("Starting Run 1/3")
+    print("Starting Run")
     sps_model = initialise_sps_model(neb_em=nebem, sfh_type=3, zcont=1, dust_type=dust, imf_type=imf)
     print("libraries: ", sps_model.libraries)
 
@@ -88,11 +88,11 @@ def simulate_photometry(sps_parameters, filters, imf, dust, nebem=True, zhistory
         photometry_neb.append(get_magnitudes(sps_model, filters=filters, lya_uncertainity=lya_uncertainity))
 
         i+=1
-        if(i%100 == 0 and mpi_rank==0):
+        if(i%1000 == 0 and mpi_rank==0):
             print(i)
 
     photometry_neb = np.vstack(np.asarray(photometry_neb))
-    print("Run 1/3 Complete")
+    print("Run Complete")
 
     if(zhistory):
 

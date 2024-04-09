@@ -37,7 +37,8 @@ def generate_sps_parameters(nsamples, prior_parameters, redshift_mass_prior_data
     #Unpack hyperparameters
     logzsol_mu, logzsol_sigma, dust1_mu, dust1_sigma, dust2_mu, \
     dust2_sigma, dust_index_mu, dust_index_sigma, igm_factor_mu, \
-    igm_factor_sigma, gas_logu_mu, gas_logu_sigma, fagn_mu, \
+    igm_factor_sigma, gas_logu_mu, gas_logu_sigma, \
+    gas_logz_mu, gas_logz_sigma, fagn_mu, \
     fagn_sigma, agn_tau_mu, agn_tau_sigma, logsfmu1, logsfmu2, logsfmu3, \
     logsfmu4, logsfmu5, logsfmu6, logsfsig1, logsfsig2, logsfsig3, logsfsig4, \
     logsfsig5, logsfsig6, nu = prior_parameters
@@ -89,6 +90,12 @@ def generate_sps_parameters(nsamples, prior_parameters, redshift_mass_prior_data
     gas_logu_max = -1.0
     gas_logu = truncated_normal(gas_logu_mu, gas_logu_sigma, gas_logu_min, gas_logu_max, nsamples) 
     sps_parameters.append(gas_logu)
+
+    #Gas ionisation parameter - gas_logz
+    gas_logz_min = -2.0
+    gas_logz_max = 0.5
+    gas_logz = truncated_normal(gas_logz_mu, gas_logz_sigma, gas_logz_min, gas_logz_max, nsamples) 
+    sps_parameters.append(gas_logz)
 
     #AGN fraction to luminosity - fagn
     fagn_min = -5.0
@@ -171,7 +178,7 @@ def sps_parameter_names():
     """
 
     names = np.array(["zred", "logzsol", "dust1", "dust2", "dust_index", 
-                    "igm_factor", "gas_logu", "logfagn", "agn_tau",
+                    "igm_factor", "gas_logu", "gas_logz", "logfagn", "agn_tau",
                     "logf1", "logf2", "logf3", "logf4", "logf5","logf6", "logmass"])
     
     return names
