@@ -62,7 +62,7 @@ def update_model(sps_model, sps_parameters, z_history, agebins):
         sps_model.set_tabular_sfh(time, star_formation_history) 
 
 
-def simulate_photometry(sps_parameters, filters, imf, dust, nebem=True, zhistory=True, agebins=None, enable_mpi=False, lya_uncertainity=False, mpi_rank=0):
+def simulate_photometry(sps_parameters, filters, imf, dust, nebem=True, zhistory=True, agebins=None, enable_mpi=False, lya_uncertainity=False, mpi_rank=0, save_spec=False):
 
     ngalaxies = sps_parameters.shape[0]
 
@@ -72,90 +72,49 @@ def simulate_photometry(sps_parameters, filters, imf, dust, nebem=True, zhistory
     if agebins is None:
         agebins = sfh.default_agebins()
 
-    #Generate photometry with Nebular emmision###################
     print("Starting Run")
     sps_model = initialise_sps_model(neb_em=nebem, sfh_type=3, zcont=1, dust_type=dust, imf_type=imf)
     print("libraries: ", sps_model.libraries)
 
     i = 0
-    photometry_neb = []
+    photometry = []
+    spectra = []
     while(i < ngalaxies):
 
         source = sps_parameters[i, :]
         update_model(sps_model, source, z_history=False, agebins=agebins)
 
         #generate photometry for source
-        photometry_neb.append(get_magnitudes(sps_model, filters=filters, lya_uncertainity=lya_uncertainity))
+        if(save_spec):
+            phot, spec = get_magnitudes(sps_model, filters=filters, lya_uncertainity=lya_uncertainity, return_spec=True)
+            photometry.append(phot)
+            spectra.append(spec)
+        else:
+            photometry.append(get_magnitudes(sps_model, filters=filters, lya_uncertainity=lya_uncertainity))
 
         i+=1
         if(i%1000 == 0 and mpi_rank==0):
             print(i)
 
-    photometry_neb = np.vstack(np.asarray(photometry_neb))
-    print("Run Complete")
-
-    if(zhistory):
-
-        #Generate photometry without nebular emmision################
-        print("Starting Run 2/3")
-        sps_model = initialise_sps_model(sfh_type=3, neb_em=False, zcont=1, dust_type=dust, imf_type=imf)
-        i = 0
-        photometry_no_neb = []
-        while(i < ngalaxies):
-
-            source = sps_parameters[i, :]
-            update_model(sps_model, source, z_history=False, agebins=agebins)
-
-            #generate photometry for source
-            photometry_no_neb.append(get_magnitudes(sps_model, filters=filters, lya_uncertainity=lya_uncertainity))
-
-            i+=1
-            if(i%100 == 0 and mpi_rank==0):
-                print(i)
-
-        photometry_no_neb = np.vstack(np.asarray(photometry_no_neb))
-        print("Run 2/3 Complete")
-
-        #Nebular emmission contribution
-        photometric_contribution_from_neb = photometry_neb - photometry_no_neb
-        
-        #Define SPS Model without Nebular emmision BUT with zhistory############
-        print("Starting Run 3/3")
-        sps_model = initialise_sps_model(neb_em=False, sfh_type=3, zcont=3, dust_type=dust, imf_type=imf)
-
-        i = 0
-        photometry_zhis = []
-        while(i < ngalaxies):
-
-            source = sps_parameters[i, :]
-            update_model(sps_model, source, z_history=True, agebins=agebins)
-
-            #generate photometry for source
-            photometry_zhis.append(get_magnitudes(sps_model, filters=filters, lya_uncertainity=lya_uncertainity))
-
-            i+=1
-            if(i%100 == 0 and mpi_rank==0):
-                print(i)
-
-        photometry_zhis = np.vstack(np.asarray(photometry_zhis))
-        ###################################################
-        
-        print("Run 3/3 Complete")
-        photometry_final = photometry_zhis + photometric_contribution_from_neb
-    
-    else:
-        photometry_final = photometry_neb
+    photometry = np.vstack(np.asarray(photometry))
+    if(save_spec):
+        spectra = np.vstack(np.asarray(spectra))
 
     print("Complete")
 
     if(enable_mpi):
-        np.save("simulation_data/simulated_photometry_"+str(mpi_rank)+".npy", photometry_final)
+        np.save("simulation_data/simulated_photometry_"+str(mpi_rank)+".npy", photometry)
         np.save("simulation_data/sps_parameters_"+str(mpi_rank)+".npy", sps_parameters)
-    else:
-        np.save("simulation_data/simulated_photometry.npy", photometry_final)
-        np.save("simulation_data/sps_parameters.npy", sps_parameters)
+        if(save_spec):
+            np.save("simulation_data/spectra_"+str(mpi_rank)+".npy", spectra)
 
-    return photometry_final
+    else:
+        np.save("simulation_data/simulated_photometry.npy", photometry)
+        np.save("simulation_data/sps_parameters.npy", sps_parameters)
+        if(save_spec):
+            np.save("simulation_data/spectra_"+str(mpi_rank)+".npy", spectra)
+
+    return photometry
 
 
 def fsps_get_sed(sps_model):
@@ -178,7 +137,7 @@ def fsps_get_magnitudes(sps_model, filters):
     return mags# - 2.5*logmass
 
 
-def get_magnitudes(sps_model, filters, lya_uncertainity=False):
+def get_magnitudes(sps_model, filters, lya_uncertainity=False, return_spec=False):
     
     lsun = L_sun.cgs.value
 
@@ -205,7 +164,10 @@ def get_magnitudes(sps_model, filters, lya_uncertainity=False):
 
     magnitudes = observate.getSED(lambdas, redshifted_spectrum_sedpy, filterlist=bands, linear_flux=False)
     
-    return magnitudes
+    if(return_spec):
+        return magnitudes, spectrum
+    else:
+        return magnitudes
 
 def redshift_fsps_spectrum(sps_model, spec):
     """Takes output of fsps_get_sed() and redshifts spectrum.
@@ -213,6 +175,7 @@ def redshift_fsps_spectrum(sps_model, spec):
     Spectrum must be in Lsun/AA. Wavelength in AA.
     
     """
+
 
     lambdas, spectrum = spec
     redshift = sps_model.params['zred']
