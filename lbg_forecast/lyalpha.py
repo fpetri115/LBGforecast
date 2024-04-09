@@ -35,7 +35,7 @@ def lin_interp(wave, sed, l0, dlambda):
 
     return (em2-em1)/(l2-l1)*(wave-l1) + em1
 
-def modify_peak(wave, sed, redshift, dlambda, sig, bias, diagnostics=False):
+def modify_peak(wave, sed, dlambda, sig, bias, a, diagnostics=False):
     """Replaces Lyman alpha absorbtion or emission with a gaussian.
 
     :param wave:
@@ -43,20 +43,21 @@ def modify_peak(wave, sed, redshift, dlambda, sig, bias, diagnostics=False):
 
     :param sed:
         The sed
-    
-    :param redshift:
-        Redshift of obsereved galaxy sed
 
     :param dlambda:
-        Estimation of width of lyman-alpha region. E.g. if dlambda = 100, 
+        Estimation of width of lyman-alpha region. E.g. if dlambda = 60, 
         the lyman alpha peak will be assumed to be in the region of 
-        1215.16*(1+redshift) +/- 100
+        1215.16*(1+redshift) +/- 60
     
     :param sig:
         Width of gaussian to replace peak with
     
     :param bias:
         Optionally shift peak by an amount given by this parameter in angstroms
+
+    :param a:
+        Flux retained in peak. Takes values between 0 and 1. A value of 1 means flux
+        is conserved after modifying peak.
     
     :param diagnostics:
         If true, shows plots for diagnostics
@@ -67,7 +68,7 @@ def modify_peak(wave, sed, redshift, dlambda, sig, bias, diagnostics=False):
     """
 
     #setup
-    lyalpha = 1215.16*(1+redshift)
+    lyalpha = 1215.16#*(1+redshift)
     gaussian = (1/(np.sqrt(2*np.pi*sig**2)))*np.exp(-0.5*(wave-(lyalpha+bias))**2/(sig**2))
 
     #find peak
@@ -87,7 +88,7 @@ def modify_peak(wave, sed, redshift, dlambda, sig, bias, diagnostics=False):
 
     if(sign == 1):
         flattened_sed[indx] = flattened_peak
-        modified_sed = flattened_sed + gaussian*area*sign
+        modified_sed = flattened_sed + gaussian*area*sign*a
         modified_sed = np.clip(modified_sed, 0 , None)
 
     #plotting

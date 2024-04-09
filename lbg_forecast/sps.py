@@ -183,12 +183,14 @@ def get_magnitudes(sps_model, filters, lya_uncertainity=False):
     lsun = L_sun.cgs.value
 
     lambdas, spectrum = sps_model.get_spectrum(tage=sps_model.params['tage'], peraa=True)
-    redshift = sps_model.params['zred']
 
     if(lya_uncertainity):
         lya_width = np.random.uniform(30, 100)
         lya_bias = 0
-        spectrum = ly.modify_peak(lambdas, spectrum, redshift, 100, lya_width, lya_bias, diagnostics=False)
+        a_param = np.random.uniform(0, 1)
+        spectrum = ly.modify_peak(lambdas, spectrum, 60, lya_width, lya_bias, a_param, diagnostics=False)
+
+    redshift = sps_model.params['zred']
 
     luminosity_distance = cosmo.luminosity_distance(redshift).cgs.value
 
