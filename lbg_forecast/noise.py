@@ -9,7 +9,7 @@ def select_u_dropouts(observed_catalog):
     udrop = udrop.dropna(axis=0, subset=['i5'])
     udrop = udrop.dropna(axis=0, subset=['r5'])
     udrop = udrop.dropna(axis=0, subset=['g5'])
-    udrop = udrop.dropna(axis=0, subset=['u5'])
+    #udrop = udrop.dropna(axis=0, subset=['u5']) #uncomment to go back to og (1/4)
 
     return udrop.filter(['u','g','r','i','z','y'])
 
@@ -19,7 +19,7 @@ def select_g_dropouts(observed_catalog):
 
     gdrop = gdrop.dropna(axis=0, subset=['i5'])
     gdrop = gdrop.dropna(axis=0, subset=['r5'])
-    gdrop = gdrop.dropna(axis=0, subset=['g5'])
+   #gdrop = gdrop.dropna(axis=0, subset=['g5']) #uncomment to go back to og (2/4)
     gdrop = gdrop.drop(gdrop[np.isnan(gdrop.u2) == False].index)
 
     
@@ -30,7 +30,7 @@ def select_r_dropouts(observed_catalog):
     rdrop = observed_catalog.copy(deep=True)
     rdrop = rdrop.dropna(axis=0, subset=['z5'])
     rdrop = rdrop.dropna(axis=0, subset=['i5'])
-    rdrop = rdrop.dropna(axis=0, subset=['r5'])
+    #rdrop = rdrop.dropna(axis=0, subset=['r5']) #uncomment to go back to og (3/4)
     rdrop = rdrop.drop(rdrop[np.isnan(rdrop.g2) == False].index)
     
     return rdrop.filter(['u','g','r','i','z','y'])
@@ -55,7 +55,7 @@ def get_noisy_magnitudes(sps_params, noiseless_photometry, random_state=42, retu
 
     observed_catalog = observed_catalog.join(catalog_sig5).join(catalog_sig2)
     
-    brightness_cut = 19
+    brightness_cut = 23 #19  #uncomment to go back to og (4/4)
     observed_catalog.dropna(axis=0, subset=['i5'], inplace=True) #require 5sigma detection in i band
     observed_catalog.drop(observed_catalog[observed_catalog['i5'] < brightness_cut].index, inplace=True)
 

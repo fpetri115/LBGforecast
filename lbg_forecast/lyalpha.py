@@ -68,7 +68,7 @@ def modify_peak(wave, sed, dlambda, sig, bias, a, diagnostics=False):
     """
 
     #setup
-    lyalpha = 1215.16#*(1+redshift)
+    lyalpha = 1215.67#*(1+redshift)
     gaussian = (1/(np.sqrt(2*np.pi*sig**2)))*np.exp(-0.5*(wave-(lyalpha+bias))**2/(sig**2))
 
     #find peak

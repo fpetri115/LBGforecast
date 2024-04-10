@@ -62,7 +62,7 @@ def update_model(sps_model, sps_parameters, z_history, agebins):
         sps_model.set_tabular_sfh(time, star_formation_history) 
 
 
-def simulate_photometry(sps_parameters, filters, imf, dust, nebem=True, zhistory=True, agebins=None, enable_mpi=False, lya_uncertainity=False, mpi_rank=0, save_spec=False):
+def simulate_photometry(sps_parameters, filters, imf, dust, nebem=True, zhistory=True, agebins=None, enable_mpi=False, lya_uncertainity=False, mpi_rank=0, save_spec=False, run_count=0):
 
     ngalaxies = sps_parameters.shape[0]
 
@@ -74,6 +74,7 @@ def simulate_photometry(sps_parameters, filters, imf, dust, nebem=True, zhistory
 
     print("Starting Run")
     sps_model = initialise_sps_model(neb_em=nebem, sfh_type=3, zcont=1, dust_type=dust, imf_type=imf)
+    indx = ly.find_wave_range(sps_model.wavelengths, 1215.67, 100)#for saving lya peak
     print("libraries: ", sps_model.libraries)
 
     i = 0
@@ -88,7 +89,7 @@ def simulate_photometry(sps_parameters, filters, imf, dust, nebem=True, zhistory
         if(save_spec):
             phot, spec = get_magnitudes(sps_model, filters=filters, lya_uncertainity=lya_uncertainity, return_spec=True)
             photometry.append(phot)
-            spectra.append(spec)
+            spectra.append(spec[indx])
         else:
             photometry.append(get_magnitudes(sps_model, filters=filters, lya_uncertainity=lya_uncertainity))
 
@@ -103,16 +104,19 @@ def simulate_photometry(sps_parameters, filters, imf, dust, nebem=True, zhistory
     print("Complete")
 
     if(enable_mpi):
-        np.save("simulation_data/simulated_photometry_"+str(mpi_rank)+".npy", photometry)
-        np.save("simulation_data/sps_parameters_"+str(mpi_rank)+".npy", sps_parameters)
+        np.save("simulation_data/simulated_photometry_"+str(mpi_rank+run_count)+".npy", photometry)
+        np.save("simulation_data/sps_parameters_"+str(mpi_rank+run_count)+".npy", sps_parameters)
         if(save_spec):
-            np.save("simulation_data/spectra_"+str(mpi_rank)+".npy", spectra)
+            np.save("simulation_data/spectra_"+str(mpi_rank+run_count)+".npy", spectra)
 
     else:
         np.save("simulation_data/simulated_photometry.npy", photometry)
         np.save("simulation_data/sps_parameters.npy", sps_parameters)
         if(save_spec):
-            np.save("simulation_data/spectra_"+str(mpi_rank)+".npy", spectra)
+            np.save("simulation_data/spectra.npy", spectra)
+
+    if(mpi_rank==0):
+        np.save("simulation_data/wavelengths_"+str(mpi_rank)+".npy", sps_model.wavelengths[indx])
 
     return photometry
 
