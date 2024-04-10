@@ -63,7 +63,7 @@ def update_model(sps_model, sps_parameters, z_history, agebins):
         sps_model.set_tabular_sfh(time, star_formation_history) 
 
 
-def simulate_photometry(sps_parameters, filters, imf, dust, nebem=True, zhistory=True, agebins=None, enable_mpi=False, lya_uncertainity=False, mpi_rank=0, save_spec=False, run_count=0, path="/"):
+def simulate_photometry(sps_parameters, filters, imf, dust, nebem=True, zhistory=True, agebins=None, enable_mpi=False, lya_uncertainity=False, mpi_rank=0, save_spec=False, run_count=0, path="./"):
 
     ngalaxies = sps_parameters.shape[0]
 
@@ -88,11 +88,11 @@ def simulate_photometry(sps_parameters, filters, imf, dust, nebem=True, zhistory
 
         #generate photometry for source
         if(save_spec):
-            phot, spec = get_magnitudes(sps_model, filters=filters, lya_uncertainity=lya_uncertainity, return_spec=True)
+            phot, spec = get_magnitudes(sps_model, filters=filters, lya_uncertainity=lya_uncertainity, return_spec=True, path=path)
             photometry.append(phot)
             spectra.append(spec[indx])
         else:
-            photometry.append(get_magnitudes(sps_model, filters=filters, lya_uncertainity=lya_uncertainity))
+            photometry.append(get_magnitudes(sps_model, filters=filters, lya_uncertainity=lya_uncertainity, path=path))
 
         i+=1
         if(i%1000 == 0 and mpi_rank==0):
@@ -142,7 +142,7 @@ def fsps_get_magnitudes(sps_model, filters):
     return mags# - 2.5*logmass
 
 
-def get_magnitudes(sps_model, filters, lya_uncertainity=False, return_spec=False):
+def get_magnitudes(sps_model, filters, lya_uncertainity=False, return_spec=False, path="./"):
     
     lsun = L_sun.cgs.value
 
@@ -163,7 +163,7 @@ def get_magnitudes(sps_model, filters, lya_uncertainity=False, return_spec=False
     redshifted_spectrum_sedpy = redshifted_spectrum_cgs #erg s-1 cm-2 aa-1
 
     if(filters == 'lsst'):
-        bands = get_lsst_filters()
+        bands = get_lsst_filters(path)
     if(filters == 'suprimecam'):
         bands = get_suprimecam_filters()
 
@@ -191,7 +191,7 @@ def redshift_fsps_spectrum(sps_model, spec):
 
 
 
-def get_lsst_filters():
+def get_lsst_filters(path):
             
     ufltr = fsps.filters.Filter(144, 'lsst_u', 'lsst')
     gfltr = fsps.filters.Filter(145, 'lsst_g', 'lsst')
@@ -202,14 +202,14 @@ def get_lsst_filters():
 
     filters = []
     for band in ['u', 'g', 'r', 'i', 'z', 'y']:
-        filter_data = np.genfromtxt('./lbg_forecast/lsst_filters/total_'+band+'.dat', skip_header=7, delimiter=' ')
+        filter_data = np.genfromtxt(path+'lbg_forecast/lsst_filters/total_'+band+'.dat', skip_header=7, delimiter=' ')
         filter_data[:, 0] = filter_data[:, 0]*10 #covert to angstroms
         filters.append(observate.Filter("lsst_"+band, data=(filter_data[:, 0], filter_data[:, 1])))
     
     return filters
 
 #for homebrew get_mags
-def get_lsst_filters_fsps():
+def get_lsst_filters_fsps(path):
             
     ufltr = fsps.filters.Filter(144, 'lsst_u', 'lsst')
     gfltr = fsps.filters.Filter(145, 'lsst_g', 'lsst')
@@ -220,7 +220,7 @@ def get_lsst_filters_fsps():
 
     filters = []
     for band in ['u', 'g', 'r', 'i', 'z', 'y']:
-        filter_data = np.genfromtxt('./lbg_forecast/lsst_filters_fsps/total_'+band+'.dat', skip_header=1, delimiter=' ')
+        filter_data = np.genfromtxt(path+'/lbg_forecast/lsst_filters_fsps/total_'+band+'.dat', skip_header=1, delimiter=' ')
         filters.append([filter_data[:, 0], filter_data[:, 1]])
     
     return filters
