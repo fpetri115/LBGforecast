@@ -62,7 +62,7 @@ def update_model(sps_model, sps_parameters, z_history, agebins):
         sps_model.set_tabular_sfh(time, star_formation_history) 
 
 
-def simulate_photometry(sps_parameters, filters, imf, dust, nebem=True, zhistory=True, agebins=None, enable_mpi=False, lya_uncertainity=False, mpi_rank=0, save_spec=False, run_count=0):
+def simulate_photometry(sps_parameters, filters, imf, dust, nebem=True, zhistory=True, agebins=None, enable_mpi=False, lya_uncertainity=False, mpi_rank=0, save_spec=False, run_count=0, path="/"):
 
     ngalaxies = sps_parameters.shape[0]
 
@@ -104,19 +104,19 @@ def simulate_photometry(sps_parameters, filters, imf, dust, nebem=True, zhistory
     print("Complete")
 
     if(enable_mpi):
-        np.save("simulation_data/simulated_photometry_"+str(mpi_rank+run_count)+".npy", photometry)
-        np.save("simulation_data/sps_parameters_"+str(mpi_rank+run_count)+".npy", sps_parameters)
+        np.save(path+"simulation_data/simulated_photometry_"+str(mpi_rank+run_count)+".npy", photometry)
+        np.save(path+"simulation_data/sps_parameters_"+str(mpi_rank+run_count)+".npy", sps_parameters)
         if(save_spec):
-            np.save("simulation_data/spectra_"+str(mpi_rank+run_count)+".npy", spectra)
+            np.save(path+"simulation_data/spectra_"+str(mpi_rank+run_count)+".npy", spectra)
 
     else:
-        np.save("simulation_data/simulated_photometry.npy", photometry)
-        np.save("simulation_data/sps_parameters.npy", sps_parameters)
+        np.save(path+"simulation_data/simulated_photometry.npy", photometry)
+        np.save(path+"simulation_data/sps_parameters.npy", sps_parameters)
         if(save_spec):
-            np.save("simulation_data/spectra.npy", spectra)
+            np.save(path+"simulation_data/spectra.npy", spectra)
 
     if(mpi_rank==0):
-        np.save("simulation_data/wavelengths_"+str(mpi_rank)+".npy", sps_model.wavelengths[indx])
+        np.save(path+"simulation_data/wavelengths_"+str(mpi_rank)+".npy", sps_model.wavelengths[indx])
 
     return photometry
 
