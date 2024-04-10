@@ -1,6 +1,10 @@
 import sys
 import os
 
+###########
+#FOR USE ON HPC MUST DELETE FIRST TWO LINES OF SPS.PY FILE
+###########
+
 import numpy as np
 import lbg_forecast.hyperparameters as hyp
 import lbg_forecast.population_model as pop

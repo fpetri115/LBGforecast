@@ -1,5 +1,6 @@
 import os
 os.environ["SPS_HOME"] = "/Users/fpetri/packages/fsps" 
+#DELETE ABOVE TWO LINES FOR USE ON HPC
 
 import fsps
 import numpy as np
