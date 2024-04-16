@@ -64,7 +64,7 @@ def update_model(sps_model, sps_parameters, z_history, agebins):
         sps_model.set_tabular_sfh(time, star_formation_history) 
 
 
-def simulate_photometry(sps_parameters, filters, imf, dust, nebem=True, zhistory=True, agebins=None, enable_mpi=False, lya_uncertainity=False, mpi_rank=0, save_spec=False, run_count=0, path="./"):
+def simulate_photometry(sps_parameters, filters, imf, nebem=True, zhistory=True, agebins=None, enable_mpi=False, lya_uncertainity=False, mpi_rank=0, save_spec=False, run_count=0, path="./"):
 
     ngalaxies = sps_parameters.shape[0]
 
@@ -75,7 +75,7 @@ def simulate_photometry(sps_parameters, filters, imf, dust, nebem=True, zhistory
         agebins = sfh.default_agebins()
 
     print("Starting Run")
-    sps_model = initialise_sps_model(neb_em=nebem, sfh_type=3, zcont=1, dust_type=dust, imf_type=imf)
+    sps_model = initialise_sps_model(neb_em=nebem, sfh_type=3, zcont=1, imf_type=imf)
     indx = ly.find_wave_range(sps_model.wavelengths, 1215.67, 100)#for saving lya peak
     print("libraries: ", sps_model.libraries)
 

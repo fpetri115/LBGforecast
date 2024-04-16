@@ -30,4 +30,4 @@ prior_parameters = hyp.sample_prior_parameters(1, hyperparameter_mu_bounds, hype
 redshift_mass_prior_parameters = pr.preload_prior_data()
 sps_parameters = pop.generate_sps_parameters(ngals, prior_parameters[0,:], redshift_mass_prior_parameters, uniform_redshift_mass=True, uniform_logf=True)
 
-photometry = sps.simulate_photometry(sps_parameters, "lsst", imf=1, dust=0, nebem=True, zhistory=False, enable_mpi=True, lya_uncertainity=False, mpi_rank=rank, save_spec=True, run_count=run_count, path=path)
+photometry = sps.simulate_photometry(sps_parameters, "lsst", imf=1, nebem=True, zhistory=False, enable_mpi=True, lya_uncertainity=False, mpi_rank=rank, save_spec=True, run_count=run_count, path=path)
