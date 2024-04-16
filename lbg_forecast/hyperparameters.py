@@ -66,9 +66,9 @@ def default_hyperparameter_bounds():
     """
 
     hyperparameter_mu_bounds = np.array([[-2.5, 0.5],  #logzsol
-                                    [0.0, 2.0],      #dust1
+                                    [0.0, 4.0],      #dust1
                                     [0.0, 4.0],      #dust2
-                                    [-1.0, 0.4],     #dust_index
+                                    [-2.2, 0.4],     #dust_index
                                     [1.0, 1.0],      #igm_factor 
                                     [-4.0, -1.0],    #gas_logu
                                     [-2.0, 0.5],     #gas_logz
@@ -90,9 +90,9 @@ def default_hyperparameter_bounds():
     ])
 
     hyperparameter_sigma_max = np.array([[0.01, 3.0], #logzsol
-                                        [0.01, 2.0], #dust1
+                                        [0.01, 4.0], #dust1
                                         [0.01, 4.0], #dust2
-                                        [0.01, 0.5], #dust_index
+                                        [0.01, 2.6], #dust_index
                                         [0.1, 0.1], #igm_factor 
                                         [0.01, 3.0], #gas_logu
                                         [0.01, 2.5], #gas_logz
@@ -107,7 +107,7 @@ def uniform_hyperparameter_bounds():
     """
 
     hyperparameter_mu_bounds = np.array([[-1.0, -1.0],  #logzsol
-                                    [1.0, 1.0],      #dust1
+                                    [2.0, 2.0],      #dust1
                                     [2.0, 2.0],      #dust2
                                     [-0.7, -0.7],    #dust_index
                                     [1.0, 1.0],      #igm_factor 
@@ -131,9 +131,9 @@ def uniform_hyperparameter_bounds():
     ])
 
     hyperparameter_sigma_max = np.array([[3.0, 3.0], #logzsol
-                                        [2.0, 2.0], #dust1
+                                        [4.0, 4.0], #dust1
                                         [4.0, 4.0], #dust2
-                                        [1.4, 1.4], #dust_index
+                                        [2.6, 2.6], #dust_index
                                         [2.0, 2.0], #igm_factor 
                                         [3.0, 3.0], #gas_logu
                                         [2.5, 2.5], #gas_logz

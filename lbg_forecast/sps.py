@@ -18,10 +18,11 @@ from astropy.constants import c
 
 from sedpy import observate
 
-def initialise_sps_model(neb_em, sfh_type=3, zcont=1, imf_type=2, dust_type=0, igm=True):
+def initialise_sps_model(neb_em, sfh_type=3, zcont=1, imf_type=2, igm=True):
     
-    sps_model = fsps.StellarPopulation(compute_vega_mags=False, zcontinuous=zcont, imf_type=imf_type, sfh=sfh_type, dust_type=dust_type)
+    sps_model = fsps.StellarPopulation(compute_vega_mags=False, zcontinuous=zcont, imf_type=imf_type, sfh=sfh_type, dust_type=4)
 
+    sps_model.params['dust1_index'] = -1.0
     sps_model.params['add_neb_emission'] = neb_em
     sps_model.params['add_neb_continuum'] = neb_em
     sps_model.params['nebemlineinspec'] = neb_em
