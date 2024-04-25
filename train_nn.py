@@ -18,6 +18,10 @@ ndata = int(sys.argv[4]) #input to get number of data to use in training
 load_model = int(sys.argv[5]) # 1 -> load saved model, 0 -> don't 
 patience = int(sys.argv[6]) # early stopping set up
 
+lr = [float(i) for i in sys.argv[7].split()] #N
+batch_size = [int(i) for i in sys.argv[8].split()] #N-1
+gradient_accumulation_steps = [int(i) for i in sys.argv[9].split()] #N
+
 #check if GPU detected
 print("Num GPUs Available: ", len(tf.config.list_physical_devices('GPU')))
 
@@ -44,19 +48,12 @@ print(filter)
 
 # training set up
 validation_split = 0.1
-
-#STEP SIZE 
-lr = [1e-3, 1e-4, 1e-5, 1e-5]
-
+batch_size.append(int((1-validation_split) * training_theta.shape[0]))
 #BIGGER BATCH -> BETTER ESTIMATE OF GRADIENT BUT MORE MEMORY REQUIRED AND SLOWER 
 #(REMEMBER: NETWORK ONLY UPDATES PER BATCH)
 #   -A BIGGER BATCH MEANS YOU WILL LOOP THROUGH DATA QUICKER
 #   -SO NEED MORE EPOCHS
 # doing large batches last to check it doesnt crazy impact the validation loss? Do most of the work with small batches which is faster?
-batch_size = [1000, 10000, 30000, int((1-validation_split) * training_theta.shape[0])]
-
-#how many minibatches to split batches into for memory saving
-gradient_accumulation_steps = [1, 1, 1, 10]
 
 if(len(lr) != len(batch_size) or 
    len(lr) != len(gradient_accumulation_steps) or
@@ -69,6 +66,8 @@ n_units = 128
 
 #extra params
 verbose = True
+restore_file = False
+restore_filename = ''
 
 #optimiser
 optimiser = tf.keras.optimizers.legacy.Adam() #SWITCH TO tf.keras.optimizers.Adam() ON HPC!!
@@ -88,6 +87,10 @@ for f in range(len(filters)):
 
     if verbose is True:
         print('filter ' + filters[f] + '...')
+    
+    if(load_model == 1):
+        restore_file = True
+        restore_filename = path+'/trained_models/model_{}x{}'.format(n_layers, n_units) + filters[f]
 
     # construct the PHOTULATOR model
     photulator = Photulator(n_parameters=training_theta.shape[-1], 
@@ -97,13 +100,9 @@ for f in range(len(filters)):
                         magnitudes_shift=magnitudes_shift[f], 
                         magnitudes_scale=magnitudes_scale[f], 
                         n_hidden=n_hidden, 
-                        restore=False, 
-                        restore_filename=None,
+                        restore=restore_file, 
+                        restore_filename=restore_filename,
                         optimizer=optimiser)
-    
-    #load model if needed
-    if(load_model):
-        photulator.restore(path+'/trained_models/model_{}x{}'.format(n_layers, n_units) + filters[f])
 
     # train using cooling/heating schedule for lr/batch-size
     for i in range(len(lr)):
@@ -166,6 +165,16 @@ for f in range(len(filters)):
                     print('Validation loss = ' + str(best_loss))
                 running_val_loss.append(validation_loss)
 
-np.save(path+"/trained_models/loss_"+filters[f]+".npy", running_loss)
-np.save(path+"/trained_models/valloss_"+filters[f]+".npy", np.hstack(running_val_loss))
-np.save(path+"/trained_models/lr_"+filters[f]+".npy", running_lr)
+if(load_model == 1):
+    prev_loss = np.load(path+"/trained_models/loss_"+filters[f]+".npy")
+    prev_val = np.load(path+"/trained_models/valloss_"+filters[f]+".npy")
+    prev_lr = np.load(path+"/trained_models/lr_"+filters[f]+".npy")
+
+    np.save(path+"/trained_models/loss_"+filters[f]+".npy", np.hstack((prev_loss, running_loss)))
+    np.save(path+"/trained_models/valloss_"+filters[f]+".npy", np.hstack((prev_val, np.hstack(running_val_loss))))
+    np.save(path+"/trained_models/lr_"+filters[f]+".npy", np.hstack((prev_lr, running_lr)))
+
+else:
+    np.save(path+"/trained_models/loss_"+filters[f]+".npy", running_loss)
+    np.save(path+"/trained_models/valloss_"+filters[f]+".npy", np.hstack(running_val_loss))
+    np.save(path+"/trained_models/lr_"+filters[f]+".npy", running_lr)
