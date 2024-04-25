@@ -1,3 +1,9 @@
+import os
+os.environ["SPS_HOME"] = "/Users/fpetri/packages/fsps" 
+
+#DELETE ABOVE TWO LINES ON HPC
+#SWITCH OPTIMISER TO tf.keras.optimizers.Adam() ON HPC!!
+
 import sys
 import numpy as np
 from speculator import Photulator
@@ -5,17 +11,22 @@ import fsps
 import matplotlib.pyplot as plt
 import tensorflow as tf
 
-dir = sys.argv[1]
-ndata = int(sys.argv[4])
+select = int(sys.argv[1]) # select the filter to train
+file_id = sys.argv[2] #id for trainign data to use
+ndata = int(sys.argv[3]) #input to get number of data to use in training
+load_model = int(sys.argv[4]) # 1 -> load saved model, 0 -> don't 
+patience = int(sys.argv[5]) # early stopping set up
 
+#check if GPU detected
 print("Num GPUs Available: ", len(tf.config.list_physical_devices('GPU')))
 
-filter_list = fsps.find_filter('lsst') + fsps.find_filter('suprimecam')[1:2]+fsps.find_filter('suprimecam')[3:]
+#get names of filters used
+filter_list = fsps.find_filter('lsst')
 print(filter_list)
 
 #training data
-spsparams = np.load(dir+"/training_params.npy")[:ndata].astype(np.float32)
-photometry = np.load(dir+"/training_data.npy")[:ndata].astype(np.float32)
+spsparams = np.load("training_data/photometry_"+file_id+".npy")[:ndata].astype(np.float32)
+photometry = np.load("training_data/sps_parameters_"+file_id+".npy")[:ndata].astype(np.float32)
 print(spsparams.shape, photometry.shape)
 
 # parameters shift and scale
@@ -24,8 +35,7 @@ parameters_scale = np.std(spsparams, axis=0)
 magnitudes_shift = np.mean(photometry, axis=0)
 magnitudes_scale = np.std(photometry, axis=0)
 
-#select filters
-select = int(sys.argv[3])
+#select approriate photometery given filter
 filters = filter_list[select:select+1]
 training_theta = tf.convert_to_tensor(spsparams)
 training_mag = tf.convert_to_tensor(photometry[:,select:select+1])
@@ -33,12 +43,24 @@ print(filter)
 
 # training set up
 validation_split = 0.1
+
+#STEP SIZE 
 lr = [1e-3, 1e-4, 1e-5, 1e-5]
+
+#BIGGER BATCH -> BETTER ESTIMATE OF GRADIENT BUT MORE MEMORY REQUIRED AND SLOWER 
+#(REMEMBER: NETWORK ONLY UPDATES PER BATCH)
+#   -A BIGGER BATCH MEANS YOU WILL LOOP THROUGH DATA QUICKER
+#   -SO NEED MORE EPOCHS
+# doing large batches last to check it doesnt crazy impact the validation loss? Do most of the work with small batches which is faster?
 batch_size = [1000, 10000, 30000, int((1-validation_split) * training_theta.shape[0])]
+
+#how many minibatches to split batches into for memory saving
 gradient_accumulation_steps = [1, 1, 1, 10]
 
-# early stopping set up
-patience = int(sys.argv[2])
+if(len(lr) != len(batch_size) or 
+   len(lr) != len(gradient_accumulation_steps) or
+     len(batch_size) != len(gradient_accumulation_steps)):
+    raise Exception("miss matched size of lr/batch_size/gradient_acc") 
 
 # architecture
 n_layers = 4
@@ -46,18 +68,19 @@ n_units = 128
 
 #extra params
 verbose = True
-disable_early_stopping=True
 
 #optimiser
-optimiser = tf.keras.optimizers.legacy.Adam()
+optimiser = tf.keras.optimizers.legacy.Adam() #SWITCH TO tf.keras.optimizers.Adam() ON HPC!!
 
 #running loss
 running_loss = []
-running_val_loss = []
+running_val_loss = [] #keeps track of validation loss across different batch sizes/learning rates
 running_lr = []
 
 # architecture
 n_hidden = [n_units]*n_layers
+
+###############BEGIN TRAINIING
 
 # train each band in turn
 for f in range(len(filters)):
@@ -72,10 +95,14 @@ for f in range(len(filters)):
                         parameters_scale=parameters_scale, 
                         magnitudes_shift=magnitudes_shift[f], 
                         magnitudes_scale=magnitudes_scale[f], 
-                        n_hidden=[128, 128, 128, 128], 
+                        n_hidden=n_hidden, 
                         restore=False, 
                         restore_filename=None,
                         optimizer=optimiser)
+    
+    #load model if needed
+    if(load_model):
+        photulator.restore('trained_models/model_{}x{}'.format(n_layers, n_units) + filters[f])
 
     # train using cooling/heating schedule for lr/batch-size
     for i in range(len(lr)):
@@ -104,13 +131,16 @@ for f in range(len(filters)):
         # loop over epochs
         while early_stopping_counter < patience:
 
-            # loop over batches for a single epoch
+            # loop over batches for a single epoch 
+            #for loop:(give one batch of param+phot -> update network once)
             for theta, mag in training_data:
 
                 # training step: check whether to accumulate gradients or not (only worth doing this for very large batch sizes)
                 if gradient_accumulation_steps[i] == 1:
                     loss = photulator.training_step(theta, mag)
                 else:
+                    #FURTHER BATCHING of batch into sub-batch as not to calculate the gradients all in one step, instead calculate them in smaller sub-batches
+                    #but then still update the model in one batch (not sub-batches) as you have all the gradients, just 'acculumlated' to save memory
                     loss = photulator.training_step_with_accumulated_gradients(theta, mag, accumulation_steps=gradient_accumulation_steps[i])
 
                 running_loss.append(loss)
@@ -120,19 +150,20 @@ for f in range(len(filters)):
             validation_loss.append(photulator.compute_loss(training_theta[~training_selection], train_mag[~training_selection]).numpy())
 
             # early stopping condition
+            # if validation loss keeps going down, reset stopping counter
             if validation_loss[-1] < best_loss:
                 best_loss = validation_loss[-1]
                 early_stopping_counter = 0
+            #else, if validation loss goes back up again, increment counter
             else:
                 early_stopping_counter += 1
+            #when counter reaches patience, save model(the larger patience, the more epochs in a row the validation loss needs to be same or increasing)
             if early_stopping_counter >= patience:
                 photulator.update_emulator_parameters()
-                photulator.save('model_{}x{}'.format(n_layers, n_units) + filters[f])
+                photulator.save('trained_models/model_{}x{}'.format(n_layers, n_units) + filters[f])
                 if verbose is True:
                     print('Validation loss = ' + str(best_loss))
-        
-        for v in validation_loss:
-            running_val_loss.append(v)
+                running_val_loss.append(validation_loss)
 
 np.save("loss_"+filters[f]+".npy", running_loss)
 np.save("valloss_"+filters[f]+".npy", running_val_loss)
