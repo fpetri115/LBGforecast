@@ -12,10 +12,11 @@ import matplotlib.pyplot as plt
 import tensorflow as tf
 
 select = int(sys.argv[1]) # select the filter to train
-file_id = sys.argv[2] #id for trainign data to use
-ndata = int(sys.argv[3]) #input to get number of data to use in training
-load_model = int(sys.argv[4]) # 1 -> load saved model, 0 -> don't 
-patience = int(sys.argv[5]) # early stopping set up
+path = sys.argv[2]
+file_id = sys.argv[3] #id for training data to use
+ndata = int(sys.argv[4]) #input to get number of data to use in training
+load_model = int(sys.argv[5]) # 1 -> load saved model, 0 -> don't 
+patience = int(sys.argv[6]) # early stopping set up
 
 #check if GPU detected
 print("Num GPUs Available: ", len(tf.config.list_physical_devices('GPU')))
@@ -25,8 +26,8 @@ filter_list = fsps.find_filter('lsst')
 print(filter_list)
 
 #training data
-spsparams = np.load("training_data/photometry_"+file_id+".npy")[:ndata].astype(np.float32)
-photometry = np.load("training_data/sps_parameters_"+file_id+".npy")[:ndata].astype(np.float32)
+spsparams = np.load(path+"/training_data/photometry_"+file_id+".npy")[:ndata].astype(np.float32)
+photometry = np.load(path+"/training_data/sps_parameters_"+file_id+".npy")[:ndata].astype(np.float32)
 print(spsparams.shape, photometry.shape)
 
 # parameters shift and scale
@@ -102,7 +103,7 @@ for f in range(len(filters)):
     
     #load model if needed
     if(load_model):
-        photulator.restore('trained_models/model_{}x{}'.format(n_layers, n_units) + filters[f])
+        photulator.restore(path+'/trained_models/model_{}x{}'.format(n_layers, n_units) + filters[f])
 
     # train using cooling/heating schedule for lr/batch-size
     for i in range(len(lr)):
@@ -160,11 +161,11 @@ for f in range(len(filters)):
             #when counter reaches patience, save model(the larger patience, the more epochs in a row the validation loss needs to be same or increasing)
             if early_stopping_counter >= patience:
                 photulator.update_emulator_parameters()
-                photulator.save('trained_models/model_{}x{}'.format(n_layers, n_units) + filters[f])
+                photulator.save(path+'/trained_models/model_{}x{}'.format(n_layers, n_units) + filters[f])
                 if verbose is True:
                     print('Validation loss = ' + str(best_loss))
                 running_val_loss.append(validation_loss)
 
-np.save("loss_"+filters[f]+".npy", running_loss)
-np.save("valloss_"+filters[f]+".npy", running_val_loss)
-np.save("lr_"+filters[f]+".npy", running_lr)
+np.save(path+"/trained_models/loss_"+filters[f]+".npy", running_loss)
+np.save(path+"/trained_models/valloss_"+filters[f]+".npy", np.hstack(running_val_loss))
+np.save(path+"/trained_models/lr_"+filters[f]+".npy", running_lr)
