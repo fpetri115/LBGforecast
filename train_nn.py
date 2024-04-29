@@ -19,8 +19,10 @@ load_model = int(sys.argv[5]) # 1 -> load saved model, 0 -> don't
 patience = int(sys.argv[6]) # early stopping set up
 
 lr = [float(i) for i in sys.argv[7].split()] #N
-batch_size = [int(i) for i in sys.argv[8].split()] #N-1
+batch_size = [int(i) for i in sys.argv[8].split()] #N-1 (if add_final==1) N (if add_final==0)
 gradient_accumulation_steps = [int(i) for i in sys.argv[9].split()] #N
+
+add_final = int(sys.argv[10]) #1 = true: add run with batch_size=full dataset
 
 #check if GPU detected
 print("Num GPUs Available: ", len(tf.config.list_physical_devices('GPU')))
@@ -48,7 +50,8 @@ print(filter)
 
 # training set up
 validation_split = 0.1
-batch_size.append(int((1-validation_split) * training_theta.shape[0]))
+if(add_final == 1):
+    batch_size.append(int((1-validation_split) * training_theta.shape[0]))
 #BIGGER BATCH -> BETTER ESTIMATE OF GRADIENT BUT MORE MEMORY REQUIRED AND SLOWER 
 #(REMEMBER: NETWORK ONLY UPDATES PER BATCH)
 #   -A BIGGER BATCH MEANS YOU WILL LOOP THROUGH DATA QUICKER
