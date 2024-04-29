@@ -9,7 +9,7 @@ def select_u_dropouts(observed_catalog):
     udrop = udrop.dropna(axis=0, subset=['i5'])
     udrop = udrop.dropna(axis=0, subset=['r5'])
     udrop = udrop.dropna(axis=0, subset=['g5'])
-    #udrop = udrop.dropna(axis=0, subset=['u5']) #uncomment to go back to og (1/4)
+    udrop = udrop.dropna(axis=0, subset=['u5']) #uncomment to go back to og (1/4)
 
     return udrop.filter(['u','g','r','i','z','y'])
 
@@ -19,7 +19,7 @@ def select_g_dropouts(observed_catalog):
 
     gdrop = gdrop.dropna(axis=0, subset=['i5'])
     gdrop = gdrop.dropna(axis=0, subset=['r5'])
-   #gdrop = gdrop.dropna(axis=0, subset=['g5']) #uncomment to go back to og (2/4)
+    gdrop = gdrop.dropna(axis=0, subset=['g5']) #uncomment to go back to og (2/4)
     gdrop = gdrop.drop(gdrop[np.isnan(gdrop.u2) == False].index)
 
     
@@ -30,7 +30,7 @@ def select_r_dropouts(observed_catalog):
     rdrop = observed_catalog.copy(deep=True)
     rdrop = rdrop.dropna(axis=0, subset=['z5'])
     rdrop = rdrop.dropna(axis=0, subset=['i5'])
-    #rdrop = rdrop.dropna(axis=0, subset=['r5']) #uncomment to go back to og (3/4)
+    rdrop = rdrop.dropna(axis=0, subset=['r5']) #uncomment to go back to og (3/4)
     rdrop = rdrop.drop(rdrop[np.isnan(rdrop.g2) == False].index)
     
     return rdrop.filter(['u','g','r','i','z','y'])
