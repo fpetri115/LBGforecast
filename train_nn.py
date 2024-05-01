@@ -32,8 +32,8 @@ filter_list = fsps.find_filter('lsst')
 print(filter_list)
 
 #training data
-spsparams = np.load(path+"/training_data/photometry_"+file_id+".npy")[:ndata].astype(np.float32)
-photometry = np.load(path+"/training_data/sps_parameters_"+file_id+".npy")[:ndata].astype(np.float32)
+spsparams = np.load(path+"/training_data/sps_parameters_"+file_id+".npy")[:ndata].astype(np.float32)
+photometry = np.load(path+"/training_data/photometry_"+file_id+".npy")[:ndata].astype(np.float32)
 print(spsparams.shape, photometry.shape)
 
 # parameters shift and scale

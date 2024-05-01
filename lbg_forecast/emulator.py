@@ -4,29 +4,17 @@ import pickle
 from speculator import Photulator
 import matplotlib.pyplot as plt
 
-import os
-
 class fsps_emulator:
     
     def __init__(self, path):
 
         #Define attrributes
         self._models = []
-        self._ndata = 1000000
         self._filters = ['u', 'g', 'r', 'i', 'z', 'y']
-
-        # change directory
-        os.chdir(path+'/models')
-
-        # load training data
-        #self._sps_params = np.load(path+"/LBGforecast/data/data/training_params.npy")[:self._ndata]
-        #self._training_photometry = np.load(path+"/LBGforecast/data/data/training_data.npy")[:self._ndata]
 
         #load photulator
         for f in self._filters:
-            self._models.append(Photulator(restore=True, restore_filename = "model_4x128lsst_"+f))
-        
-        os.chdir(path)
+            self._models.append(Photulator(restore=True, restore_filename = path+"/trained_models/model_4x128lsst_"+f))
 
     #forward pass for all filters
     def mimic_photometry(self, sps_params):
