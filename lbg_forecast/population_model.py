@@ -44,7 +44,7 @@ def generate_sps_parameters(nsamples, prior_parameters, redshift_mass_prior_data
     logsfsig5, logsfsig6, nu = prior_parameters
 
     if(uniform_redshift_mass):
-        z_samples = np.random.uniform(0.0, 15.0, nsamples)
+        z_samples = np.random.uniform(0.0, 7.0, nsamples)
         m_samples = np.random.uniform(7, 13, nsamples)
     else:
         z_samples, m_samples = pr.sample_redshift_mass_prior(nsamples, redshift_mass_prior_data, prior_bounds=[0.0,7.0,7,13], plotting=False)
