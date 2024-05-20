@@ -111,7 +111,7 @@ for f in range(len(filters)):
     for i in range(len(lr)):
         
         if verbose is True:
-            print('learning rate = ' + str(lr[i]) + ', batch size = ' + str(batch_size[i]))
+            print('learning rate = ' + str(lr[i]) + ', batch size = ' + str(batch_size[i]), flush=True)
 
         # set learning rate
         photulator.optimizer.lr = lr[i]
@@ -151,6 +151,8 @@ for f in range(len(filters)):
 
             # compute total loss and validation loss
             validation_loss.append(photulator.compute_loss(training_theta[~training_selection], train_mag[~training_selection]).numpy())
+            if verbose is True:
+                    print('Running validation loss = ' + str(validation_loss[-1]), flush=True)
 
             # early stopping condition
             # if validation loss keeps going down, reset stopping counter
@@ -165,7 +167,7 @@ for f in range(len(filters)):
                 photulator.update_emulator_parameters()
                 photulator.save(path+'/trained_models/model_{}x{}'.format(n_layers, n_units) + filters[f])
                 if verbose is True:
-                    print('Validation loss = ' + str(best_loss))
+                    print('Validation loss = ' + str(best_loss), flush=True)
                 running_val_loss.append(validation_loss)
 
 if(load_model == 1):
