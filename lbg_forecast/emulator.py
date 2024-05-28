@@ -17,16 +17,26 @@ class fsps_emulator:
             self._models.append(Photulator(restore=True, restore_filename = path+"/trained_models/model_4x128lsst_"+f))
 
     #forward pass for all filters
-    def mimic_photometry(self, sps_params):
+    def mimic_photometry(self, sps_params, batch_size):
 
-        photometry = []
+        photometry_all = []
+
+        data_size = sps_params.shape[0]
+
+        if(data_size%batch_size != 0):
+            raise Exception("batch sizes do not fit")
+        
+        nbatches = int(data_size/batch_size)
 
         i = 0
         for f in self._filters:
-            photometry.append(self._models[i].magnitudes_(sps_params))
+            photometry_band = []
+            for n in range(nbatches):
+                photometry_band.append(self._models[i].magnitudes_(sps_params[n*batch_size:(n+1)*batch_size]))
             i+=1
+            photometry_all.append(np.reshape(np.asarray(photometry_band), (data_size, 1)))
 
-        return np.hstack((np.asarray(photometry)))
+        return np.hstack((np.asarray(photometry_all)))
 
 
 
