@@ -78,7 +78,6 @@ optimiser = tf.keras.optimizers.legacy.Adam() #SWITCH TO tf.keras.optimizers.Ada
 #running loss
 running_loss = []
 running_val_loss = [] #keeps track of validation loss across different batch sizes/learning rates
-running_lr = []
 
 # architecture
 n_hidden = [n_units]*n_layers
@@ -147,7 +146,6 @@ for f in range(len(filters)):
                     loss = photulator.training_step_with_accumulated_gradients(theta, mag, accumulation_steps=gradient_accumulation_steps[i])
 
                 running_loss.append(loss)
-                running_lr.append(photulator.optimizer.lr)
 
             # compute total loss and validation loss
             validation_loss.append(photulator.compute_loss(training_theta[~training_selection], train_mag[~training_selection]).numpy())
@@ -173,13 +171,14 @@ for f in range(len(filters)):
 if(load_model == 1):
     prev_loss = np.load(path+"/trained_models/loss_"+filters[f]+".npy")
     prev_val = np.load(path+"/trained_models/valloss_"+filters[f]+".npy")
-    prev_lr = np.load(path+"/trained_models/lr_"+filters[f]+".npy")
+    print(prev_val.shape, flush=True)
+    new_loss = np.hstack((prev_loss, running_loss))
+    new_val = np.hstack((prev_val, np.hstack(running_val_loss)))
+    print(new_val.shape, flush=True)
 
-    np.save(path+"/trained_models/loss_"+filters[f]+".npy", np.hstack((prev_loss, running_loss)))
-    np.save(path+"/trained_models/valloss_"+filters[f]+".npy", np.hstack((prev_val, np.hstack(running_val_loss))))
-    np.save(path+"/trained_models/lr_"+filters[f]+".npy", np.hstack((prev_lr, running_lr)))
+    np.save(path+"/trained_models/loss_"+filters[f]+".npy", new_loss)
+    np.save(path+"/trained_models/valloss_"+filters[f]+".npy", new_val)
 
 else:
     np.save(path+"/trained_models/loss_"+filters[f]+".npy", running_loss)
     np.save(path+"/trained_models/valloss_"+filters[f]+".npy", np.hstack(running_val_loss))
-    np.save(path+"/trained_models/lr_"+filters[f]+".npy", running_lr)
