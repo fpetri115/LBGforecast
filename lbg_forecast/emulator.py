@@ -10,7 +10,7 @@ class fsps_emulator:
 
         #Define attrributes
         self._models = []
-        self._filters = ['u','g','r','i','z','y']
+        self._filters = ['u']#,'g','r','i','z','y']
 
         #load photulator
         for f in self._filters:
