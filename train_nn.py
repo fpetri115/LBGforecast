@@ -23,6 +23,7 @@ batch_size = [int(i) for i in sys.argv[8].split()] #N-1 (if add_final==1) N (if 
 gradient_accumulation_steps = [int(i) for i in sys.argv[9].split()] #N
 
 add_final = int(sys.argv[10]) #1 = true: add run with batch_size=full dataset
+max_epochs = int(sys.argv[11]) #max number of epochs to loop (set to 99999999 or some other large number if you want to stop via patience instead)
 
 #check if GPU detected
 print("Num GPUs Available: ", len(tf.config.list_physical_devices('GPU')))
@@ -129,6 +130,7 @@ for f in range(len(filters)):
         validation_loss = [np.infty]
         best_loss = np.infty
         early_stopping_counter = 0
+        epoch = 0
 
         # loop over epochs
         while early_stopping_counter < patience:
@@ -149,6 +151,7 @@ for f in range(len(filters)):
 
             # compute total loss and validation loss
             validation_loss.append(photulator.compute_loss(training_theta[~training_selection], train_mag[~training_selection]).numpy())
+            epoch+=1
             if verbose is True:
                     print('Running validation loss = ' + str(validation_loss[-1]), flush=True)
 
@@ -160,6 +163,11 @@ for f in range(len(filters)):
             #else, if validation loss goes back up again, increment counter
             else:
                 early_stopping_counter += 1
+
+            #stop if has been training too long (fail safe for hpc)
+            if(epoch > max_epochs):
+                early_stopping_counter = patience
+                print('Max Epochs Reached!', flush=True)
             #when counter reaches patience, save model(the larger patience, the more epochs in a row the validation loss needs to be same or increasing)
             if early_stopping_counter >= patience:
                 photulator.update_emulator_parameters()
