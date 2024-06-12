@@ -14,7 +14,7 @@ class fsps_emulator:
 
         #load photulator
         for f in self._filters:
-            self._models.append(Photulator(restore=True, restore_filename = path+"/trained_models/model_4x256lsst_"+f))
+            self._models.append(Photulator(restore=True, restore_filename = path+"/trained_models/model_4x128lsst_"+f))
 
     #forward pass for all filters
     def mimic_photometry(self, sps_params, batch_size):
