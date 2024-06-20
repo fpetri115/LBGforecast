@@ -25,6 +25,8 @@ gradient_accumulation_steps = [int(i) for i in sys.argv[9].split()] #N
 add_final = int(sys.argv[10]) #1 = true: add run with batch_size=full dataset
 max_epochs = int(sys.argv[11]) #max number of epochs to loop (set to 99999999 or some other large number if you want to stop via patience instead)
 
+validation_split = float(sys.argv[12]) #fraction of training data used for validation
+
 #check if GPU detected
 print("Num GPUs Available: ", len(tf.config.list_physical_devices('GPU')))
 
@@ -50,7 +52,6 @@ training_mag = tf.convert_to_tensor(photometry[:,select:select+1])
 print(filter)
 
 # training set up
-validation_split = 0.1
 if(add_final == 1):
     batch_size.append(int((1-validation_split) * training_theta.shape[0]))
 #BIGGER BATCH -> BETTER ESTIMATE OF GRADIENT BUT MORE MEMORY REQUIRED AND SLOWER 
