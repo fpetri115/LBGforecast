@@ -66,8 +66,8 @@ if(len(lr) != len(batch_size) or
     raise Exception("miss matched size of lr/batch_size/gradient_acc") 
 
 # architecture
-n_layers = 4
-n_units = 128
+n_layers = 0
+n_units = 0
 
 #extra params
 verbose = True
@@ -82,7 +82,7 @@ running_loss = []
 running_val_loss = [] #keeps track of validation loss across different batch sizes/learning rates
 
 # architecture
-n_hidden = [n_units]*n_layers
+n_hidden = [32, 64, 128, 64, 32, 16, 8, 4, 2] #[n_units]*n_layers
 
 ###############BEGIN TRAINIING
 
