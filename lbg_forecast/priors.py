@@ -300,7 +300,9 @@ def plot_redshift_mass_prior(redshift_samples, mass_samples):
         fig.set_figheight(10)
         fig.set_figwidth(30)
         ax[0].hist(redshift_samples, bins=50)
+        ax[0].set_xlabel('z', fontsize=20)
         ax[1].hist(mass_samples, bins=50)
+        ax[1].set_xlabel('log(M)', fontsize=20)
 
 def preload_prior_data(zmax=7.0):
     z_grid = np.linspace(0.0, zmax, 100)
