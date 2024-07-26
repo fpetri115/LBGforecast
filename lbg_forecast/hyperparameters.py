@@ -107,8 +107,8 @@ def hyperparameter_bounds_low_dust():
     """
 
     hyperparameter_mu_bounds = np.array([[-2.5, 0.5],  #logzsol
-                                    [0.0, 3.0],      #dust1
-                                    [0.0, 3.0],      #dust2
+                                    [0.0, 0.2],      #dust1
+                                    [0.0, 0.2],      #dust2
                                     [-2.2, 0.4],     #dust_index
                                     [1.0, 1.0],      #igm_factor 
                                     [-4.0, -1.0],    #gas_logu
@@ -141,7 +141,47 @@ def hyperparameter_bounds_low_dust():
                                         [0.1, 145]   #agn_tau
     ])
 
+def hyperparameter_tighter():
+    """Some default parameters for sample_prior_parameters()
+    """
+
+    hyperparameter_mu_bounds = np.array([[-2.5, 0.5],  #logzsol
+                                    [0.0, 0.5],      #dust1
+                                    [0.0, 1.0],      #dust2
+                                    [-1.0, 0.4],     #dust_index
+                                    [1.0, 1.0],      #igm_factor 
+                                    [-4.0, -1.0],    #gas_logu
+                                    [-1.5, 0.5],     #gas_logz
+                                    [-5.0, 1.0],     #log10(fagn)
+                                    [5, 150],        #agn_tau
+                                    [-2, 2],         #logsfmu1
+                                    [-2, 2],         #logsfmu2
+                                    [-2, 2],         #logsfmu3
+                                    [-2, 2],         #logsfmu4
+                                    [-2, 2],         #logsfmu5
+                                    [-2, 2],         #logsfmu6
+                                    [0.3, 0.3],      #logsfsig1
+                                    [0.3, 0.3],      #logsfsig2
+                                    [0.3, 0.3],      #logsfsig3
+                                    [0.3, 0.3],      #logsfsig4
+                                    [0.3, 0.3],      #logsfsig5
+                                    [0.3, 0.3],      #logsfsig6
+                                    [2, 2]           #nu   
+    ])
+
+    hyperparameter_sigma_max = np.array([[0.5, 3.0], #logzsol
+                                        [0.1, 2.0], #dust1
+                                        [0.1, 2.0], #dust2
+                                        [0.1, 2.6], #dust_index
+                                        [0.1, 0.1], #igm_factor 
+                                        [0.5, 3.0], #gas_logu
+                                        [0.5, 2.5], #gas_logz
+                                        [0.5, 6.0], #log10(fagn)
+                                        [1, 145]   #agn_tau
+    ])
+
     return hyperparameter_mu_bounds, hyperparameter_sigma_max
+
 def default_hyperparameter_bounds():
     """Some default parameters for sample_prior_parameters()
     """

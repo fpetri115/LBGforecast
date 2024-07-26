@@ -63,7 +63,7 @@ def generate_sps_parameters(nsamples, prior_parameters, redshift_mass_prior_data
 
     #Dust parameter for attenuating young starlight - dust1
     dust1_min = 0.0
-    dust1_max = 4.0
+    dust1_max = 2.0
     dust1 = truncated_normal(dust1_mu, dust1_sigma, dust1_min, dust1_max, nsamples) 
     sps_parameters.append(dust1)
 
