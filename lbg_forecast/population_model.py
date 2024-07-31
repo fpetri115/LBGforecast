@@ -1,6 +1,7 @@
 import numpy as np
 from astropy.cosmology import WMAP9 as cosmo
 import lbg_forecast.priors as pr
+import lbg_forecast.dust_priors as dpr
 import math
 import matplotlib.pyplot as plt
 from scipy.stats import truncnorm
@@ -76,7 +77,7 @@ def generate_sps_parameters(nsamples, prior_parameters, redshift_mass_prior_data
     #Index of dust attenuation law - dust_index
     dust_index_min = -2.2
     dust_index_max = 0.4
-    dust_index = truncated_normal(dust_index_mu, dust_index_sigma, dust_index_min, dust_index_max, nsamples) 
+    dust_index = dpr.dust_index_function(dust2)#truncated_normal(dust_index_mu, dust_index_sigma, dust_index_min, dust_index_max, nsamples) 
     sps_parameters.append(dust_index)
 
     #IGM dust attenuation fudge factor - igm_factor
