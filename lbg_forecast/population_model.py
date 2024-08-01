@@ -64,14 +64,26 @@ def generate_sps_parameters(nsamples, prior_parameters, redshift_mass_prior_data
 
     #Dust parameter for attenuating young starlight - dust1
     dust1_min = 0.0
-    dust1_max = 2.0
-    dust1 = truncated_normal(dust1_mu, dust1_sigma, dust1_min, dust1_max, nsamples) 
-    sps_parameters.append(dust1)
+    dust1_max = 4.0
+    #dust1 = truncated_normal(dust1_mu, dust1_sigma, dust1_min, dust1_max, nsamples) 
+    #sps_parameters.append(dust1)
 
     #Diffuse dust parameter - dust2
     dust2_min = 0.0
     dust2_max = 4.0
-    dust2 = truncated_normal(dust2_mu, dust2_sigma, dust2_min, dust2_max, nsamples) 
+    #dust2 = truncated_normal(dust2_mu, dust2_sigma, dust2_min, dust2_max, nsamples)
+    dust1 = []
+    dust2 = []
+    while(len(dust1)!= nsamples):
+        dust2_sample = truncated_normal(dust2_mu, dust2_sigma, dust2_min, dust2_max, 1)[0]
+        dust1_sample = (dpr.dust_ratio_prior(1)*dust2_sample)[0]
+        if(dust1_sample < 4.0):
+            dust1.append(dust1_sample)
+            dust2.append(dust2_sample)
+    
+    dust1 = np.array(dust1)
+    dust2 = np.array(dust2)
+    sps_parameters.append(dust1)
     sps_parameters.append(dust2)
 
     #Index of dust attenuation law - dust_index

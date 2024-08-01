@@ -146,8 +146,8 @@ def hyperparameter_tighter():
     """
 
     hyperparameter_mu_bounds = np.array([[-2.5, 0.5],  #logzsol
-                                    [0.0, 0.5],      #dust1
-                                    [0.0, 1.0],      #dust2
+                                    [0.0, 2.0],      #dust1
+                                    [0.0, 2.0],      #dust2
                                     [-1.0, 0.4],     #dust_index
                                     [1.0, 1.0],      #igm_factor 
                                     [-4.0, -1.0],    #gas_logu
