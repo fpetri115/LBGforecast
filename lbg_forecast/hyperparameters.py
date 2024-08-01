@@ -154,12 +154,12 @@ def hyperparameter_tighter():
                                     [-1.5, 0.5],     #gas_logz
                                     [-5.0, 1.0],     #log10(fagn)
                                     [5, 150],        #agn_tau
-                                    [-2, 2],         #logsfmu1
-                                    [-2, 2],         #logsfmu2
-                                    [-2, 2],         #logsfmu3
-                                    [-2, 2],         #logsfmu4
-                                    [-2, 2],         #logsfmu5
-                                    [-2, 2],         #logsfmu6
+                                    [-1, 1],         #logsfmu1
+                                    [-1, 1],         #logsfmu2
+                                    [-1, 1],         #logsfmu3
+                                    [-1, 1],         #logsfmu4
+                                    [-1, 1],         #logsfmu5
+                                    [-1, 1],         #logsfmu6
                                     [0.3, 0.3],      #logsfsig1
                                     [0.3, 0.3],      #logsfsig2
                                     [0.3, 0.3],      #logsfsig3
@@ -173,7 +173,7 @@ def hyperparameter_tighter():
                                         [0.1, 2.0], #dust1
                                         [0.1, 2.0], #dust2
                                         [0.1, 2.6], #dust_index
-                                        [0.1, 0.1], #igm_factor 
+                                        [0.001, 0.001], #igm_factor 
                                         [0.5, 3.0], #gas_logu
                                         [0.5, 2.5], #gas_logz
                                         [0.5, 6.0], #log10(fagn)
