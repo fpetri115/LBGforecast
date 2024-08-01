@@ -61,33 +61,6 @@ def generate_sps_parameters(nsamples, prior_parameters, redshift_mass_prior_data
     logzsol_max = 0.5
     logzsol = truncated_normal(logzsol_mu, logzsol_sigma, logzsol_min, logzsol_max, nsamples)
 
-    #Dust parameter for attenuating young starlight - dust1
-    dust1_min = 0.0
-    dust1_max = 4.0
-    #dust1 = truncated_normal(dust1_mu, dust1_sigma, dust1_min, dust1_max, nsamples) 
-    #sps_parameters.append(dust1)
-
-    #Diffuse dust parameter - dust2
-    dust2_min = 0.0
-    dust2_max = 4.0
-    #dust2 = truncated_normal(dust2_mu, dust2_sigma, dust2_min, dust2_max, nsamples)
-    dust1 = []
-    dust2 = []
-    while(len(dust1)!= nsamples):
-        dust2_sample = truncated_normal(dust2_mu, dust2_sigma, dust2_min, dust2_max, 1)[0]
-        dust1_sample = (dpr.dust_ratio_prior(1)*dust2_sample)[0]
-        if(dust1_sample < 4.0):
-            dust1.append(dust1_sample)
-            dust2.append(dust2_sample)
-    
-    dust1 = np.array(dust1)
-    dust2 = np.array(dust2)
-
-    #Index of dust attenuation law - dust_index
-    dust_index_min = -2.2
-    dust_index_max = 0.4
-    dust_index = dpr.dust_index_function(dust2)#truncated_normal(dust_index_mu, dust_index_sigma, dust_index_min, dust_index_max, nsamples) 
-
     #IGM dust attenuation fudge factor - igm_factor
     igm_factor_min = 0.0
     igm_factor_max = 2.0
@@ -124,6 +97,35 @@ def generate_sps_parameters(nsamples, prior_parameters, redshift_mass_prior_data
     #Total stellar mass formed in solar masses - mass
     mass = 10**m_samples
 
+
+
+
+    #Dust parameter for attenuating young starlight - dust1
+    #Diffuse dust parameter - dust2
+    dust1_min = 0.0
+    dust1_max = 4.0
+    dust2_min = 0.0
+    dust2_max = 4.0
+
+    dust1 = []
+    dust2 = []
+    indx = 0
+    while(len(dust1)!= nsamples):
+        dust2_sample = dpr.dust2_function(sfh.calculate_recent_sfr(redshift[indx], mass[indx], log_sfr_ratios[indx], single=True))
+        dust1_sample = (dpr.dust_ratio_prior(1)*dust2_sample)[0]
+        if(dust1_sample < dust1_max):
+            dust1.append(dust1_sample)
+            dust2.append(dust2_sample)
+            indx+=1
+    
+    dust1 = np.array(dust1)
+    dust2 = np.array(dust2)
+
+    #Index of dust attenuation law - dust_index
+    dust_index_min = -2.2
+    dust_index_max = 0.4
+    dust_index = dpr.dust_index_function(dust2)#truncated_normal(dust_index_mu, dust_index_sigma, dust_index_min, dust_index_max, nsamples) 
+
     sps_parameters.append(redshift)
     sps_parameters.append(logzsol)
     sps_parameters.append(dust1)
@@ -140,9 +142,6 @@ def generate_sps_parameters(nsamples, prior_parameters, redshift_mass_prior_data
         sps_parameters.append(log_sfr_ratios[:, column])
     
     sps_parameters.append(mass)
-
-
-    recent_sfr = sfh.calculate_recent_sfr(redshift, mass, log_sfr_ratios)
 
     return np.transpose(np.array(sps_parameters))
 

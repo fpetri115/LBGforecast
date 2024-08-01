@@ -12,3 +12,17 @@ def dust_index_function(dust2):
 
 def dust_ratio_prior(nsamples):
     return truncated_normal(1.0, 0.3, 0.0, 2.0, nsamples)
+
+def dust2_function(sfr):
+    """
+    Parameters
+    -----------
+    sfr : ndarray of size (nsamples,) of recent sfr calculated 
+    from sfh.calculate_recent_sfr()
+
+    Returns
+    ---------
+    samples of dust2 sps parameter
+
+    """
+    return 0.2 + 0.5*np.log10(sfr)*np.heaviside(np.log10(sfr), 0.5)

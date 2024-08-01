@@ -154,7 +154,7 @@ def logsfr_ratios_to_masses(logmass=None, logsfr_ratios=None, agebins=None,
 
     return m1 * coeffs
 
-def calculate_recent_sfr(redshift_samples, mass_samples, log_sfr_ratios_samples):
+def calculate_recent_sfr(redshift_samples, mass_samples, log_sfr_ratios_samples, single=False):
     """Calculates SFR averaged over most recent 100Myr for a given set of sps
     parameter samples. Wrapper around nonpar_recent_sfr().
     
@@ -175,16 +175,22 @@ def calculate_recent_sfr(redshift_samples, mass_samples, log_sfr_ratios_samples)
         Recent SFR averaged over last 100Myr for each sample 
         in solar masses yr-1
     """
+    if(single == False):
+        sfrs_samples = np.vsplit(log_sfr_ratios_samples, redshift_samples.shape[0])
 
-    sfrs_samples = np.vsplit(log_sfr_ratios_samples, redshift_samples.shape[0])
+        recent_sfr = []
+        for z, m, sfrs in zip(redshift_samples, mass_samples, sfrs_samples):
+            shifted_age_bins = zred_to_agebins(z, default_agebins())
+            masses = continuity_sfh(shifted_age_bins, sfrs[0], m)[1]
+            recent_sfr.append(nonpar_recent_sfr(masses, shifted_age_bins))
+        
+        recent_sfr = np.array(recent_sfr)
 
-    recent_sfr = []
-    for z, m, sfrs in zip(redshift_samples, mass_samples, sfrs_samples):
-        shifted_age_bins = zred_to_agebins(z, default_agebins())
-        masses = continuity_sfh(shifted_age_bins, sfrs[0], m)[1]
-        recent_sfr.append(nonpar_recent_sfr(masses, shifted_age_bins))
-    
-    recent_sfr = np.array(recent_sfr)
+    else:
+        sfrs_samples = log_sfr_ratios_samples
+        shifted_age_bins = zred_to_agebins(redshift_samples, default_agebins())
+        masses = continuity_sfh(shifted_age_bins, sfrs_samples, mass_samples)[1]
+        recent_sfr = nonpar_recent_sfr(masses, shifted_age_bins)
 
     return recent_sfr
 
@@ -324,7 +330,7 @@ def test_recent_sfr():
 
     import lbg_forecast.population_model as pop
 
-    nsamples = 100000
+    nsamples = 10000
     mass_norm = 10**10
     nu = 2
     sigma = np.array([0.3, 0.3, 0.3, 0.3, 0.3, 0.3])
