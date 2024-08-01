@@ -1,6 +1,7 @@
 import numpy as np
 from astropy.cosmology import WMAP9 as cosmo
 import lbg_forecast.priors as pr
+import lbg_forecast.sfh as sfh
 import lbg_forecast.dust_priors as dpr
 import math
 import matplotlib.pyplot as plt
@@ -54,13 +55,11 @@ def generate_sps_parameters(nsamples, prior_parameters, redshift_mass_prior_data
 
     #Redshift - zred
     redshift = z_samples
-    sps_parameters.append(redshift)
 
     #Stellar Metallicity - logzsol
     logzsol_min = -2.5
     logzsol_max = 0.5
     logzsol = truncated_normal(logzsol_mu, logzsol_sigma, logzsol_min, logzsol_max, nsamples)
-    sps_parameters.append(logzsol)
 
     #Dust parameter for attenuating young starlight - dust1
     dust1_min = 0.0
@@ -83,44 +82,36 @@ def generate_sps_parameters(nsamples, prior_parameters, redshift_mass_prior_data
     
     dust1 = np.array(dust1)
     dust2 = np.array(dust2)
-    sps_parameters.append(dust1)
-    sps_parameters.append(dust2)
 
     #Index of dust attenuation law - dust_index
     dust_index_min = -2.2
     dust_index_max = 0.4
     dust_index = dpr.dust_index_function(dust2)#truncated_normal(dust_index_mu, dust_index_sigma, dust_index_min, dust_index_max, nsamples) 
-    sps_parameters.append(dust_index)
 
     #IGM dust attenuation fudge factor - igm_factor
     igm_factor_min = 0.0
     igm_factor_max = 2.0
     igm_factor = truncated_normal(igm_factor_mu, igm_factor_sigma, igm_factor_min, igm_factor_max, nsamples) 
-    sps_parameters.append(igm_factor)
 
     #Gas ionisation parameter - gas_logu
     gas_logu_min = -4.0
     gas_logu_max = -1.0
     gas_logu = truncated_normal(gas_logu_mu, gas_logu_sigma, gas_logu_min, gas_logu_max, nsamples) 
-    sps_parameters.append(gas_logu)
 
     #Gas ionisation parameter - gas_logz
     gas_logz_min = -2.0
     gas_logz_max = 0.5
     gas_logz = truncated_normal(gas_logz_mu, gas_logz_sigma, gas_logz_min, gas_logz_max, nsamples) 
-    sps_parameters.append(gas_logz)
 
     #AGN fraction to luminosity - fagn
     fagn_min = -5.0
     fagn_max = 1.0
     fagn = truncated_normal(fagn_mu, fagn_sigma, fagn_min, fagn_max, nsamples) 
-    sps_parameters.append(10**fagn)
 
     #Optical depth of AGN torus - agn_tau
     agn_tau_min = 5
     agn_tau_max = 150
     agn_tau = truncated_normal(agn_tau_mu, agn_tau_sigma, agn_tau_min, agn_tau_max, nsamples) 
-    sps_parameters.append(agn_tau)
     
     #Log SFR ratios
     if(uniform_logf):
@@ -130,13 +121,28 @@ def generate_sps_parameters(nsamples, prior_parameters, redshift_mass_prior_data
         sf_sig = np.array([logsfsig1, logsfsig2, logsfsig3, logsfsig4, logsfsig5, logsfsig6])
         log_sfr_ratios = continuity_prior(nsamples, nu, sf_mu, sf_sig)
 
+    #Total stellar mass formed in solar masses - mass
+    mass = 10**m_samples
+
+    sps_parameters.append(redshift)
+    sps_parameters.append(logzsol)
+    sps_parameters.append(dust1)
+    sps_parameters.append(dust2)
+    sps_parameters.append(dust_index)
+    sps_parameters.append(igm_factor)
+    sps_parameters.append(gas_logu)
+    sps_parameters.append(gas_logz)
+    sps_parameters.append(10**fagn)
+    sps_parameters.append(agn_tau)
+
     ncols = log_sfr_ratios.shape[1]
     for column in range(ncols):
         sps_parameters.append(log_sfr_ratios[:, column])
-
-    #Total stellar mass formed in solar masses - mass
-    mass = 10**m_samples
+    
     sps_parameters.append(mass)
+
+
+    recent_sfr = sfh.calculate_recent_sfr(redshift, mass, log_sfr_ratios)
 
     return np.transpose(np.array(sps_parameters))
 

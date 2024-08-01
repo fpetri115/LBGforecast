@@ -154,6 +154,40 @@ def logsfr_ratios_to_masses(logmass=None, logsfr_ratios=None, agebins=None,
 
     return m1 * coeffs
 
+def calculate_recent_sfr(redshift_samples, mass_samples, log_sfr_ratios_samples):
+    """Calculates SFR averaged over most recent 100Myr for a given set of sps
+    parameter samples. Wrapper around nonpar_recent_sfr().
+    
+    Parameters
+    ----------
+    redshift_samples : ndarray of shape (nsamples,)
+        Array of redshift sps parameter samples
+
+    mass_samples :  ndarray of shape (nsamples,)
+        Array of galaxy stellar mass sps parameter samples
+    
+    log_sfr_ratios_samples : ndarray of shape (nsamples, 5)
+        Array of contiunity prior sfr ratios 
+
+    Returns
+    -------
+    recent_sfr : ndarray of shape (nsamples, )
+        Recent SFR averaged over last 100Myr for each sample 
+        in solar masses yr-1
+    """
+
+    sfrs_samples = np.vsplit(log_sfr_ratios_samples, redshift_samples.shape[0])
+
+    recent_sfr = []
+    for z, m, sfrs in zip(redshift_samples, mass_samples, sfrs_samples):
+        shifted_age_bins = zred_to_agebins(z, default_agebins())
+        masses = continuity_sfh(shifted_age_bins, sfrs[0], m)[1]
+        recent_sfr.append(nonpar_recent_sfr(masses, shifted_age_bins))
+    
+    recent_sfr = np.array(recent_sfr)
+
+    return recent_sfr
+
 def frac_to_masses(total_mass, fracs, agebins):
     t = np.diff(10**agebins, axis=-1)[:, 0]
     m_n = []
@@ -282,3 +316,24 @@ def plot_sfh(sfh, t):
     
     plt.tick_params(axis="x", width = 2, labelsize=12*0.8)
     plt.tick_params(axis="y", width = 2, labelsize=12*0.8)
+
+def test_recent_sfr():
+    """Reproduces recent sfr plot for continuity prior seen in 
+    figure 2 of https://iopscience.iop.org/article/10.3847/1538-4357/ab133c
+    """
+
+    import lbg_forecast.population_model as pop
+
+    nsamples = 100000
+    mass_norm = 10**10
+    nu = 2
+    sigma = np.array([0.3, 0.3, 0.3, 0.3, 0.3, 0.3])
+    mu = np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
+    redshift_samples = np.zeros(nsamples)
+    mass_samples = mass_norm*np.ones(nsamples)
+    log_sfr_ratio_samples = pop.continuity_prior(nsamples, nu, mu, sigma)
+    recent_sfrs = calculate_recent_sfr(redshift_samples, mass_samples, log_sfr_ratio_samples)
+
+    plt.hist(np.log10(recent_sfrs/(mass_norm)), bins=100, density=True)
+    plt.xlabel("Log(sSFR/yr-1)")
+    plt.xlim(-12, -7.8)
