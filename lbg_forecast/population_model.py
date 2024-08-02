@@ -106,25 +106,15 @@ def generate_sps_parameters(nsamples, prior_parameters, redshift_mass_prior_data
     dust1_max = 4.0
     dust2_min = 0.0
     dust2_max = 4.0
-
-    dust1 = []
-    dust2 = []
-    indx = 0
-    while(len(dust1)!= nsamples):
-        dust2_sample = dpr.dust2_function(sfh.calculate_recent_sfr(redshift[indx], mass[indx], log_sfr_ratios[indx], single=True))
-        dust1_sample = (dpr.dust_ratio_prior(1)*dust2_sample)[0]
-        if(dust1_sample < dust1_max):
-            dust1.append(dust1_sample)
-            dust2.append(dust2_sample)
-            indx+=1
-    
-    dust1 = np.array(dust1)
-    dust2 = np.array(dust2)
-
     #Index of dust attenuation law - dust_index
     dust_index_min = -2.2
     dust_index_max = 0.4
-    dust_index = dpr.dust_index_function(dust2)#truncated_normal(dust_index_mu, dust_index_sigma, dust_index_min, dust_index_max, nsamples) 
+
+    
+
+    dust2 = dpr.dust2_function(sfh.calculate_recent_sfr(redshift, mass, log_sfr_ratios))
+    dust1 = dpr.dust_ratio_prior(nsamples)*dust2
+    dust_index = dpr.dust_index_function(dust2)
 
     sps_parameters.append(redshift)
     sps_parameters.append(logzsol)

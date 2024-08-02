@@ -27,4 +27,4 @@ def dust2_function(sfr):
 
     """
     dust2_mean = 0.2 + 0.5*np.log10(sfr)*np.heaviside(np.log10(sfr), 0.5)
-    return truncated_normal(dust2_mean, 0.2, 0, 4.0, 1)[0]
+    return truncated_normal(dust2_mean, 0.2, 0, 4.0, sfr.shape[0])
