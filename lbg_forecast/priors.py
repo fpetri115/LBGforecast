@@ -256,7 +256,7 @@ def sample_redshift_mass_prior(nsamples, prior_data, prior_bounds=[0.0,10.0,7,13
     """
 
     nwalkers = 100
-    steps = 10000
+    steps = 20000
     burnin = 5000
     if(nsamples >= steps*nwalkers - burnin):
         raise Exception("Requesting too many samples")
@@ -307,7 +307,7 @@ def plot_redshift_mass_prior(redshift_samples, mass_samples):
 def preload_prior_data(zmax=7.0):
     z_grid = np.linspace(0.0, zmax, 100)
     v_grid = volume_elements(z_grid)
-    preloaded_z_dependent_curves = preload_parameter_curves(1000, z_grid, 1000000, truth=False)
+    preloaded_z_dependent_curves = preload_parameter_curves(2000, z_grid, 2000000, truth=False)
 
     return preloaded_z_dependent_curves, z_grid, v_grid
 
