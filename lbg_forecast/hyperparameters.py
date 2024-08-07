@@ -145,21 +145,21 @@ def hyperparameter_tighter():
     """Some default parameters for sample_prior_parameters()
     """
 
-    hyperparameter_mu_bounds = np.array([[-2.0, 0.0],  #logzsol
-                                    [0.0, 1.0],      #dust1
-                                    [0.0, 1.0],      #dust2
-                                    [-0.5, 0.4],     #dust_index
+    hyperparameter_mu_bounds = np.array([[-2.5, 0.5],  #logzsol
+                                    [0.0, 2.0],      #dust1
+                                    [0.0, 2.0],      #dust2
+                                    [-2.2, 0.4],     #dust_index
                                     [1.0, 1.0],      #igm_factor 
-                                    [-3.0, -2.0],    #gas_logu
-                                    [-1.0, 0.0],     #gas_logz
+                                    [-4.0, -1.0],    #gas_logu
+                                    [-2.0, 0.5],     #gas_logz
                                     [-5.0, 1.0],     #log10(fagn)
                                     [5, 150],        #agn_tau
-                                    [-1, 1],         #logsfmu1
-                                    [-1, 1],         #logsfmu2
-                                    [-1, 1],         #logsfmu3
-                                    [-1, 1],         #logsfmu4
-                                    [-1, 1],         #logsfmu5
-                                    [-1, 1],         #logsfmu6
+                                    [0.0, 0.0],         #logsfmu1
+                                    [0.0, 0.0],         #logsfmu2
+                                    [0.0, 0.0],         #logsfmu3
+                                    [0.0, 0.0],         #logsfmu4
+                                    [0.0, 0.0],         #logsfmu5
+                                    [0.0, 0.0],         #logsfmu6
                                     [0.2, 0.4],      #logsfsig1
                                     [0.2, 0.4],      #logsfsig2
                                     [0.2, 0.4],      #logsfsig3
@@ -176,7 +176,7 @@ def hyperparameter_tighter():
                                         [0.01, 0.2], #igm_factor 
                                         [0.1, 3.0], #gas_logu
                                         [0.1, 2.5], #gas_logz
-                                        [0.2, 6.0], #log10(fagn)
+                                        [0.1, 6.0], #log10(fagn)
                                         [1, 145]   #agn_tau
     ])
 
