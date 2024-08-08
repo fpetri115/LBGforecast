@@ -7,6 +7,7 @@ import math
 import matplotlib.pyplot as plt
 from scipy.stats import truncnorm
 from scipy.stats import t
+from prospect.models import priors_beta as pb
 
 def generate_sps_parameters(nsamples, prior_parameters, redshift_mass_prior_data, uniform_redshift_mass=False, uniform_logf=False):
     """Sample sps parameters given some prior parameters.
@@ -86,17 +87,23 @@ def generate_sps_parameters(nsamples, prior_parameters, redshift_mass_prior_data
     agn_tau_max = 150
     agn_tau = truncated_normal(agn_tau_mu, agn_tau_sigma, agn_tau_min, agn_tau_max, nsamples) 
     
+    #Total stellar mass formed in solar masses - mass
+    mass = 10**m_samples
+
     #Log SFR ratios
     if(uniform_logf):
         log_sfr_ratios = np.random.uniform(-5.0, 5.0, (nsamples, 6))
     else:
-        sf_mu = np.array([logsfmu1, logsfmu2, logsfmu3, logsfmu4, logsfmu5, logsfmu6])
+        #sf_mu = np.array([logsfmu1, logsfmu2, logsfmu3, logsfmu4, logsfmu5, logsfmu6])
         sf_sig = np.array([logsfsig1, logsfsig2, logsfsig3, logsfsig4, logsfsig5, logsfsig6])
-        log_sfr_ratios = continuity_prior(nsamples, nu, sf_mu, sf_sig)
+        #log_sfr_ratios = continuity_prior(nsamples, nu, sf_mu, sf_sig)
 
-    #Total stellar mass formed in solar masses - mass
-    mass = 10**m_samples
+        log_sfr_rations_means = []
+        for n in range(nsamples):
+            log_sfr_rations_means.append(pb.expe_logsfr_ratios(redshift[n], mass[n], -5.0, 5.0))
 
+        log_sfr_ratios = t.rvs(df=2, loc=log_sfr_rations_means, scale=0.3)
+        #log_sfr_ratios = np.clip(logsfr_ratios_rvs, a_min=-5.0, a_max=5.0)
 
 
 
@@ -111,12 +118,12 @@ def generate_sps_parameters(nsamples, prior_parameters, redshift_mass_prior_data
     dust_index_max = 0.4
 
     
-    dust2 = truncated_normal(dust2_mu,dust2_sigma, dust2_min, dust2_max, nsamples)#dpr.dust2_function(sfh.calculate_recent_sfr(redshift, mass, log_sfr_ratios))
-    dust1 = truncated_normal(dust1_mu,dust1_sigma, dust1_min, dust1_max, nsamples)#dpr.dust_ratio_prior(nsamples)*dust2
-    dust_index = truncated_normal(dust_index_mu, dust_index_sigma, dust_index_min, dust_index_max, nsamples)#dpr.dust_index_function(dust2)
+    #dust2 = truncated_normal(dust2_mu,dust2_sigma, dust2_min, dust2_max, nsamples)#dpr.dust2_function(sfh.calculate_recent_sfr(redshift, mass, log_sfr_ratios))
+    #dust1 = truncated_normal(dust1_mu,dust1_sigma, dust1_min, dust1_max, nsamples)#dpr.dust_ratio_prior(nsamples)*dust2
+    #dust_index = truncated_normal(dust_index_mu, dust_index_sigma, dust_index_min, dust_index_max, nsamples)#dpr.dust_index_function(dust2)
 
-    #dust2 = dpr.dust2_function(sfh.calculate_recent_sfr(redshift, mass, log_sfr_ratios))
-    #dust1 = dpr.dust_ratio_prior(nsamples)*dust2
+    dust2 = dpr.dust2_function(sfh.calculate_recent_sfr(redshift, mass, log_sfr_ratios))
+    dust1 = dpr.dust_ratio_prior(nsamples)*dust2
     dust_index = dpr.dust_index_function(dust2)
 
     sps_parameters.append(redshift)
