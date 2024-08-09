@@ -1,132 +1,95 @@
 import numpy as np
+
+def sources_inside_u_cuts(umg, gmr):
+    """Given two (ndim,) arrays of u-g and g-r
+    colours, return indexes of lbgs
+    """
     
-def SelectDropouts(dropout, dropout_data):
+    return [np.where((umg > 1.5) & (gmr > -1.0) & (gmr < 1.2) & (umg > 0.75 + 1.5*gmr))[0]]
+
+def sources_inside_g_cuts(gmr, rmi):
+    """Given two (ndim,) arrays of g-r and r-i
+    colours, return indexes of lbgs
+    """
+    
+    return [np.where((gmr > 1.0) & (rmi < 1.0) & (gmr > 0.8 + 1.5*rmi))[0]]
+
+def sources_inside_r_cuts(rmi, imz):
+    """Given two (ndim,) arrays of r-i and i-z
+    colours, return indexes of lbgs
+    """
+    
+    return [np.where((rmi > 1.2) & (imz < 0.7) & (rmi > 1.0 + 1.5*imz))[0]]
+
+
+def select_dropouts(dropout, dropout_colour_data):
+    """Takes element of output from colour_cuts.colours
+     (output[0] = udrop, output[1] =gdrop, output[2] = rdrop) and 
+    returns selected redshifts for given dropout
+    """
+  
+    sps_params, colours = dropout_colour_data
+
+    umg = colours[:, 0]
+    gmr = colours[:, 1]
+    rmi = colours[:, 2]
+    imz = colours[:, 3]
+
+    if(dropout == 'u'):
+        inds = sources_inside_u_cuts(umg, gmr)
         
-        sps_params, colours = dropout_data
-
-        n_sources = len(sps_params)
-        umg = colours[:, 0]
-        gmr = colours[:, 1]
-        rmi = colours[:, 2]
-        imz = colours[:, 3]
-    
-        u_dropouts = []
-        g_dropouts = []
-        r_dropouts = []
+    if(dropout == 'g'):
+        inds = sources_inside_g_cuts(gmr, rmi)
         
-        if(dropout == 'u'):
-            i=0
-            while i < n_sources:
-                if(u_drop(umg[i], gmr[i])==True):
-                    u_dropouts.append(sps_params[i])              
-                i+=1
+    if(dropout == 'r'):
+        inds = sources_inside_r_cuts(rmi, imz)
 
-            return np.vstack(np.asarray(u_dropouts))
-            
-        if(dropout == 'g'):
-            i=0
-            while i < n_sources:
-                if(g_drop(gmr[i], rmi[i])==True):
-                    g_dropouts.append(sps_params[i])                   
-                i+=1
+    return sps_params[:, 0][inds]
 
-            return np.vstack(np.asarray(g_dropouts))
-            
-        if(dropout == 'r'):
-            i=0
-            while i < n_sources:
-                if(r_drop(rmi[i], imz[i])==True):
-                    r_dropouts.append(sps_params[i])
-                i+=1
 
-            return np.vstack(np.asarray(r_dropouts))
 
-def u_drop(ug,gr):
-    if(ug>1.5 and gr>-1 and gr<1.2 and ug > (1.5*gr+0.75)):
-        return True
-    else:
-        return False
+def apply_cuts(dropout_data):
+    """takes output from colours() and returns
+    redshift samples for each dropout class in list
+    """
 
-def u_cut1(gr):
-    cutl=[]
-    for i in gr:
-        cutl.append(1.5)
-    return cutl
+    u_dropouts, g_dropouts, r_dropouts = dropout_data
 
-def u_cut2(ug):
-    cutl=[]
-    for i in ug:
-        cutl.append(-1.0)
-    return cutl
+    #Select dropout sources
+    u_redshifts = select_dropouts('u', u_dropouts)
+    g_redshifts = select_dropouts('g', g_dropouts)
+    r_redshifts = select_dropouts('r', r_dropouts)
 
-def u_cut3(ug):
-    cutl=[]
-    for i in ug:
-        cutl.append(1.2)
-    return cutl
+    redshift_array = np.empty(3, object)
+    redshift_array[:] = [u_redshifts, g_redshifts, r_redshifts]     
 
-def u_cut4(gr):
-    cutl=[]
-    for i in gr:
-        cutl.append(1.5*i+0.75)
-    return cutl
+    return redshift_array
+
+
+def colours(dropout_data):
+    """Gets output from noise.get_noiseymagnitudes and converts
+    magnitudes to colours
+    """
+
+    u_photometry = dropout_data[0][1]
+    u_colours = calculate_colours(u_photometry)
+    u_colour_dropout_data = [dropout_data[0][0], u_colours]
+
+    g_photometry = dropout_data[1][1]
+    g_colours = calculate_colours(g_photometry)
+    g_colour_dropout_data = [dropout_data[1][0], g_colours]
+
+    r_photometry = dropout_data[2][1]
+    r_colours = calculate_colours(r_photometry)
+    r_colour_dropout_data = [dropout_data[2][0], r_colours]
+
+    return [u_colour_dropout_data, g_colour_dropout_data, r_colour_dropout_data]
+
+# calculate colours of a set of photometry
+def calculate_colours(photometry):
     
-def g_drop(gr,ri):
-    if(gr>1.0 and ri<1.0 and ri>-1.0 and gr > (1.5*ri+0.8)):
-        return True
-    else:
-        return False
-            
-def g_cut1(ri):
-    cutl=[]
-    for i in ri:
-        cutl.append(1.0)
-    return cutl
+    photo1 = photometry[:,:-1]
+    photo2 = photometry[:,1:]
+    colours = photo1 - photo2
 
-def g_cut2(gr):
-    cutl=[]
-    for i in gr:
-        cutl.append(1.0)
-    return cutl
-    
-def g_cut3(gr):
-    cutl=[]
-    for i in gr:
-        cutl.append(-1.0)
-    return cutl
-
-def g_cut4(ri):
-    cutl=[]
-    for i in ri:
-        cutl.append(1.5*i+0.8)
-    return cutl
-    
-def r_drop(ri,iz):
-    if(ri>1.2 and iz<0.7 and iz>-1.0 and ri > (1.5*iz+1.0)):
-        return True
-    else:
-        return False
-            
-def r_cut1(iz):
-    cutl=[]
-    for i in iz:
-        cutl.append(1.2)
-    return cutl
-
-def r_cut2(ri):
-    cutl=[]
-    for i in ri:
-        cutl.append(0.7)
-    return cutl
-    
-def r_cut3(ri):
-    cutl=[]
-    for i in ri:
-        cutl.append(-1.0)
-    return cutl
-
-def r_cut4(iz):
-    cutl=[]
-    for i in iz:
-        cutl.append(1.5*i+1.0)
-    return cutl    
+    return colours

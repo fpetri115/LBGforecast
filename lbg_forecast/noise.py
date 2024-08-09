@@ -8,13 +8,15 @@ def select_u_dropouts(observed_catalog):
 
     udrop = udrop.dropna(axis=0, subset=['g5'])
     udrop = udrop.dropna(axis=0, subset=['r5'])
+    #udrop = udrop.dropna(axis=0, subset=['u']) 
 
-    #udrop = udrop.dropna(axis=0, subset=['u5']) #uncomment to go back to og (1/4)
+    udrop = udrop.drop(udrop[np.isnan(udrop.u2) == False].index)
+    #udrop['u'].replace(np.nan, 30.0, inplace=True)
 
-    udrop = udrop.drop(udrop[udrop.r < 22].index)
-    udrop = udrop.drop(udrop[udrop.r > 26].index)
+    udrop = udrop.drop(udrop[udrop.r5 < 23].index)
+    udrop = udrop.drop(udrop[udrop.r5 > 25].index)
 
-    return udrop.filter(['u','g','r','i','z'])
+    return udrop.filter(['u','g5','r5','i5','z5'])
 
 def select_g_dropouts(observed_catalog):
     
@@ -22,16 +24,16 @@ def select_g_dropouts(observed_catalog):
 
     gdrop = gdrop.dropna(axis=0, subset=['r5'])
     gdrop = gdrop.dropna(axis=0, subset=['i5'])
+    #gdrop = gdrop.dropna(axis=0, subset=['g']) 
 
-    #gdrop = gdrop.dropna(axis=0, subset=['g5']) #uncomment to go back to og (2/4)
+    gdrop = gdrop.drop(gdrop[gdrop.i5 < 23].index)
+    gdrop = gdrop.drop(gdrop[gdrop.i5 > 25].index)
 
-    gdrop = gdrop.drop(gdrop[gdrop.i < 22].index)
-    gdrop = gdrop.drop(gdrop[gdrop.i > 26].index)
-
+    #gdrop = gdrop.drop(gdrop[np.isnan(gdrop.g5) == False].index)
     gdrop = gdrop.drop(gdrop[np.isnan(gdrop.u2) == False].index)
 
     
-    return gdrop.filter(['u','g','r','i','z'])
+    return gdrop.filter(['u','g','r5','i5','z5'])
 
 def select_r_dropouts(observed_catalog):
 
@@ -39,15 +41,15 @@ def select_r_dropouts(observed_catalog):
 
     rdrop = rdrop.dropna(axis=0, subset=['i5'])
     rdrop = rdrop.dropna(axis=0, subset=['z5'])
+    #rdrop = rdrop.dropna(axis=0, subset=['r']) 
 
-    #rdrop = rdrop.dropna(axis=0, subset=['r5']) #uncomment to go back to og (3/4)
-
-    rdrop = rdrop.drop(rdrop[rdrop.z < 22].index)
-    rdrop = rdrop.drop(rdrop[rdrop.z > 26].index)
+    rdrop = rdrop.drop(rdrop[rdrop.z5 < 23].index)
+    rdrop = rdrop.drop(rdrop[rdrop.z5 > 25].index)
     
+    #rdrop = rdrop.drop(rdrop[np.isnan(rdrop.r5) == False].index)
     rdrop = rdrop.drop(rdrop[np.isnan(rdrop.g2) == False].index)
     
-    return rdrop.filter(['u','g','r','i','z'])
+    return rdrop.filter(['u','g','r','i5','z5'])
 
 def get_noisy_magnitudes(sps_params, noiseless_photometry, random_state=42, return_params=False):
 
@@ -56,11 +58,11 @@ def get_noisy_magnitudes(sps_params, noiseless_photometry, random_state=42, retu
     catalog = pd.DataFrame(noiseless_photometry, columns=['u', 'g', 'r', 'i', 'z'])
 
     errModel = LsstErrorModel(sigLim=0, absFlux=True)
-    sig5detections = LsstErrorModel(sigLim=5)
-    sig2detections = LsstErrorModel(sigLim=2)
+    sig5detections = LsstErrorModel(sigLim=5, absFlux=True)
+    sig2detections = LsstErrorModel(sigLim=2, absFlux=True)
 
     observed_catalog = errModel(catalog, random_state=random_state).filter(['u', 'g', 'r', 'i', 'z']).replace([np.inf, -np.inf], np.nan, inplace=False)
-
+    #observed_catalog = observed_catalog.dropna(axis=0)
     catalog_sig5 = sig5detections(observed_catalog, random_state=random_state).filter(['u', 'g', 'r', 'i', 'z']).replace([np.inf, -np.inf], np.nan, inplace=False)
     catalog_sig5.rename(columns={"u": "u5", "g": "g5", "r": "r5", "i": "i5", "z": "z5"}, inplace=True)
 
@@ -81,9 +83,9 @@ def get_noisy_magnitudes(sps_params, noiseless_photometry, random_state=42, retu
     g_dropouts = gdrop.to_numpy()
     r_dropouts = rdrop.to_numpy()
 
-    u_index = udrop.index.to_numpy().tolist()
-    g_index = gdrop.index.to_numpy().tolist()
-    r_index = rdrop.index.to_numpy().tolist()
+    u_index = udrop.index.to_numpy()
+    g_index = gdrop.index.to_numpy()
+    r_index = rdrop.index.to_numpy()
 
     u_params = sps_params[u_index,:]
     g_params = sps_params[g_index,:]

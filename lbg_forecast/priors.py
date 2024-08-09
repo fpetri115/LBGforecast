@@ -76,6 +76,7 @@ def select_allowed_parameter_curves(z_grid, curves):
     alphas = curves[3:]
     selected_curves = []
     prior_bounds = [np.array([np.log10(0.01e-3), np.log10(0.06e-3)]), np.array([-100, -4]), np.array([10, 12])]
+    #prior_bounds = [np.array([np.log10(1e-5), np.log10(1e-3)]), np.array([-100, -4]), np.array([10, 12])]
     i = 0
     for param in redshift_dependent_curves:
         param_df = pd.DataFrame(param, columns=z_grid)
