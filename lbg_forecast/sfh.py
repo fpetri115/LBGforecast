@@ -323,6 +323,19 @@ def plot_sfh(sfh, t):
     plt.tick_params(axis="x", width = 2, labelsize=12*0.8)
     plt.tick_params(axis="y", width = 2, labelsize=12*0.8)
 
+def plot_recent_sfrs(sps_params, plot):
+    """Given some spsparameter samples (nsamples,nparam) , calculate recent 100Myr averaged
+    sfrs, and plot histgram
+    """
+    nsfrs=1000
+    recentsfh = calculate_recent_sfr(sps_params[:nsfrs, 0], sps_params[:nsfrs, -1], sps_params[:nsfrs, 10:-1])
+    logssfrs = np.log10(recentsfh/(sps_params[:nsfrs, -1]))
+    
+    if(plot):
+        plt.hist(logssfrs, density=True, alpha=0.1, color='b', bins=np.arange(np.min(logssfrs), np.max(logssfrs), 0.1))
+
+    return logssfrs
+
 def test_recent_sfr():
     """Reproduces recent sfr plot for continuity prior seen in 
     figure 2 of https://iopscience.iop.org/article/10.3847/1538-4357/ab133c
