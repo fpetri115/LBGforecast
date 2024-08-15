@@ -51,7 +51,7 @@ def select_r_dropouts(observed_catalog):
     
     return rdrop.filter(['u','g','r','i5','z5'])
 
-def get_noisy_magnitudes(sps_params, noiseless_photometry, random_state=42, return_params=False):
+def get_noisy_magnitudes(sps_params, noiseless_photometry, random_state=42):
 
     #noiseless_photometry = np.load("/Users/fpetri/repos/LBGforecast/data/data/training_data.npy")[:1000000, :6]
     #sps_params = np.load("/Users/fpetri/repos/LBGforecast/data/data/training_params.npy")[:1000000, :]
@@ -95,7 +95,5 @@ def get_noisy_magnitudes(sps_params, noiseless_photometry, random_state=42, retu
     g_data = [g_params, g_dropouts]
     r_data = [r_params, r_dropouts]
 
-    if(return_params):
-        return [(u_data, g_data, r_data), (u_params, g_params, r_params)]
-    else:
-        return (u_data, g_data, r_data)
+
+    return (u_data, g_data, r_data)

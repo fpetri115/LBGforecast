@@ -15,13 +15,30 @@ def default_nz_bins():
 
 def simulate_nzs(sps_params, model, emulator_batch_size):
 
+    #emulate photometry given sps parameters
     source_photometry = model.mimic_photometry(sps_params, emulator_batch_size)
 
-    #apply detection limits and calculate colours
-    all_dropouts = noise.get_noisy_magnitudes(sps_params, source_photometry, random_state=np.random.randint(0, 100000))
-    all_dropouts = cuts.colours(all_dropouts)
+    #apply noise, the perform SNR, brightness and faintness cuts
+    all_dropouts_mags = noise.get_noisy_magnitudes(sps_params, source_photometry, random_state=np.random.randint(0, 100000))
+
+    #convert magnitudes to colours
+    all_dropouts_colours = cuts.colours(all_dropouts_mags)
     
-    nzs = cuts.apply_cuts(all_dropouts)
+    #apply LBG colour cuts
+    u_data, g_data, r_data = cuts.apply_cuts_to_colours(all_dropouts_colours)
+
+    #get selected redshift samples and combine into object array
+    nzs = build_redshift_distribution_samples_object(u_data, g_data, r_data)
 
     return nzs
 
+def build_redshift_distribution_samples_object(u_data, g_data, r_data):
+
+    u_redshifts = cuts.get_zs(u_data)
+    g_redshifts = cuts.get_zs(g_data)
+    r_redshifts = cuts.get_zs(r_data)
+
+    redshift_array = np.empty(3, object)
+    redshift_array[:] = [u_redshifts, g_redshifts, r_redshifts]     
+
+    return redshift_array
