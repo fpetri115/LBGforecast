@@ -96,8 +96,8 @@ def generate_sps_parameters(nsamples, prior_parameters, redshift_mass_prior_data
     else:
         sf_mu = np.array([logsfmu1, logsfmu2, logsfmu3, logsfmu4, logsfmu5, logsfmu6])
         sf_sig = np.array([logsfsig1, logsfsig2, logsfsig3, logsfsig4, logsfsig5, logsfsig6])
-        log_sfr_ratios = continuity_prior(nsamples, nu, sf_mu, sf_sig)
-
+        log_sfr_ratios = continuity_prior(nsamples, nu, sf_mu, sf_sig, redshift)
+    
    #     log_sfr_rations_means = []
    #     for n in range(nsamples):
    #         log_sfr_rations_means.append(pb.expe_logsfr_ratios(redshift[n], mass[n], -5.0, 5.0))
@@ -172,7 +172,7 @@ def truncated_normal(mu, sigma, min, max, samples):
     return truncnorm.rvs(a, b, loc=mu, scale=sigma, size=samples)
 
 
-def continuity_prior(nsamples, nu, mu, sigma, min=-5, max=5):
+def continuity_prior(nsamples, nu, mu, sigma, redshifts):
     """Samples log sfr ratios from student's t distributions
     for continuity SFH, TRUNCATED at [min, max]
     
@@ -203,13 +203,24 @@ def continuity_prior(nsamples, nu, mu, sigma, min=-5, max=5):
 
     #inverse transform sampling for each logsfrratio parameter
     for sfrs in range(nsfrs):
-        cdf_samples = np.random.uniform(t.cdf(min, nu, loc=mu[sfrs], scale=sigma[sfrs]), t.cdf(max, nu, loc=mu[sfrs], scale=sigma[sfrs]), size=(nsamples,))
-        log_sfr_ratios = t.ppf(cdf_samples, nu, loc=mu[sfrs], scale=sigma[sfrs])
-        all_log_sfr_ratios.append(np.reshape(log_sfr_ratios, (nsamples, 1)))
+        #cdf_samples = np.random.uniform(t.cdf(min, nu, loc=mu[sfrs], scale=sigma[sfrs]), t.cdf(max, nu, loc=mu[sfrs], scale=sigma[sfrs]), size=(nsamples,))
+        #log_sfr_ratios = t.ppf(cdf_samples, nu, loc=mu[sfrs], scale=sigma[sfrs])
+        all_log_sfr_ratios.append(sample_truncated_t(nsamples, nu, mu[sfrs], sigma[sfrs]))#np.reshape(log_sfr_ratios, (nsamples, 1)))
+
+        low_redshift_inds = np.where(redshifts < 2.0)[0]
+        all_log_sfr_ratios[sfrs][low_redshift_inds, :] = sample_truncated_t(low_redshift_inds.shape[0], nu, mu[sfrs], 0.3)
 
     all_log_sfr_ratios = np.hstack(all_log_sfr_ratios)
 
     return all_log_sfr_ratios
+
+def sample_truncated_t(nsamples, nu, mu, sigma, min=-5, max=5):
+        """Returns truncated students't distribution samples as column vector
+        """
+        cdf_samples = np.random.uniform(t.cdf(min, nu, loc=mu, scale=sigma), t.cdf(max, nu, loc=mu, scale=sigma), size=(nsamples,))
+        log_sfr_ratios = t.ppf(cdf_samples, nu, loc=mu, scale=sigma)
+        return np.reshape(log_sfr_ratios, (nsamples, 1))
+
 
 def sps_parameter_names():
     """Returns array of strings containing names of sps parameters.
