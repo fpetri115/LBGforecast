@@ -94,9 +94,9 @@ def generate_sps_parameters(nsamples, prior_parameters, redshift_mass_prior_data
     if(uniform_logf):
         log_sfr_ratios = np.random.uniform(-5.0, 5.0, (nsamples, 6))
     else:
-         sf_mu = np.array([logsfmu1, logsfmu2, logsfmu3, logsfmu4, logsfmu5, logsfmu6])
-         sf_sig = np.array([logsfsig1, logsfsig2, logsfsig3, logsfsig4, logsfsig5, logsfsig6])
-         log_sfr_ratios = continuity_prior(nsamples, nu, sf_mu, sf_sig)
+        sf_mu = np.array([logsfmu1, logsfmu2, logsfmu3, logsfmu4, logsfmu5, logsfmu6])
+        sf_sig = np.array([logsfsig1, logsfsig2, logsfsig3, logsfsig4, logsfsig5, logsfsig6])
+        log_sfr_ratios = continuity_prior(nsamples, nu, sf_mu, sf_sig)
 
    #     log_sfr_rations_means = []
    #     for n in range(nsamples):
