@@ -110,18 +110,18 @@ def hyperparameter_tighter():
                                     [0.0, 1.0],      #dust1
                                     [0.0, 1.0],      #dust2
                                     [-2.2, 0.4],     #dust_index
-                                    [1.0, 1.0],      #igm_factor 
+                                    [0.9, 1.1],      #igm_factor 
                                     [-4.0, -1.0],    #gas_logu
                                     [-2.0, 0.5],     #gas_logz
-                                    [-5.0, -5.0],     #log10(fagn)
-                                    [5, 5],        #agn_tau
+                                    [-5.0, 1.0],     #log10(fagn)
+                                    [5, 150],        #agn_tau
                                     [-1.0, 1.0],         #logsfmu1
                                     [-1.0, 1.0],         #logsfmu2
                                     [-1.0, 1.0],         #logsfmu3
                                     [-1.0, 1.0],         #logsfmu4
                                     [-1.0, 1.0],         #logsfmu5
                                     [-1.0, 1.0],         #logsfmu6
-                                    [1.2, 0.4],      #logsfsig1
+                                    [0.2, 0.4],      #logsfsig1
                                     [0.2, 0.4],      #logsfsig2
                                     [0.2, 0.4],      #logsfsig3
                                     [0.2, 0.4],      #logsfsig4
@@ -134,11 +134,11 @@ def hyperparameter_tighter():
                                         [0.1, 1.0], #dust1
                                         [0.1, 1.0], #dust2
                                         [0.1, 2.6], #dust_index
-                                        [0.001, 0.001], #igm_factor 
+                                        [0.1, 0.2], #igm_factor 
                                         [0.1, 3.0], #gas_logu
                                         [0.1, 3.0], #gas_logz
-                                        [0.1, 0.1], #log10(fagn)
-                                        [1, 1]   #agn_tau
+                                        [0.01, 6.0], #log10(fagn)
+                                        [0.1, 145]   #agn_tau
     ])
 
     return hyperparameter_mu_bounds, hyperparameter_sigma_max

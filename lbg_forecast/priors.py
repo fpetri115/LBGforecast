@@ -75,7 +75,7 @@ def select_allowed_parameter_curves(z_grid, curves):
     redshift_dependent_curves =  curves[:3]
     alphas = curves[3:]
     selected_curves = []
-    prior_bounds = [np.array([np.log10(0.01e-3), np.log10(0.06e-3)]), np.array([-100, -4]), np.array([10, 12])]
+    prior_bounds = [np.array([np.log10(0.1e-3), np.log10(0.6e-3)]), np.array([-100, -4]), np.array([10, 12])]
     #prior_bounds = [np.array([np.log10(1e-5), np.log10(1e-3)]), np.array([-100, -4]), np.array([10, 12])]
     i = 0
     for param in redshift_dependent_curves:
@@ -308,7 +308,7 @@ def plot_redshift_mass_prior(redshift_samples, mass_samples):
 def preload_prior_data(zmax=7.0):
     z_grid = np.linspace(0.0, zmax, 100)
     v_grid = volume_elements(z_grid)
-    preloaded_z_dependent_curves = preload_parameter_curves(2000, z_grid, 2000000, truth=False)
+    preloaded_z_dependent_curves = preload_parameter_curves(10000, z_grid, 1500000, truth=False)
 
     return preloaded_z_dependent_curves, z_grid, v_grid
 
@@ -349,8 +349,8 @@ def sample_allowed_parameter_curves(z_grid, nsamples, allowed_curves):
 
     for param in allowed_curves:
         ncurves = param.shape[0]
-        if(ncurves < nsamples):
-            raise Exception("Requesting too many samples, try lowering nsamples")
+        #if(ncurves < nsamples):
+        #    raise Exception("Requesting too many samples, try lowering nsamples")
         random_indexes = np.random.randint(0, ncurves, nsamples)
         param_df = pd.DataFrame(param, columns=z_grid)
         param_df = param_df.loc[random_indexes]
