@@ -1,6 +1,6 @@
 import numpy as np
 from astropy.cosmology import WMAP9 as cosmo
-import lbg_forecast.priors as pr
+import lbg_forecast.priors_old as pr
 import lbg_forecast.sfh as sfh
 import lbg_forecast.dust_priors as dpr
 import math

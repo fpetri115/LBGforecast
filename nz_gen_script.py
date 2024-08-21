@@ -5,7 +5,7 @@ from mpi4py import MPI
 import os
 import lbg_forecast.hyperparams as hyp
 import lbg_forecast.nz_sim as nz
-import lbg_forecast.priors as pr
+import lbg_forecast.priors_old as pr
 import lbg_forecast.popmodel as pop
 import lbg_forecast.emulator as em
 
