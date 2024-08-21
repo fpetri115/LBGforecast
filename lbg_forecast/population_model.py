@@ -142,7 +142,7 @@ def generate_sps_parameters(nsamples, prior_parameters, redshift_mass_prior_data
     dust1 = truncated_normal(dust1_mu,dust1_sigma, dust1_min, dust1_max, nsamples)#dpr.dust_ratio_prior(nsamples)*dust2
     #dust_index = truncated_normal(dust_index_mu, dust_index_sigma, dust_index_min, dust_index_max, nsamples)#dpr.dust_index_function(dust2)
 
-    #dust2 = dpr.dust2_function(sfh.calculate_recent_sfr(redshift, mass, log_sfr_ratios))
+    #dust2 = dpr.dust2_function(sfh.calculate_recent_sfr(redshift, 10**mass, log_sfr_ratios))
     #dust1 = dpr.dust_ratio_prior(nsamples)*dust2
     dust_index = dpr.dust_index_function(dust2)
 

@@ -1,4 +1,5 @@
 import numpy as np
+import lbg_forecast.sfh as sfh
 from scipy.stats import truncnorm
 
 def truncated_normal(mu, sigma, min, max, samples):
@@ -18,8 +19,9 @@ def dust2_function(sfr):
     """
     Parameters
     -----------
-    sfr : ndarray of size (nsamples,) of recent sfr calculated 
-    from sfh.calculate_recent_sfr() (CURRENTLY ONLY WORKS ONE SAMPLE AT A TIME)
+    sfr : ndarray of size (nsamples,) of recent sfr calculated. Needs to be
+    not logged, and not the sSFR, so use: sfh.calculate_recent_sfr(), 
+    NOT sfh.calculate_recent_sfrs()!!
 
     Returns
     ---------
@@ -27,4 +29,17 @@ def dust2_function(sfr):
 
     """
     dust2_mean = 0.2 + 0.5*np.log10(sfr)*np.heaviside(np.log10(sfr), 0.5)
+    dust2_mean = peturb_means(dust2_mean, 0.2)
     return truncated_normal(dust2_mean, 0.2, 0, 4.0, sfr.shape[0])
+
+def peturb_means(means, pertubation):
+    return means+np.random.uniform(-pertubation, pertubation)
+
+def sample_dust_priors(redshift, mass, log_sfr_ratios):
+
+    recent_sfrs = sfh.calculate_recent_sfr(redshift, 10**mass, log_sfr_ratios)
+    dust2 = dust2_function(recent_sfrs)
+    dust_index = dust_index_function(dust2)
+    dust_ratio = dust_ratio_prior(dust2.shape[0])
+
+    return dust2, dust_index, dust_ratio, recent_sfrs
