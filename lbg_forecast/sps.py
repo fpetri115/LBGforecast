@@ -67,6 +67,7 @@ def update_model(sps_model, sps_parameters, z_history, agebins):
 def simulate_photometry(sps_parameters, filters, imf, nebem=True, zhistory=True, agebins=None, enable_mpi=False, lya_uncertainity=False, mpi_rank=0, save_spec=False, run_count=0, path="./"):
 
     ngalaxies = sps_parameters.shape[0]
+    cosmology=cosmo
 
     if(nebem == False and zhistory == True):
         raise Exception("nebular emission cannot be turned off with zhistory enabled at present")
@@ -89,11 +90,11 @@ def simulate_photometry(sps_parameters, filters, imf, nebem=True, zhistory=True,
 
         #generate photometry for source
         if(save_spec):
-            phot, spec = get_magnitudes(sps_model, filters=filters, lya_uncertainity=lya_uncertainity, return_spec=True, path=path)
+            phot, spec = get_magnitudes(sps_model, filters=filters, cosmology=cosmology, lya_uncertainity=lya_uncertainity, return_spec=True, path=path)
             photometry.append(phot)
             spectra.append(spec[indx])
         else:
-            photometry.append(get_magnitudes(sps_model, filters=filters, lya_uncertainity=lya_uncertainity, path=path))
+            photometry.append(get_magnitudes(sps_model, filters=filters, cosmology=cosmology, lya_uncertainity=lya_uncertainity, path=path))
 
         i+=1
         if(i%1000 == 0 and mpi_rank==0):
@@ -143,7 +144,7 @@ def fsps_get_magnitudes(sps_model, filters):
     return mags# - 2.5*logmass
 
 
-def get_magnitudes(sps_model, filters, lya_uncertainity=False, return_spec=False, path="./"):
+def get_magnitudes(sps_model, filters, cosmology, lya_uncertainity=False, return_spec=False, path="./"):
     
     lsun = L_sun.cgs.value
 
@@ -157,7 +158,7 @@ def get_magnitudes(sps_model, filters, lya_uncertainity=False, return_spec=False
 
     redshift = sps_model.params['zred']
 
-    luminosity_distance = cosmo.luminosity_distance(redshift).cgs.value
+    luminosity_distance = cosmology.luminosity_distance(redshift).cgs.value
 
     redshifted_spectrum = redshift_fsps_spectrum(sps_model, (lambdas, spectrum)) #lsun aa-1
     redshifted_spectrum_cgs = redshifted_spectrum*(lsun/(4.0*np.pi*(luminosity_distance**2))) #erg s-1 cm-2 aa-1
