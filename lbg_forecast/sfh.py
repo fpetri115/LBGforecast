@@ -139,6 +139,35 @@ def zred_to_agebins(zred=0.0, agebins=[], **extras):
     agelims = list(agebins[0]) + np.linspace(agebins[1][1], np.log10(tbinmax), ncomp-2).tolist() + [np.log10(tuniv)]
     return np.array([agelims[:-1], agelims[1:]]).T
 
+def zred_to_agebins_pbeta(zred=None, agebins=[], **extras):
+    """New agebin scheme, refined so that none of the bins is overly wide when the universe is young.
+    
+    Parameters
+    ----------
+    zred : float
+        Cosmological redshift.  This sets the age of the universe.
+    agebins :  ndarray of shape ``(nbin, 2)``
+        The SFH bin edges in log10(years).
+    
+    Returns
+    -------
+    agebins : ndarray of shape ``(nbin, 2)``
+        The new SFH bin edges.
+    """
+    amin = 7.1295
+    nbins_sfh = len(agebins)
+    tuniv = cosmo.age(zred).value*1e9 # because input zred is atleast_1d
+    tbinmax = (tuniv*0.9)
+    if (zred <= 3.):
+        agelims = [0.0,7.47712] + np.linspace(8.0,np.log10(tbinmax),nbins_sfh-2).tolist() + [np.log10(tuniv)]
+    else:
+        agelims = np.linspace(amin,np.log10(tbinmax),nbins_sfh).tolist() + [np.log10(tuniv)]
+        agelims[0] = 0
+        
+    agebins = np.array([agelims[:-1], agelims[1:]])
+    return agebins.T
+
+
 def logsfr_ratios_to_masses(logmass=None, logsfr_ratios=None, agebins=None,
                             **extras):
     """This converts from an array of log_10(SFR_j / SFR_{j+1}) and a value of
