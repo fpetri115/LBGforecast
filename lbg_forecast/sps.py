@@ -32,7 +32,7 @@ def initialise_sps_model(neb_em, sfh_type=3, zcont=1, imf_type=2, igm=True):
 
     return sps_model 
 
-def update_model(sps_model, sps_parameters, z_history, agebins):
+def update_model(sps_model, sps_parameters, z_history, agebins, binscale=sfh.zred_to_agebins):
     
     sps_model.params['zred'] = sps_parameters[0]
     sps_model.params['logzsol'] = sps_parameters[1]
@@ -48,7 +48,7 @@ def update_model(sps_model, sps_parameters, z_history, agebins):
 
     total_mass_formed = sps_parameters[-1]
     
-    shifted_age_bins = sfh.zred_to_agebins(sps_model.params['zred'], agebins)
+    shifted_age_bins = binscale(sps_model.params['zred'], agebins)
     time, star_formation_history, tage = sfh.continuity_sfh(shifted_age_bins, log_sfr_ratios, total_mass_formed)[0]
     sps_model.params['tage'] = tage
 
