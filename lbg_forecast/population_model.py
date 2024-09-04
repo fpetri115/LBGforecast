@@ -1,5 +1,7 @@
 import numpy as np
 from astropy.cosmology import WMAP9 as cosmo
+from prospect.models import priors_beta as pb
+from prospect.models import transforms as ts
 import lbg_forecast.priors_old as pr
 import lbg_forecast.sfh as sfh
 import lbg_forecast.dust_priors as dpr
@@ -7,7 +9,6 @@ import math
 import matplotlib.pyplot as plt
 from scipy.stats import truncnorm
 from scipy.stats import t
-from prospect.models import priors_beta as pb
 
 def generate_sps_parameters(nsamples, prior_parameters, redshift_mass_prior_data, uniform_redshift_mass=False, uniform_logf=False):
     """Sample sps parameters given some prior parameters.
@@ -171,6 +172,24 @@ def truncated_normal(mu, sigma, min, max, samples):
     a, b = (min - mu) / sigma, (max - mu) / sigma
     return truncnorm.rvs(a, b, loc=mu, scale=sigma, size=samples)
 
+def prospector_beta_sfh_prior(nsamples, redshift, logmass, sigma):
+    """Samples log SFR ratios from prospector-beta prior (Wang et al. 2023).
+    nbins restricted to nbins=7 for use with sfh.default_agebins().
+    """
+    logsfrratios_samples = np.empty((nsamples, 6))
+    for n in range(nsamples):
+
+        samples = pb.DymSFHfixZred(zred=redshift,
+                mass_mini=logmass-1e-3, mass_maxi=logmass+1e-3,
+                z_mini=-1.98, z_maxi=0.19,
+                logsfr_ratio_mini=-5.0, logsfr_ratio_maxi=5.0,
+                logsfr_ratio_tscale=sigma, nbins_sfh=7,
+                const_phi=True).sample()
+        
+        logsfrratios = ts.nzsfh_to_logsfr_ratios(samples)
+        logsfrratios_samples[n, :] = logsfrratios
+
+    return logsfrratios_samples
 
 def continuity_prior(nsamples, nu, mu, sigma, redshifts):
     """Samples log sfr ratios from student's t distributions
