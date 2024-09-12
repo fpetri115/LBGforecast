@@ -4,7 +4,7 @@ import numpy as np
 
 
 def get_cosmology():
-    return wmap1
+    return wmap9
 
 def get_wmap1():
     return wmap1
