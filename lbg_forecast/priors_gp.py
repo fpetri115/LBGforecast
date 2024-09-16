@@ -10,7 +10,7 @@ class CSFRDModel(gpytorch.models.ExactGP):
     def __init__(self, train_x, train_y, likelihood):
         super(CSFRDModel, self).__init__(train_x, train_y, likelihood)
         self.mean_module = gpytorch.means.ZeroMean()
-        self.covar_module = gpytorch.kernels.ScaleKernel(gpytorch.kernels.RBFKernel(lengthscale_constraint=gpytorch.constraints.GreaterThan(3.0)))
+        self.covar_module = gpytorch.kernels.ScaleKernel(gpytorch.kernels.RBFKernel(lengthscale_constraint=gpytorch.constraints.GreaterThan(3.5)))
 
     def forward(self, x):
         mean_x = self.mean_module(x)
@@ -37,20 +37,22 @@ class CSFRDPrior():
         self.prior = self.model(self.test_z)
         self.systematic_shift = self.calculate_systematic()
 
+        self.behroozi_redshift, self.total_obs_csfr, self.true_csfr = self.get_behroozi19_curves()
+
     def sample_prior(self):
-        return self.reverse_scaling(self.prior.sample()).numpy()
+        return self.reverse_scaling(self.test_z, self.prior.sample()).numpy()
     
     def sample_prior_corrected(self):
-        return self.reverse_scaling(self.prior.sample()).numpy() - self.systematic_shift
+        return self.reverse_scaling(self.test_z, self.prior.sample()).numpy() - self.systematic_shift
     
     def get_prior_mean(self):
-        return self.reverse_scaling(self.prior.mean).numpy()
+        return self.reverse_scaling(self.test_z, self.prior.mean).numpy()
     
     def get_prior_mean_corrected(self):
-        return self.reverse_scaling(self.prior.mean).numpy() - self.systematic_shift
+        return self.reverse_scaling(self.test_z, self.prior.mean).numpy() - self.systematic_shift
 
-    def reverse_scaling(self, log_scaled_csfrd):
-        return 10**scale_csfrd_inverse(log_scaled_csfrd, self.log_csfrd)
+    def reverse_scaling(self, redshift, log_shifted_csfrd):
+        return 10**shift_csfrd_inverse(redshift, log_shifted_csfrd, np.flip(self.behroozi_redshift), np.flip(np.log10(self.total_obs_csfr)))
     
     def plot_observed_csfrds(self):
 
@@ -65,7 +67,7 @@ class CSFRDPrior():
             ax1.errorbar(self.train_z, 10**self.log_csfrd, yerr=[self.err_l, self.err_h], fmt="ko", capsize=2, ms=4, lw=1)
             ax1.plot(self.test_z.numpy(), self.get_prior_mean(), lw=3, zorder=1200, c="k")
             lower, upper = self.prior.confidence_region()
-            ax1.fill_between(self.test_z.numpy(), self.reverse_scaling(lower), self.reverse_scaling(upper), alpha=0.5, zorder=0, color="purple")
+            ax1.fill_between(self.test_z.numpy(), self.reverse_scaling(self.test_z, lower), self.reverse_scaling(self.test_z, upper), alpha=0.5, zorder=0, color="purple")
             ax1.plot(behroozi19[0], behroozi19[1], zorder=1100, ls="--", c="orange", lw=3)
 
             ax1.set_yscale("log")
@@ -77,7 +79,7 @@ class CSFRDPrior():
 
             ax2.errorbar(self.train_z, 10**self.log_csfrd, yerr=[self.err_l, self.err_h], fmt="ko", capsize=2, ms=4, lw=1)
             ax2.plot(self.test_z.numpy(), self.get_prior_mean(), lw=3, zorder=1200, c='k')
-            nsamples = 200
+            nsamples = 500
             for sample in range(nsamples):
                 ax2.plot(self.test_z, self.sample_prior(), c='purple', alpha=0.1, zorder=-1)
 
@@ -103,7 +105,7 @@ class CSFRDPrior():
             ax1.errorbar(self.train_z, 10**self.log_csfrd, yerr=[self.err_l, self.err_h], fmt="ko", capsize=2, ms=4, lw=1)
             ax1.plot(self.test_z.numpy(), self.get_prior_mean_corrected(), lw=3, zorder=1200, c="k")
             lower, upper = self.prior.confidence_region()
-            ax1.fill_between(self.test_z.numpy(), self.reverse_scaling(lower)-self.systematic_shift, self.reverse_scaling(upper)-self.systematic_shift, alpha=0.5, zorder=0, color="purple")
+            ax1.fill_between(self.test_z.numpy(), self.reverse_scaling(self.test_z, lower)-self.systematic_shift, self.reverse_scaling(self.test_z, upper)-self.systematic_shift, alpha=0.5, zorder=0, color="purple")
             ax1.plot(behroozi19[0], behroozi19[2], zorder=1100, ls="--", c="orange", lw=3)
 
             ax1.set_yscale("log")
@@ -115,7 +117,7 @@ class CSFRDPrior():
 
             ax2.errorbar(self.train_z, 10**self.log_csfrd, yerr=[self.err_l, self.err_h], fmt="ko", capsize=2, ms=4, lw=1)
             ax2.plot(self.test_z.numpy(), self.get_prior_mean_corrected(), lw=3, zorder=1200, c='k')
-            nsamples = 200
+            nsamples = 500
             for sample in range(nsamples):
                 ax2.plot(self.test_z, self.sample_prior_corrected(), c='purple', alpha=0.1, zorder=-1)
 
@@ -139,13 +141,13 @@ class CSFRDPrior():
             
             ax.plot(self.test_z.numpy(), self.get_prior_mean(), lw=2, zorder=1200, c="b")
             lower, upper = self.prior.confidence_region()
-            ax.fill_between(self.test_z.numpy(), self.reverse_scaling(lower), self.reverse_scaling(upper), alpha=0.5, zorder=0, color="b")
+            ax.fill_between(self.test_z.numpy(), self.reverse_scaling(self.test_z, lower), self.reverse_scaling(self.test_z, upper), alpha=0.5, zorder=0, color="b")
             ax.plot(behroozi19[0], behroozi19[1], zorder=1100, ls="--", c="b", lw=2)
 
 
             ax.plot(self.test_z.numpy(), self.get_prior_mean_corrected(), lw=2, zorder=1200, c='r')
             lower, upper = self.prior.confidence_region()
-            ax.fill_between(self.test_z.numpy(), self.reverse_scaling(lower)-self.systematic_shift, self.reverse_scaling(upper)-self.systematic_shift, alpha=0.5, zorder=0, color="r")
+            ax.fill_between(self.test_z.numpy(), self.reverse_scaling(self.test_z, lower)-self.systematic_shift, self.reverse_scaling(self.test_z, upper)-self.systematic_shift, alpha=0.5, zorder=0, color="r")
             ax.plot(behroozi19[0], behroozi19[2], zorder=1100, ls="--", c="r", lw=2)
 
             ax.set_yscale("log")
@@ -179,14 +181,18 @@ class CSFRDPrior():
         return np.interp(self.test_z, np.flip(redshift), np.flip(sys_shift))
 
 #data pre-processing
-def scale_csfrd(csfrd):
-    return (csfrd - csfrd.mean())/csfrd.std()
-def scale_csfrd_errors(errs, csfrd):
-    return errs/csfrd.std()
-def scale_csfrd_inverse(new_csfrd, train_csfrd):
-    return new_csfrd*train_csfrd.std() + train_csfrd.mean()
+def shift_csfrd(new_redshift, csfrd, redshift, mean):
+    return csfrd - np.interp(new_redshift, redshift, mean)
+def shift_csfrd_inverse(new_redshift, csfrd, redshift, mean):
+    return csfrd + np.interp(new_redshift, redshift, mean)
 
 def process_training_data(training_data):
+
+
+    data = ascii.read("csfr_data/csfrs.dat")  
+    scale = np.array(data["Scale"])
+    redshift = cosmo.scale_to_z(scale)
+    total_obs_csfr = np.array(data["Total_Obs_CSFR"])
 
     train_redshift = torch.from_numpy(training_data[0])
     train_csfrd = torch.from_numpy(training_data[1])
@@ -197,12 +203,10 @@ def process_training_data(training_data):
 
 
     log_train_csfrd = torch.log10(train_csfrd)
-    log_train_scaled_csfrd = scale_csfrd(log_train_csfrd)
-    log_train_scaled_csfrd_errors_l = scale_csfrd_errors(log_train_csfrd_errors_l, log_train_csfrd)
-    log_train_scaled_csfrd_errors_h = scale_csfrd_errors(log_train_csfrd_errors_h, log_train_csfrd)
-    log_train_scaled_csfrd_errors = log_train_scaled_csfrd_errors_l+log_train_scaled_csfrd_errors_h
+    log_train_shifted_csfrd = shift_csfrd(train_redshift, log_train_csfrd, np.flip(redshift), np.flip(np.log10(total_obs_csfr)))
+    log_train_csfrd_errors = log_train_csfrd_errors_l+log_train_csfrd_errors_h
 
-    return train_redshift, log_train_scaled_csfrd, log_train_scaled_csfrd_errors, log_train_csfrd, train_csfrd_errors_l, train_csfrd_errors_h
+    return train_redshift, log_train_shifted_csfrd, log_train_csfrd_errors, log_train_csfrd, train_csfrd_errors_l, train_csfrd_errors_h
 
 # Function x**(1/2)
 def forward(x):
