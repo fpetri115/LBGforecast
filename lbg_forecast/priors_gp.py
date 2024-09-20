@@ -17,12 +17,36 @@ class CSFRDModel(gpytorch.models.ExactGP):
         covar_x = self.covar_module(x)
         return gpytorch.distributions.MultivariateNormal(mean_x, covar_x)
 
+class DustIndexModel(gpytorch.models.ExactGP):
+
+    def __init__(self, train_x, train_y, likelihood):
+        super(DustIndexModel, self).__init__(train_x, train_y, likelihood)
+        self.mean_module = gpytorch.means.ZeroMean()
+        self.covar_module = gpytorch.kernels.ScaleKernel(gpytorch.kernels.RBFKernel(lengthscale_constraint=gpytorch.constraints.GreaterThan(1.0)))
+
+    def forward(self, x):
+        mean_x = self.mean_module(x)
+        covar_x = self.covar_module(x)
+        return gpytorch.distributions.MultivariateNormal(mean_x, covar_x)
+    
+class DiffuseDustModel(gpytorch.models.ExactGP):
+
+    def __init__(self, train_x, train_y, likelihood):
+        super(DiffuseDustModel, self).__init__(train_x, train_y, likelihood)
+        self.mean_module = gpytorch.means.ZeroMean()
+        self.covar_module = gpytorch.kernels.ScaleKernel(gpytorch.kernels.RBFKernel(lengthscale_constraint=gpytorch.constraints.GreaterThan(4.0)))
+
+    def forward(self, x):
+        mean_x = self.mean_module(x)
+        covar_x = self.covar_module(x)
+        return gpytorch.distributions.MultivariateNormal(mean_x, covar_x)
+
 class CSFRDPrior():
 
     def __init__(self):
 
         state_dict = torch.load('/Users/fpetri/repos/LBGForecast/gp_models/gp_csfrd.pth', weights_only=True)
-        self.train_z, self.train_log_csfrd, self.errs, self.log_csfrd, self.err_l, self.err_h = process_training_data(get_training_data())
+        self.train_z, self.train_log_csfrd, self.errs, self.log_csfrd, self.err_l, self.err_h = process_training_data_csfrd(get_training_data_csfrd())
 
         self.likelihood = gpytorch.likelihoods.FixedNoiseGaussianLikelihood(torch.square(self.errs),
                                                               learn_additional_noise=False,
@@ -180,13 +204,70 @@ class CSFRDPrior():
 
         return np.interp(self.test_z, np.flip(redshift), np.flip(sys_shift))
 
+class DustIndexPrior():
+
+    def __init__(self):
+
+        state_dict = torch.load('/Users/fpetri/repos/LBGForecast/gp_models/gp_index.pth', weights_only=True)
+        self.train_av, self.train_d, self.d_errors, self.d_err_l_pop, self.d_err_h_pop = get_index_training_data()
+
+        self.likelihood = gpytorch.likelihoods.FixedNoiseGaussianLikelihood(torch.square(self.d_errors),
+                                                              learn_additional_noise=False,
+                                                                noise_constraint=gpytorch.constraints.GreaterThan(0.0))
+        
+        self.model = DustIndexModel(train_x=self.train_av, train_y=torch.zeros_like(self.train_av), likelihood=self.likelihood)
+        self.test_av = torch.linspace(0, 2.5, 100)
+        self.mean = np.interp(self.test_av, self.train_av, self.train_d)
+
+        self.model.load_state_dict(state_dict)
+        self.model.eval()
+
+        self.prior = self.model(self.test_av)
+
+    def sample_prior(self):
+        return self.prior.sample().numpy() + self.mean
+    
+    def get_prior_mean(self):
+        return self.prior.mean + self.mean
+    
+    def plot_model(self):
+
+        with torch.no_grad():
+            # Initialize plot
+            f, ax = plt.subplots(2, 1, figsize=(10, 7))
+
+            # Get upper and lower confidence bounds
+            lower, upper = self.prior.confidence_region()
+            # Plot training data as black stars
+            ax[0].errorbar(self.train_av.numpy(), self.train_d.numpy(), yerr=[self.d_err_l_pop, self.d_err_h_pop], fmt='ko', capsize=2)
+            # Plot predictive means as blue line
+            ax[0].plot(self.test_av.numpy(), self.get_prior_mean(), 'b')
+            # Shade between the lower and upper confidence bounds
+            ax[0].fill_between(self.test_av.numpy(), lower+self.mean, upper+self.mean, alpha=0.5)
+            #ax.legend(['Observed Data', 'Mean', 'Confidence'])
+
+            ax[0].set_xlabel("Av")
+            ax[0].set_ylabel("delta")
+
+            nsamples = 1000
+            for sample in range(nsamples):
+                f_sample = self.sample_prior()
+                ax[1].plot(self.test_av, f_sample, c='purple', alpha=0.1)
+            
+            ax[1].plot(self.test_av, self.get_prior_mean(), zorder=1000, ls='-', c='k')
+            ax[1].errorbar(self.train_av.numpy(), self.train_d.numpy(), yerr=[self.d_err_l_pop, self.d_err_h_pop], fmt='ko', capsize=2)
+
+            ax[1].set_xlabel("Av")
+            ax[1].set_ylabel("delta")
+
+
 #data pre-processing
 def shift_csfrd(new_redshift, csfrd, redshift, mean):
     return csfrd - np.interp(new_redshift, redshift, mean)
 def shift_csfrd_inverse(new_redshift, csfrd, redshift, mean):
     return csfrd + np.interp(new_redshift, redshift, mean)
 
-def process_training_data(training_data):
+def process_training_data_csfrd(training_data):
 
 
     data = ascii.read("csfr_data/csfrs.dat")  
@@ -215,7 +296,7 @@ def forward(x):
 def inverse(x):
     return x**(1.5)
 
-def get_training_data(plot=False):
+def get_training_data_csfrd(plot=False):
 
     data = ascii.read("csfr_data/obs.txt")
     csfr_rows = data['Type']=="csfr"
@@ -258,3 +339,27 @@ def get_training_data(plot=False):
     #plt.ylim(0.001, 0.2)
 
     return train_redshift, train_csfrd, train_csfrd_errors, err_l, err_h, log_err_l, log_err_h, log_val_err_l, log_val_err_h
+
+def extract_from_file(file):
+    #https://iopscience.iop.org/article/10.3847/1538-4357/aabf3c
+    #and popcosmos
+
+    data = ascii.read(file)
+    av = np.array(data['x'])
+    n = np.array(data['y'])
+    n_err_l_val = np.array(data['yl'])
+    n_err_h_val = np.array(data['yh'])
+    n_err_l = n - n_err_l_val
+    n_err_h = n_err_h_val - n
+    n_err = n_err_l + n_err_h
+
+    return n, av, n_err, n_err_l, n_err_h
+
+def get_index_training_data():
+
+    d_pop, av_pop, d_err_pop, d_err_l_pop, d_err_h_pop = extract_from_file("dust_data/popcosmos_data.txt")
+    train_d = torch.from_numpy(d_pop)
+    train_av = torch.from_numpy(av_pop)
+    d_errors = torch.from_numpy(d_err_pop)
+
+    return train_av, train_d, d_errors, d_err_l_pop, d_err_h_pop
