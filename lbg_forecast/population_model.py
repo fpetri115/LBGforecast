@@ -9,6 +9,8 @@ import math
 import matplotlib.pyplot as plt
 from scipy.stats import truncnorm
 from scipy.stats import t
+import lbg_forecast.modified_prospector_beta as mpb
+
 
 def generate_sps_parameters(nsamples, prior_parameters, redshift_mass_prior_data, uniform_redshift_mass=False, uniform_logf=False):
     """Sample sps parameters given some prior parameters.
@@ -171,6 +173,26 @@ def truncated_normal(mu, sigma, min, max, samples):
     """
     a, b = (min - mu) / sigma, (max - mu) / sigma
     return truncnorm.rvs(a, b, loc=mu, scale=sigma, size=samples)
+
+def modified_prospector_beta_sfh_prior(nsamples, redshift, logmass, sigma):
+    """Each call of this function will sample a different expected csfrd
+    """
+
+    dym_sfh =  mpb.ModifiedDymSFHfixZred(zred=redshift,
+                mass_mini=logmass-1e-3, mass_maxi=logmass+1e-3,
+                z_mini=-1.98, z_maxi=0.19,
+                logsfr_ratio_mini=-5.0, logsfr_ratio_maxi=5.0,
+                logsfr_ratio_tscale=sigma, nbins_sfh=7,
+                const_phi=True)
+    
+    logsfrratios_samples = np.empty((nsamples, 6))
+    for n in range(nsamples):
+
+        samples = dym_sfh.sample()
+        logsfrratios = ts.nzsfh_to_logsfr_ratios(samples)
+        logsfrratios_samples[n, :] = logsfrratios
+
+    return logsfrratios_samples
 
 def prospector_beta_sfh_prior(nsamples, redshift, logmass, sigma):
     """Samples log SFR ratios from prospector-beta prior (Wang et al. 2023).
