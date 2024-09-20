@@ -10,7 +10,7 @@ class CSFRDModel(gpytorch.models.ExactGP):
     def __init__(self, train_x, train_y, likelihood):
         super(CSFRDModel, self).__init__(train_x, train_y, likelihood)
         self.mean_module = gpytorch.means.ZeroMean()
-        self.covar_module = gpytorch.kernels.ScaleKernel(gpytorch.kernels.RBFKernel(lengthscale_constraint=gpytorch.constraints.GreaterThan(3.5)))
+        self.covar_module = gpytorch.kernels.ScaleKernel(gpytorch.kernels.RBFKernel(lengthscale_constraint=gpytorch.constraints.GreaterThan(7.0)))
 
     def forward(self, x):
         mean_x = self.mean_module(x)
@@ -46,10 +46,10 @@ class CSFRDPrior():
         return self.reverse_scaling(self.test_z, self.prior.sample()).numpy() - self.systematic_shift
     
     def get_prior_mean(self):
-        return self.reverse_scaling(self.test_z, self.prior.mean).numpy()
+        return self.reverse_scaling(self.test_z, self.prior.mean.detach()).numpy()
     
     def get_prior_mean_corrected(self):
-        return self.reverse_scaling(self.test_z, self.prior.mean).numpy() - self.systematic_shift
+        return self.reverse_scaling(self.test_z, self.prior.mean.detach()).numpy() - self.systematic_shift
 
     def reverse_scaling(self, redshift, log_shifted_csfrd):
         return 10**shift_csfrd_inverse(redshift, log_shifted_csfrd, np.flip(self.behroozi_redshift), np.flip(np.log10(self.total_obs_csfr)))
