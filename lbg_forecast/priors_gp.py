@@ -260,6 +260,61 @@ class DustIndexPrior():
             ax[1].set_xlabel("Av")
             ax[1].set_ylabel("delta")
 
+class DiffuseDustPrior():
+
+    def __init__(self):
+
+        state_dict = torch.load('/Users/fpetri/repos/LBGForecast/gp_models/gp_dust2.pth', weights_only=True)
+        self.train_sfr, self.train_av, self.av_errors, self.av_err_l_popsfr, self.av_err_h_popsfr = get_diffuse_dust_training_data()
+
+        self.likelihood = gpytorch.likelihoods.FixedNoiseGaussianLikelihood(torch.square(self.av_errors),
+                                                              learn_additional_noise=False,
+                                                                noise_constraint=gpytorch.constraints.GreaterThan(0.0))
+        
+        self.model = DustIndexModel(train_x=self.train_av, train_y=torch.zeros_like(self.train_av), likelihood=self.likelihood)
+        self.test_sfr = torch.linspace(-5, 3, 100)
+        self.mean = np.interp(self.test_sfr, self.train_sfr, self.train_av)
+
+        self.model.load_state_dict(state_dict)
+        self.model.eval()
+
+        self.prior = self.model(self.test_sfr)
+
+    def sample_prior(self):
+        return self.prior.sample().numpy() + self.mean
+    
+    def get_prior_mean(self):
+        return self.prior.mean + self.mean
+    
+    def plot_model(self):
+
+        with torch.no_grad():
+            # Initialize plot
+            f, ax = plt.subplots(2, 1, figsize=(10, 7))
+
+            # Get upper and lower confidence bounds
+            lower, upper = self.prior.confidence_region()
+            # Plot training data as black stars
+            ax[0].errorbar(self.train_sfr.numpy(), self.train_av.numpy(), yerr=[self.av_err_l_popsfr, self.av_err_h_popsfr], fmt='ko', capsize=2)
+            # Plot predictive means as blue line
+            ax[0].plot(self.test_sfr.numpy(), self.get_prior_mean(), 'b')
+            # Shade between the lower and upper confidence bounds
+            ax[0].fill_between(self.test_sfr.numpy(), lower+self.mean, upper+self.mean, alpha=0.5)
+            #ax.legend(['Observed Data', 'Mean', 'Confidence'])
+
+            ax[0].set_xlabel("log10SFR")
+            ax[0].set_ylabel("Av")
+
+            nsamples = 1000
+            for sample in range(nsamples):
+                f_sample = self.sample_prior()
+                ax[1].plot(self.test_sfr, f_sample, c='purple', alpha=0.1)
+            
+            ax[1].plot(self.test_sfr, self.get_prior_mean(), zorder=1000, ls='-', c='k')
+            ax[1].errorbar(self.train_sfr.numpy(), self.train_av.numpy(), yerr=[self.av_err_l_popsfr, self.av_err_h_popsfr], fmt='ko', capsize=2)
+
+            ax[1].set_xlabel("log10SFR")
+            ax[1].set_ylabel("Av")
 
 #data pre-processing
 def shift_csfrd(new_redshift, csfrd, redshift, mean):
@@ -363,3 +418,13 @@ def get_index_training_data():
     d_errors = torch.from_numpy(d_err_pop)
 
     return train_av, train_d, d_errors, d_err_l_pop, d_err_h_pop
+
+def get_diffuse_dust_training_data():
+
+    av_popsfr, sfr_popsfr, av_err_popsfr, av_err_l_popsfr, av_err_h_popsfr = extract_from_file("dust_data/sfr_popcosmos_data.txt")
+
+    train_sfr = torch.from_numpy(sfr_popsfr)
+    train_av = torch.from_numpy(av_popsfr)
+    av_errors = torch.from_numpy(av_err_popsfr)
+
+    return train_sfr, train_av, av_errors, av_err_l_popsfr, av_err_h_popsfr
