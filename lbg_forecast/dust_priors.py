@@ -10,7 +10,7 @@ def truncated_normal(mu, sigma, min, max, samples):
 
 def dust_index_function(dust2):
     dust_index_mean = -0.095 + 0.111*dust2 - 0.0066*dust2*dust2
-    return truncated_normal(dust_index_mean, 0.4, -2.2, 0.4, dust_index_mean.shape[0])
+    return truncated_normal(dust_index_mean, 0.4, -2.2, 0.4, len(dust_index_mean))
 
 def dust_ratio_prior(nsamples):
     return truncated_normal(1.0, 0.3, 0.0, 2.0, nsamples)
