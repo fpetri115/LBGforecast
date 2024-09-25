@@ -4,7 +4,7 @@ import numpy as np
 import lbg_forecast.cosmology as cosmo
 from astropy.io import ascii
 import matplotlib.pyplot as plt
-from lbg_forecast.population_model import truncated_normal as tnormal
+import lbg_forecast.population_model as pop
 
 class CSFRDModel(gpytorch.models.ExactGP):
 
@@ -231,12 +231,12 @@ class DustIndexPrior():
     def get_prior_mean(self):
         return self.prior.mean + self.mean
     
-    def sample_dust_index(self, input_av, nsamples):
+    def sample_dust_index(self, input_av):
         sampled_mean = self.sample_prior()
-        output_index = np.atleast_1d(np.interp(input_av, self.test_av, sampled_mean))
+        output_index = np.interp(input_av, self.test_av, sampled_mean)
 
-        sigma=0.3
-        return tnormal(output_index, sigma, -2.2, 0.4, (nsamples, output_index.shape[0]))
+        sigma=0.4
+        return pop.truncated_normal(output_index, sigma, -2.2, 0.4, input_av.shape[0])
     
     def plot_model(self):
 
@@ -293,6 +293,13 @@ class DiffuseDustPrior():
     
     def get_prior_mean(self):
         return self.prior.mean + self.mean
+    
+    def sample_dust2(self, input_sfr):
+        sampled_mean = self.sample_prior()
+        output_index = np.interp(input_sfr, self.test_sfr, sampled_mean)
+
+        sigma=0.2
+        return pop.truncated_normal(output_index, sigma, 0.0, 2.0, input_sfr.shape[0])
     
     def plot_model(self):
 

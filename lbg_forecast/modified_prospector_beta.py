@@ -9,7 +9,7 @@ import lbg_forecast.cosmology as cosmology
 from scipy.stats import t
 
 
-class ModifiedDymSFHfixZred(DymSFHfixZred):
+class ModifiedDymSFH(DymSFHfixZred):
 
     def __init__(self, parnames=[], name='', **kwargs):
         super().__init__(parnames=[], name='', **kwargs)
@@ -17,34 +17,27 @@ class ModifiedDymSFHfixZred(DymSFHfixZred):
         self._test_z, self._csfrd_sample = get_csfrd_prior()
         self.csfrd_spline = get_csfrd_spline(self._test_z, self._csfrd_sample)[1]
 
-    def sample(self, nsample=None, **kwargs):
-        """Draw a sample from the prior distribution.
-        Needed for minimizer.
-
-        :param nsample: (optional)
-            Unused. Will not work if nsample > 1 in draw_sample()!
-        """
-        if len(kwargs) > 0:
-            self.update(**kwargs)
+    def sample(self, redshift, mass):
+        #if len(kwargs) > 0:
+        #    self.update(**kwargs)
         # draw a zred from pdf(z)
-        zred = self.zred * 1
+        #zred = self.zred * 1
 
-        mass = self.mass_dist.sample()
+        #mass = self.mass_dist.sample()
 
         # given mass from above, draw logzsol
-        met_dist = priors.FastTruncatedNormal(a=self.params['z_mini'], b=self.params['z_maxi'],
-                                                mu=pb.loc_massmet(mass), sig=pb.scale_massmet(mass))
-        met = met_dist.sample()
+        #met_dist = priors.FastTruncatedNormal(a=self.params['z_mini'], b=self.params['z_maxi'],
+        #                                        mu=pb.loc_massmet(mass), sig=pb.scale_massmet(mass))
+        #met = met_dist.sample()
 
         # sfh = sfrd
-        logsfr_ratios = expe_logsfr_ratios_modified(self.csfrd_spline, this_z=zred, this_m=mass, nbins_sfh=self.params['nbins_sfh'],
+        logsfr_ratios = expe_logsfr_ratios_modified(self.csfrd_spline, this_z=redshift, this_m=mass, nbins_sfh=self.params['nbins_sfh'],
                                             logsfr_ratio_mini=self.params['logsfr_ratio_mini'],
                                             logsfr_ratio_maxi=self.params['logsfr_ratio_maxi'])
         logsfr_ratios_rvs = t.rvs(df=2, loc=logsfr_ratios, scale=self.params['logsfr_ratio_tscale'])
         logsfr_ratios_rvs = np.clip(logsfr_ratios_rvs, a_min=self.params['logsfr_ratio_mini'], a_max=self.params['logsfr_ratio_maxi'])
 
-        return np.concatenate([np.atleast_1d(zred), np.atleast_1d(mass),
-                                np.atleast_1d(met), np.atleast_1d(logsfr_ratios_rvs)])
+        return np.atleast_1d(logsfr_ratios_rvs)
     
 
 def get_csfrd_prior():
