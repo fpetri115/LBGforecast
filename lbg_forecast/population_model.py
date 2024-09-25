@@ -174,23 +174,23 @@ def truncated_normal(mu, sigma, min, max, samples):
     a, b = (min - mu) / sigma, (max - mu) / sigma
     return truncnorm.rvs(a, b, loc=mu, scale=sigma, size=samples)
 
-def modified_prospector_beta_sfh_prior(nsamples, redshift, logmass, sigma):
-    """Each call of this function will sample a different expected csfrd
+def modified_prospector_beta_sfh_prior(redshift, logmass, sigma):
+    """Each call of this function will sample a different expected csfrd. Based
+    off prospector-beta prior (Wang et al. 2023)
+
+    redshift and logmass are arrays, sigma is float
     """
 
-    dym_sfh =  mpb.ModifiedDymSFHfixZred(zred=redshift,
-                mass_mini=logmass-1e-3, mass_maxi=logmass+1e-3,
-                z_mini=-1.98, z_maxi=0.19,
-                logsfr_ratio_mini=-5.0, logsfr_ratio_maxi=5.0,
-                logsfr_ratio_tscale=sigma, nbins_sfh=7,
-                const_phi=True)
+    dym_sfh =  mpb.ModifiedDymSFH(sigma)
     
-    logsfrratios_samples = np.empty((nsamples, 6))
-    for n in range(nsamples):
+    logsfrratios_samples = np.empty((redshift.shape[0], 6))
 
-        samples = dym_sfh.sample()
-        logsfrratios = ts.nzsfh_to_logsfr_ratios(samples)
-        logsfrratios_samples[n, :] = logsfrratios
+    indx = 0
+    for z, logm in zip(redshift, logmass):
+
+        logsfrratios = dym_sfh.sample(z, logm)
+        logsfrratios_samples[indx, :] = logsfrratios
+        indx+=1
 
     return logsfrratios_samples
 

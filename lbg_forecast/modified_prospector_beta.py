@@ -9,33 +9,24 @@ import lbg_forecast.cosmology as cosmology
 from scipy.stats import t
 
 
-class ModifiedDymSFH(DymSFHfixZred):
+class ModifiedDymSFH():
 
-    def __init__(self, parnames=[], name='', **kwargs):
-        super().__init__(parnames=[], name='', **kwargs)
+    def __init__(self, tscale, logsfrmin=-5, logsfrmax=5):
 
         self._test_z, self._csfrd_sample = get_csfrd_prior()
         self.csfrd_spline = get_csfrd_spline(self._test_z, self._csfrd_sample)[1]
+        self.nbins=7
+        self.logsfrmin = logsfrmin
+        self.logsfrmax = logsfrmax
+        self.tscale = tscale
 
-    def sample(self, redshift, mass):
-        #if len(kwargs) > 0:
-        #    self.update(**kwargs)
-        # draw a zred from pdf(z)
-        #zred = self.zred * 1
+    def sample(self, redshift, logmass):
 
-        #mass = self.mass_dist.sample()
-
-        # given mass from above, draw logzsol
-        #met_dist = priors.FastTruncatedNormal(a=self.params['z_mini'], b=self.params['z_maxi'],
-        #                                        mu=pb.loc_massmet(mass), sig=pb.scale_massmet(mass))
-        #met = met_dist.sample()
-
-        # sfh = sfrd
-        logsfr_ratios = expe_logsfr_ratios_modified(self.csfrd_spline, this_z=redshift, this_m=mass, nbins_sfh=self.params['nbins_sfh'],
-                                            logsfr_ratio_mini=self.params['logsfr_ratio_mini'],
-                                            logsfr_ratio_maxi=self.params['logsfr_ratio_maxi'])
-        logsfr_ratios_rvs = t.rvs(df=2, loc=logsfr_ratios, scale=self.params['logsfr_ratio_tscale'])
-        logsfr_ratios_rvs = np.clip(logsfr_ratios_rvs, a_min=self.params['logsfr_ratio_mini'], a_max=self.params['logsfr_ratio_maxi'])
+        logsfr_ratios = expe_logsfr_ratios_modified(self.csfrd_spline, this_z=redshift, this_m=logmass, nbins_sfh=self.nbins,
+                                            logsfr_ratio_mini=self.logsfrmin,
+                                            logsfr_ratio_maxi=self.logsfrmax)
+        logsfr_ratios_rvs = t.rvs(df=2, loc=logsfr_ratios, scale=self.tscale)
+        logsfr_ratios_rvs = np.clip(logsfr_ratios_rvs, a_min=self.logsfrmin, a_max=self.logsfrmax)
 
         return np.atleast_1d(logsfr_ratios_rvs)
     
