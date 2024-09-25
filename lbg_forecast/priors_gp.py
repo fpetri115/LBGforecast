@@ -54,7 +54,7 @@ class CSFRDPrior():
                                                                 noise_constraint=gpytorch.constraints.GreaterThan(0.0))
         
         self.model = CSFRDModel(train_x=self.train_z, train_y=self.train_log_csfrd, likelihood=self.likelihood)
-        self.test_z = torch.linspace(0.001, 7, 200)
+        self.test_z = torch.linspace(0.001, 10, 200)
 
         self.model.load_state_dict(state_dict)
         self.model.eval()
@@ -114,7 +114,7 @@ class CSFRDPrior():
             ax2.set_xscale('function', functions=(forward, inverse))
             ax2.set_xlabel("Redshift")
             ax2.set_ylabel("Cosmic Star Formation Rate Density")
-            ax2.set_xlim(0, 7)
+            ax2.set_xlim(0, 10)
             ax2.set_ylim(0.003, 0.4)
 
     def plot_true_csfrds(self):
@@ -137,7 +137,7 @@ class CSFRDPrior():
             ax1.set_xscale('function', functions=(forward, inverse))
             ax1.set_xlabel("Redshift")
             ax1.set_ylabel("Cosmic Star Formation Rate Density")
-            ax1.set_xlim(0, 7)
+            ax1.set_xlim(0, 10)
             ax1.set_ylim(0.003, 0.4)
 
             ax2.errorbar(self.train_z, 10**self.log_csfrd, yerr=[self.err_l, self.err_h], fmt="ko", capsize=2, ms=4, lw=1)
@@ -152,7 +152,7 @@ class CSFRDPrior():
             ax2.set_xscale('function', functions=(forward, inverse))
             ax2.set_xlabel("Redshift")
             ax2.set_ylabel("Cosmic Star Formation Rate Density")
-            ax2.set_xlim(0, 7)
+            ax2.set_xlim(0, 10)
             ax2.set_ylim(0.003, 0.4)
 
     def plot_combined(self):
@@ -179,7 +179,7 @@ class CSFRDPrior():
             ax.set_xscale('function', functions=(forward, inverse))
             ax.set_xlabel("Redshift")
             ax.set_ylabel("Cosmic Star Formation Rate Density")
-            ax.set_xlim(0, 7)
+            ax.set_xlim(0, 10)
             ax.set_ylim(0.003, 0.4)
 
     def get_behroozi19_curves(self):
