@@ -280,7 +280,7 @@ class DiffuseDustPrior():
                                                                 noise_constraint=gpytorch.constraints.GreaterThan(0.0))
         
         self.model = DustIndexModel(train_x=self.train_av, train_y=torch.zeros_like(self.train_av), likelihood=self.likelihood)
-        self.test_sfr = torch.linspace(-5, 3, 100)
+        self.test_sfr = torch.linspace(-8, 4, 100)
         self.mean = np.interp(self.test_sfr, self.train_sfr, self.train_av)
 
         self.model.load_state_dict(state_dict)
@@ -296,10 +296,10 @@ class DiffuseDustPrior():
     
     def sample_dust2(self, input_sfr):
         sampled_mean = self.sample_prior()
-        output_index = np.interp(input_sfr, self.test_sfr, sampled_mean)
+        output_dust2av = np.interp(input_sfr, self.test_sfr, sampled_mean)
 
         sigma=0.2
-        return pop.truncated_normal(output_index, sigma, 0.0, 2.0, input_sfr.shape[0])
+        return pop.truncated_normal(output_dust2av, sigma, 0.0, 4.0, input_sfr.shape[0])
     
     def plot_model(self):
 

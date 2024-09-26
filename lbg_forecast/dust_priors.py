@@ -15,6 +15,16 @@ def dust_index_function(dust2):
 def dust_ratio_prior(nsamples):
     return truncated_normal(1.0, 0.3, 0.0, 2.0, nsamples)
 
+def sample_dust1(dust2):
+    """optical depth"""
+    dust_ratio = dust_ratio_prior(dust2.shape[0])
+    return dust_ratio*dust2
+
+def a_to_tau(a):
+    return 0.92103*a
+def tau_to_a(tau):
+    return 1.0857*tau
+
 def dust2_function(sfr):
     """
     Parameters
