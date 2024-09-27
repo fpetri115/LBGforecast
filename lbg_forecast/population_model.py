@@ -2,7 +2,7 @@ import numpy as np
 from astropy.cosmology import WMAP9 as cosmo
 from prospect.models import priors_beta as pb
 from prospect.models import transforms as ts
-import lbg_forecast.priors_old as pr
+import lbg_forecast.priors_mass_func as pr
 import lbg_forecast.sfh as sfh
 import lbg_forecast.dust_priors as dpr
 import math
@@ -91,63 +91,15 @@ def generate_sps_parameters(nsamples, prior_parameters, redshift_mass_prior_data
     agn_tau = truncated_normal(agn_tau_mu, agn_tau_sigma, agn_tau_min, agn_tau_max, nsamples) 
     
     #Total stellar mass formed in solar masses - mass
-    mass = 10**m_samples
+    mass = m_samples
 
     #Log SFR ratios
     if(uniform_logf):
         log_sfr_ratios = np.random.uniform(-5.0, 5.0, (nsamples, 6))
     else:
-        sf_mu = np.array([logsfmu1, logsfmu2, logsfmu3, logsfmu4, logsfmu5, logsfmu6])
-        sf_sig = np.array([logsfsig1, logsfsig2, logsfsig3, logsfsig4, logsfsig5, logsfsig6])
-        log_sfr_ratios = continuity_prior(nsamples, nu, sf_mu, sf_sig, redshift)
+        log_sfr_ratios = modified_prospector_beta_sfh_prior(redshift, mass, 0.3)
     
-   #     log_sfr_rations_means = []
-   #     for n in range(nsamples):
-   #         log_sfr_rations_means.append(pb.expe_logsfr_ratios(redshift[n], mass[n], -5.0, 5.0))
-
-   #    log_sfr_ratios = t.rvs(df=2, loc=log_sfr_rations_means, scale=0.3)
-   #     #log_sfr_ratios = np.clip(logsfr_ratios_rvs, a_min=-5.0, a_max=5.0)
-
-
-###########
-    #prior = pb.NzSFH(zred_mini=0.01, zred_maxi=7.0, mass_mini=7.0, mass_maxi=13.0,
-    #            z_mini=-2.5, z_maxi=0.5,
-    #            logsfr_ratio_mini=-5.0, logsfr_ratio_maxi=5.0,
-    #            logsfr_ratio_tscale=0.3, nbins_sfh=7,
-    #            const_phi=True)
-
-
-
-    #prior_samples = []
-    #for i in range(nsamples):
-    #    prior_samples.append(prior.sample())
-
-    #samples = np.vstack(np.array(prior_samples))
-
-    #redshift = samples[:, 0]
-    #mass = 10**samples[:, 1]
-    #logzsol = samples[:, 2]
-    #log_sfr_ratios = samples[:, 3:]
-##########
-
-    #Dust parameter for attenuating young starlight - dust1
-    #Diffuse dust parameter - dust2
-    dust1_min = 0.0
-    dust1_max = 4.0
-    dust2_min = 0.0
-    dust2_max = 4.0
-    #Index of dust attenuation law - dust_index
-    dust_index_min = -2.2
-    dust_index_max = 0.4
-
-    
-    dust2 = truncated_normal(dust2_mu,dust2_sigma, dust2_min, dust2_max, nsamples)#dpr.dust2_function(sfh.calculate_recent_sfr(redshift, mass, log_sfr_ratios))
-    dust1 = truncated_normal(dust1_mu,dust1_sigma, dust1_min, dust1_max, nsamples)#dpr.dust_ratio_prior(nsamples)*dust2
-    #dust_index = truncated_normal(dust_index_mu, dust_index_sigma, dust_index_min, dust_index_max, nsamples)#dpr.dust_index_function(dust2)
-
-    #dust2 = dpr.dust2_function(sfh.calculate_recent_sfr(redshift, 10**mass, log_sfr_ratios))
-    #dust1 = dpr.dust_ratio_prior(nsamples)*dust2
-    dust_index = dpr.dust_index_function(dust2)
+    dust_index, dust1, dust2 = dpr.sample_dust_model(redshift, mass, log_sfr_ratios)
 
     sps_parameters.append(redshift)
     sps_parameters.append(logzsol)
@@ -164,7 +116,7 @@ def generate_sps_parameters(nsamples, prior_parameters, redshift_mass_prior_data
     for column in range(ncols):
         sps_parameters.append(log_sfr_ratios[:, column])
     
-    sps_parameters.append(mass)
+    sps_parameters.append(10**mass)
 
     return np.transpose(np.array(sps_parameters))
 
@@ -213,7 +165,7 @@ def prospector_beta_sfh_prior(nsamples, redshift, logmass, sigma):
 
     return logsfrratios_samples
 
-def continuity_prior(nsamples, nu, mu, sigma, redshifts):
+def continuity_prior(nsamples, nu, mu, sigma):
     """Samples log sfr ratios from student's t distributions
     for continuity SFH, TRUNCATED at [min, max]
     
@@ -244,18 +196,13 @@ def continuity_prior(nsamples, nu, mu, sigma, redshifts):
 
     #inverse transform sampling for each logsfrratio parameter
     for sfrs in range(nsfrs):
-        #cdf_samples = np.random.uniform(t.cdf(min, nu, loc=mu[sfrs], scale=sigma[sfrs]), t.cdf(max, nu, loc=mu[sfrs], scale=sigma[sfrs]), size=(nsamples,))
-        #log_sfr_ratios = t.ppf(cdf_samples, nu, loc=mu[sfrs], scale=sigma[sfrs])
-        all_log_sfr_ratios.append(sample_truncated_t(nsamples, nu, mu[sfrs], sigma[sfrs]))#np.reshape(log_sfr_ratios, (nsamples, 1)))
-
-        low_redshift_inds = np.where(redshifts < 2.0)[0]
-        all_log_sfr_ratios[sfrs][low_redshift_inds, :] = sample_truncated_t(low_redshift_inds.shape[0], nu, mu[sfrs], 0.3)
+        all_log_sfr_ratios.append(sample_truncated_t(nsamples, nu, mu[sfrs], sigma[sfrs]))
 
     all_log_sfr_ratios = np.hstack(all_log_sfr_ratios)
 
     return all_log_sfr_ratios
 
-def sample_truncated_t(nsamples, nu, mu, sigma, min=-5, max=5):
+def sample_truncated_t(nsamples, nu, mu, sigma, min=-5.0, max=5.0):
         """Returns truncated students't distribution samples as column vector
         """
         cdf_samples = np.random.uniform(t.cdf(min, nu, loc=mu, scale=sigma), t.cdf(max, nu, loc=mu, scale=sigma), size=(nsamples,))

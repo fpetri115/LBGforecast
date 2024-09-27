@@ -9,7 +9,7 @@ import numpy as np
 import lbg_forecast.hyperparameters as hyp
 import lbg_forecast.population_model as pop
 import lbg_forecast.sps as sps
-import lbg_forecast.priors_old as pr
+import lbg_forecast.priors_mass_func as pr
 from mpi4py import MPI
 
 

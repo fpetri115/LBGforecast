@@ -54,9 +54,10 @@ class CSFRDPrior():
                                                                 noise_constraint=gpytorch.constraints.GreaterThan(0.0))
         
         self.model = CSFRDModel(train_x=self.train_z, train_y=self.train_log_csfrd, likelihood=self.likelihood)
-        self.test_z = torch.linspace(0.001, 10, 200)
+        self.test_z = torch.linspace(0, 30, 3000).to(torch.double)
 
         self.model.load_state_dict(state_dict)
+        self.model.to(torch.double)
         self.model.eval()
 
         self.prior = self.model(self.test_z)
@@ -193,6 +194,36 @@ class CSFRDPrior():
 
         return redshift, total_obs_csfr, true_csfr
     
+    def plot_extended(self):
+
+        prospb = np.loadtxt("/Users/fpetri/repos/LBGForecast/csfr_data/behroozi_19_sfrd.txt")
+        behroozi19 = self.get_behroozi19_curves()
+        with torch.no_grad():
+
+            f, ax = plt.subplots(1, 1, figsize=(7, 5))
+
+            ax.errorbar(self.train_z, 10**self.log_csfrd, yerr=[self.err_l, self.err_h], fmt="ko", capsize=2, ms=4, lw=1)
+            
+            ax.plot(self.test_z.numpy(), self.get_prior_mean(), lw=2, zorder=1200, c="b")
+            lower, upper = self.prior.confidence_region()
+            ax.fill_between(self.test_z.numpy(), self.reverse_scaling(self.test_z, lower), self.reverse_scaling(self.test_z, upper), alpha=0.5, zorder=0, color="b")
+            ax.plot(behroozi19[0], behroozi19[1], zorder=1100, ls="--", c="b", lw=2)
+
+
+            ax.plot(self.test_z.numpy(), self.get_prior_mean_corrected(), lw=2, zorder=1200, c='r')
+            lower, upper = self.prior.confidence_region()
+            ax.fill_between(self.test_z.numpy(), self.reverse_scaling(self.test_z, lower)-self.systematic_shift, self.reverse_scaling(self.test_z, upper)-self.systematic_shift, alpha=0.5, zorder=0, color="r")
+            ax.plot(behroozi19[0], behroozi19[2], zorder=1100, ls="--", c="r", lw=2)
+
+            ax.plot(prospb[:, 0], prospb[:, 2])
+
+            #ax.set_yscale("log")
+            ax.set_xscale('function', functions=(forward, inverse))
+            ax.set_xlabel("Redshift")
+            ax.set_ylabel("Cosmic Star Formation Rate Density")
+            ax.set_xlim(0, 30)
+            ax.set_ylim(0.0, 0.4)
+
     def calculate_systematic(self):
 
         data = ascii.read("csfr_data/csfrs.dat")  
