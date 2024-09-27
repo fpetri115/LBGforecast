@@ -235,7 +235,7 @@ class DustIndexPrior():
         sampled_mean = self.sample_prior()
         output_index = np.interp(input_av, self.test_av, sampled_mean)
 
-        sigma=0.4
+        sigma=np.random.uniform(0.2, 0.5)
         return pop.truncated_normal(output_index, sigma, -2.2, 0.4, input_av.shape[0])
     
     def plot_model(self):
@@ -298,7 +298,7 @@ class DiffuseDustPrior():
         sampled_mean = self.sample_prior()
         output_dust2av = np.interp(input_sfr, self.test_sfr, sampled_mean)
 
-        sigma=0.2
+        sigma=np.random.uniform(0.1, 0.3)
         return pop.truncated_normal(output_dust2av, sigma, 0.0, 4.0, input_sfr.shape[0])
     
     def plot_model(self):

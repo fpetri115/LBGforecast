@@ -1,5 +1,6 @@
 import numpy as np
 import lbg_forecast.sfh as sfh
+import lbg_forecast.priors_gp as gp
 from scipy.stats import truncnorm
 
 def truncated_normal(mu, sigma, min, max, samples):
@@ -13,7 +14,9 @@ def dust_index_function(dust2):
     return truncated_normal(dust_index_mean, 0.4, -2.2, 0.4, len(dust_index_mean))
 
 def dust_ratio_prior(nsamples):
-    return truncated_normal(1.0, 0.3, 0.0, 2.0, nsamples)
+    mean = np.random.uniform(0.8, 1.2)
+    sigma = np.random.uniform(0.1, 0.4)
+    return truncated_normal(mean, sigma, 0.0, 2.0, nsamples)
 
 def sample_dust1(dust2):
     """optical depth"""
@@ -45,11 +48,18 @@ def dust2_function(sfr):
 def peturb_means(means, pertubation):
     return means+np.random.uniform(-pertubation, pertubation)
 
-def sample_dust_priors(redshift, mass, log_sfr_ratios):
+def sample_dust_model(redshift, logmass, logsfrratios, return_sfrs=False):
 
-    recent_sfrs = sfh.calculate_recent_sfr(redshift, 10**mass, log_sfr_ratios)
-    dust2 = dust2_function(recent_sfrs)
-    dust_index = dust_index_function(dust2)
-    dust_ratio = dust_ratio_prior(dust2.shape[0])
+    diffuse_dust_prior = gp.DiffuseDustPrior()
+    index_prior = gp.DustIndexPrior()
 
-    return dust2, dust_index, dust_ratio, recent_sfrs
+    recent_sfrs = np.log10(sfh.calculate_recent_sfr(redshift, 10**logmass, logsfrratios))
+    dust2_av = a_to_tau(diffuse_dust_prior.sample_dust2(recent_sfrs))
+    dust_index = index_prior.sample_dust_index(dust2_av)
+    dust2 = a_to_tau(dust2_av)
+    dust1 = sample_dust1(dust2)
+
+    if(return_sfrs):
+        return dust_index, dust1, dust2, recent_sfrs
+    else:
+        return dust_index, dust1, dust2
