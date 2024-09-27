@@ -22,8 +22,6 @@ class ModifiedDymSFH():
         self.logsfrmax = logsfrmax
         self.tscale = tscale
 
-        plt.plot(self._test_z, self._csfrd_sample)
-
     def sample(self, redshift, logmass):
 
         logsfr_ratios = expe_logsfr_ratios_modified(self.csfrd_spline, this_z=redshift, this_m=logmass, nbins_sfh=self.nbins,
