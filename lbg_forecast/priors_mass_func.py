@@ -75,13 +75,32 @@ def select_allowed_parameter_curves(z_grid, curves):
     redshift_dependent_curves =  curves[:3]
     alphas = curves[3:]
     selected_curves = []
+        
+    #prior_bounds = [np.array([np.log10(0.1e-3), np.log10(2.4e-3)]), np.array([-100, -4]), np.array([10, 12])]
+
     prior_bounds = [np.array([np.log10(0.1e-3), np.log10(0.6e-3)]), np.array([-100, -4]), np.array([10, 12])]
     #prior_bounds = [np.array([np.log10(1e-5), np.log10(1e-3)]), np.array([-100, -4]), np.array([10, 12])]
     i = 0
     for param in redshift_dependent_curves:
         param_df = pd.DataFrame(param, columns=z_grid)
+
+
         param_df.drop(param_df[param_df[z_grid[-1]] > prior_bounds[i][1]].index, axis=0, inplace=True)
         param_df.drop(param_df[param_df[z_grid[-1]] < prior_bounds[i][0]].index, axis=0, inplace=True)
+
+        #else:
+        #    z_cutoff=3.0
+        #    high_z_indexes = np.where(z_grid > z_cutoff)[0]
+        #    high_zs = z_grid[high_z_indexes]
+
+            #print(param_df[high_zs])
+        #    for z in high_zs:
+        #        param_df.drop(param_df[param_df[z] > 2.4e-3].index, axis=0, inplace=True)
+        #        param_df.drop(param_df[param_df[z] < 0.01e-3].index, axis=0, inplace=True)
+
+
+            #param_df.drop(param_df[param_df[z_grid[-1]] < 0.01e-3].index, axis=0, inplace=True)
+
         selected_curves.append(param_df.to_numpy())
         i+=1
 
