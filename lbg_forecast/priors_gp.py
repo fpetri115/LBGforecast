@@ -99,7 +99,7 @@ class CSFRDPrior():
             ax1.set_yscale("log")
             ax1.set_xscale('function', functions=(forward, inverse))
             ax1.set_xlabel("Redshift")
-            ax1.set_ylabel("Cosmic Star Formation Rate Density")
+            ax1.set_ylabel("Cosmic Star Formation Rate Density [$\mathrm{M}_{\odot} \mathrm{yr}^{-1} \mathrm{Mpc}^{-3}$]")
             ax1.set_xlim(0, 7)
             ax1.set_ylim(0.003, 0.4)
 
@@ -114,7 +114,7 @@ class CSFRDPrior():
             ax2.set_yscale("log")
             ax2.set_xscale('function', functions=(forward, inverse))
             ax2.set_xlabel("Redshift")
-            ax2.set_ylabel("Cosmic Star Formation Rate Density")
+            ax2.set_ylabel("Cosmic Star Formation Rate Density [$\mathrm{M}_{\odot} \mathrm{yr}^{-1} \mathrm{Mpc}^{-3}$]")
             ax2.set_xlim(0, 10)
             ax2.set_ylim(0.003, 0.4)
 
@@ -137,7 +137,7 @@ class CSFRDPrior():
             ax1.set_yscale("log")
             ax1.set_xscale('function', functions=(forward, inverse))
             ax1.set_xlabel("Redshift")
-            ax1.set_ylabel("Cosmic Star Formation Rate Density")
+            ax1.set_ylabel("Cosmic Star Formation Rate Density [$\mathrm{M}_{\odot} \mathrm{yr}^{-1} \mathrm{Mpc}^{-3}$]")
             ax1.set_xlim(0, 10)
             ax1.set_ylim(0.003, 0.4)
 
@@ -152,7 +152,7 @@ class CSFRDPrior():
             ax2.set_yscale("log")
             ax2.set_xscale('function', functions=(forward, inverse))
             ax2.set_xlabel("Redshift")
-            ax2.set_ylabel("Cosmic Star Formation Rate Density")
+            ax2.set_ylabel("Cosmic Star Formation Rate Density [$\mathrm{M}_{\odot} \mathrm{yr}^{-1} \mathrm{Mpc}^{-3}$]")
             ax2.set_xlim(0, 10)
             ax2.set_ylim(0.003, 0.4)
 
@@ -161,27 +161,30 @@ class CSFRDPrior():
         behroozi19 = self.get_behroozi19_curves()
         with torch.no_grad():
 
-            f, ax = plt.subplots(1, 1, figsize=(7, 5))
+            f, ax = plt.subplots(1, 1, figsize=(22, 16))
 
-            ax.errorbar(self.train_z, 10**self.log_csfrd, yerr=[self.err_l, self.err_h], fmt="ko", capsize=2, ms=4, lw=1)
+            ax.errorbar(self.train_z, 10**self.log_csfrd, yerr=[self.err_l, self.err_h], fmt='o', mfc='k', ecolor='k', mec='k', alpha=1.0, elinewidth=2.5, capsize=5, ms=12, lw=3, label="Observed CSFRD (Behroozi et al. 2019)")
             
-            ax.plot(self.test_z.numpy(), self.get_prior_mean(), lw=2, zorder=1200, c="b")
+            ax.plot(self.test_z.numpy(), self.get_prior_mean(), lw=7, zorder=1200, c="k", label="Gaussian Process Mean")
             lower, upper = self.prior.confidence_region()
-            ax.fill_between(self.test_z.numpy(), self.reverse_scaling(self.test_z, lower), self.reverse_scaling(self.test_z, upper), alpha=0.5, zorder=0, color="b")
-            ax.plot(behroozi19[0], behroozi19[1], zorder=1100, ls="--", c="b", lw=2)
+            ax.fill_between(self.test_z.numpy(), self.reverse_scaling(self.test_z, lower), self.reverse_scaling(self.test_z, upper), alpha=0.4, lw=0, color="k", label="$2\sigma $ Confidence")
+            ax.plot(behroozi19[0], behroozi19[1], zorder=1100, ls="--", c="k", lw=7, label="Behroozi et al. (2019) Fit")
 
 
-            ax.plot(self.test_z.numpy(), self.get_prior_mean_corrected(), lw=2, zorder=1200, c='r')
+            ax.plot(self.test_z.numpy(), self.get_prior_mean_corrected(), lw=7, zorder=1200, c='red', ls="-", label="Gaussian Process Mean (Corrected)")
             lower, upper = self.prior.confidence_region()
-            ax.fill_between(self.test_z.numpy(), self.reverse_scaling(self.test_z, lower)-self.systematic_shift, self.reverse_scaling(self.test_z, upper)-self.systematic_shift, alpha=0.5, zorder=0, color="r")
-            ax.plot(behroozi19[0], behroozi19[2], zorder=1100, ls="--", c="r", lw=2)
+            ax.fill_between(self.test_z.numpy(), self.reverse_scaling(self.test_z, lower)-self.systematic_shift, self.reverse_scaling(self.test_z, upper)-self.systematic_shift, alpha=0.4, lw=0, color="red", label="$2\sigma $ Confidence (Corrected)")
+            ax.plot(behroozi19[0], behroozi19[2], zorder=1100, c="red", ls="--", lw=7, label="Behroozi et al. (2019) Fit (Corrected)")
 
             ax.set_yscale("log")
             ax.set_xscale('function', functions=(forward, inverse))
-            ax.set_xlabel("Redshift")
-            ax.set_ylabel("Cosmic Star Formation Rate Density")
+            ax.set_xlabel("Redshift", fontsize=32)
+            ax.set_ylabel("Cosmic Star Formation Rate Density [$\mathrm{M}_{\odot} \mathrm{yr}^{-1} \mathrm{Mpc}^{-3}$]", fontsize=32)
             ax.set_xlim(0, 10)
+            ax.tick_params(axis='y', labelsize=32)
+            ax.tick_params(axis='x', labelsize=32)
             ax.set_ylim(0.003, 0.4)
+            ax.legend(frameon=False, fontsize=22)
 
     def get_behroozi19_curves(self):
 
@@ -266,7 +269,7 @@ class DustIndexPrior():
         sampled_mean = self.sample_prior()
         output_index = np.interp(input_av, self.test_av, sampled_mean)
 
-        sigma=np.random.uniform(0.2, 0.5)
+        sigma=np.random.uniform(0.1, 0.5)
         return pop.truncated_normal(output_index, sigma, -2.2, 0.4, input_av.shape[0])
     
     def plot_model(self):
@@ -298,6 +301,29 @@ class DustIndexPrior():
 
             ax[1].set_xlabel("Av")
             ax[1].set_ylabel("delta")
+
+    def plot_model_single(self):
+
+        with torch.no_grad():
+            # Initialize plot
+            f, ax = plt.subplots(1, 1, figsize=(10, 7))
+
+            # Get upper and lower confidence bounds
+            lower, upper = self.prior.confidence_region()
+            # Plot training data as black stars
+            ax.errorbar(self.train_av.numpy(), self.train_d.numpy(), yerr=[self.d_err_l_pop, self.d_err_h_pop], fmt='o', mfc='k', ecolor='k', mec='k', alpha=1.0, elinewidth=2.5, capsize=5, ms=12, lw=3,)
+            # Plot predictive means as blue line
+            ax.plot(self.test_av.numpy(), self.get_prior_mean(), 'k')
+            # Shade between the lower and upper confidence bounds
+            ax.fill_between(self.test_av.numpy(), lower+self.mean, upper+self.mean, alpha=0.5)
+            #ax.legend(['Observed Data', 'Mean', 'Confidence'])
+
+            ax.set_xlabel("Diffuse Dust Attenuation", fontsize=24)
+            ax.set_ylabel("Diffuse Dust Index", fontsize=24)
+            ax.tick_params(axis='x', labelsize=24)
+            ax.tick_params(axis='y', labelsize=24)
+
+
 
 class DiffuseDustPrior():
 
