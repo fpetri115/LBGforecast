@@ -10,6 +10,7 @@ import lbg_forecast.sfh as sfh
 import lbg_forecast.zhistory as zh
 import lbg_forecast.population_model as pop
 import lbg_forecast.lyalpha as ly
+import lbg_forecast.igm as igm
 
 from astropy.cosmology import WMAP1 as cosmo
 #from astropy.coordinates import Distance
@@ -144,11 +145,17 @@ def fsps_get_magnitudes(sps_model, filters):
     return mags# - 2.5*logmass
 
 
-def get_magnitudes(sps_model, filters, cosmology, lya_uncertainity=False, return_spec=False, path="./"):
+def get_magnitudes(sps_model, filters, cosmology, modify_igm=False, lya_uncertainity=False, return_spec=False, path="./"):
     
     lsun = L_sun.cgs.value
+    redshift = sps_model.params['zred']
+    f_igm = sps_model.params['igm_factor']
 
     lambdas, spectrum = sps_model.get_spectrum(tage=sps_model.params['tage'], peraa=True)
+
+    if(modify_igm):
+        att = igm.apply_igm_attenuation(lambdas, redshift, f_igm)
+        spectrum = spectrum*att
 
     if(lya_uncertainity):
         lya_width = np.random.uniform(30, 100)
@@ -156,11 +163,10 @@ def get_magnitudes(sps_model, filters, cosmology, lya_uncertainity=False, return
         a_param = np.random.uniform(0, 1)
         spectrum = ly.modify_peak(lambdas, spectrum, 60, lya_width, lya_bias, a_param, diagnostics=False)
 
-    redshift = sps_model.params['zred']
-
     luminosity_distance = cosmology.luminosity_distance(redshift).cgs.value
 
-    redshifted_spectrum = redshift_fsps_spectrum(sps_model, (lambdas, spectrum)) #lsun aa-1
+    redshifted_spectrum = redshift_fsps_spectrum(sps_model, (lambdas*(1+redshift), spectrum)) #lsun aa-1
+
     redshifted_spectrum_cgs = redshifted_spectrum*(lsun/(4.0*np.pi*(luminosity_distance**2))) #erg s-1 cm-2 aa-1
     redshifted_spectrum_sedpy = redshifted_spectrum_cgs #erg s-1 cm-2 aa-1
 
@@ -172,7 +178,7 @@ def get_magnitudes(sps_model, filters, cosmology, lya_uncertainity=False, return
     magnitudes = observate.getSED(lambdas, redshifted_spectrum_sedpy, filterlist=bands, linear_flux=False)
     
     if(return_spec):
-        return magnitudes, spectrum
+        return magnitudes, (lambdas, redshifted_spectrum_sedpy)
     else:
         return magnitudes
 
@@ -211,7 +217,7 @@ def get_lsst_filters(path):
     return filters
 
 #for homebrew get_mags
-def get_lsst_filters_fsps(path):
+def get_lsst_filters_fsps():
             
     ufltr = fsps.filters.Filter(144, 'lsst_u', 'lsst')
     gfltr = fsps.filters.Filter(145, 'lsst_g', 'lsst')
@@ -222,7 +228,7 @@ def get_lsst_filters_fsps(path):
 
     filters = []
     for band in ['u', 'g', 'r', 'i', 'z', 'y']:
-        filter_data = np.genfromtxt(path+'/lbg_forecast/lsst_filters_fsps/total_'+band+'.dat', skip_header=1, delimiter=' ')
+        filter_data = np.genfromtxt('lbg_forecast/lsst_filters_fsps/total_'+band+'.dat', skip_header=1, delimiter=' ')
         filters.append([filter_data[:, 0], filter_data[:, 1]])
     
     return filters
@@ -284,8 +290,13 @@ def _fsps_lumdist(z):
     luminosity_distance = np.trapz(1/hub, zz) * (1+z) * dhub
     return luminosity_distance
 
-def fsps_cloned_get_magnitudes(sps_model, filters):
+def fsps_cloned_get_magnitudes(sps_model, filters, modify_igm):
     lambdas, spectrum = sps_model.get_spectrum(tage=sps_model.params['tage'], peraa=False)
+
+    if(modify_igm):
+        att = igm.apply_igm_attenuation(lambdas, sps_model.params['zred'], 1.0)
+        spectrum = spectrum*att
+
     redshift = sps_model.params['zred']
     redshifted_spectrum = np.interp(lambdas, lambdas*(1+redshift), spectrum)
 
