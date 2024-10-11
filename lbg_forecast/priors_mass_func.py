@@ -78,7 +78,7 @@ def select_allowed_parameter_curves(z_grid, curves):
         
     #prior_bounds = [np.array([np.log10(0.1e-3), np.log10(2.4e-3)]), np.array([-100, -4]), np.array([10, 12])]
 
-    prior_bounds = [np.array([np.log10(0.1e-3), np.log10(0.6e-3)]), np.array([-100, -4]), np.array([10, 12])]
+    prior_bounds = [np.array([np.log10(0.1e-3), np.log10(0.6e-1)]), np.array([-100, -1]), np.array([10, 12])]
     #prior_bounds = [np.array([np.log10(1e-5), np.log10(1e-3)]), np.array([-100, -4]), np.array([10, 12])]
     i = 0
     for param in redshift_dependent_curves:
@@ -138,7 +138,7 @@ def draw_parameter_curves(preloaded_curves):
 
     return sampled_curves
 
-def plot_parameter_curves(z_grid, sampled_curves, **kwargs):
+def plot_parameter_curves(z_grid, sampled_curves, log_phi_plot, **kwargs):
     """Plots output of draw_parameter_curves() only
     
     """
@@ -149,9 +149,11 @@ def plot_parameter_curves(z_grid, sampled_curves, **kwargs):
 
     indx = 0
     while(indx < 5):
+
         axes[indx].plot(z_grid, sampled_curves[indx, :], c='purple', **kwargs)
         axes[indx].set_xlabel('$z$', fontsize=20)
         axes[indx].set_ylabel(ylabels[indx], fontsize=20)
+
         indx+=1
 
 def schechter_function(logm, logphi, logm_star, alpha):
@@ -349,21 +351,31 @@ def volume_element(z, dz):
     return cosmo.comoving_volume(z+dz).value - cosmo.comoving_volume(z).value
 
 
-def plot_mass_function_parameter_curves(z_grid, curves, **kwargs):
+def plot_mass_function_parameter_curves(z_grid, curves, log_phi_plot, **kwargs):
 
     fig, axes = plt.subplots(1, 5)
     fig.set_figheight(10)
     fig.set_figwidth(30)
-    ylabels = ['log$_{10}\phi_{1}$', 'log$_{10}\phi_{2}$', 'log$_{10}\mathrm{M}_{*}$',r'$\alpha_{1}$', r'$\alpha_{2}$']
+    ylabels = ['$\phi_{1}10^{-3}\mathrm{Mpc}^{-3}\mathrm{dex}^{-1}$', '$\phi_{2}10^{-3}\mathrm{Mpc}^{-3}\mathrm{dex}^{-1}$', 'log$_{10}\mathrm{M}_{*}$',r'$\alpha_{1}$', r'$\alpha_{2}$']
+    ylabels_log = ['log$_{10}\phi_{1}$', 'log$_{10}\phi_{2}$', 'log$_{10}\mathrm{M}_{*}$',r'$\alpha_{1}$', r'$\alpha_{2}$']
     plot_no = 0
     for param in curves:
         i = 0
         ncurves = curves[plot_no].shape[0]
-        while(i < ncurves):
-            axes[plot_no].plot(z_grid, param[i, :], c='purple', **kwargs)
-            axes[plot_no].set_xlabel('$z$', fontsize=20)
+        if(log_phi_plot == True or (plot_no != 0 and plot_no != 1)):
+            while(i < ncurves):
+                axes[plot_no].plot(z_grid, param[i, :], c='purple', **kwargs)
+                i+=1
+            axes[plot_no].set_ylabel(ylabels_log[plot_no], fontsize=20)
+        else:
+            while(i < ncurves):
+                axes[plot_no].plot(z_grid, 10**param[i, :]*1e3, c='purple', **kwargs)
+                i+=1
             axes[plot_no].set_ylabel(ylabels[plot_no], fontsize=20)
-            i+=1
+
+        axes[plot_no].set_xlabel('$z$', fontsize=20)
+
+
         plot_no+=1
 
 def sample_allowed_parameter_curves(z_grid, nsamples, allowed_curves):
