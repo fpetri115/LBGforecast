@@ -13,7 +13,7 @@ import matplotlib.pyplot as plt
 
 class ModifiedDymSFH():
 
-    def __init__(self, tscale, logsfrmin=-5.0, logsfrmax=5.0):
+    def __init__(self, tscale, alpha, logsfrmin=-5.0, logsfrmax=5.0):
 
         self._test_z, self._csfrd_sample = get_csfrd_prior()
         self.csfrd_spline = get_csfrd_spline(self._test_z, self._csfrd_sample)[1]
@@ -21,12 +21,13 @@ class ModifiedDymSFH():
         self.logsfrmin = logsfrmin
         self.logsfrmax = logsfrmax
         self.tscale = tscale
+        self.alpha= alpha
 
     def sample(self, redshift, logmass):
 
         logsfr_ratios = expe_logsfr_ratios_modified(self.csfrd_spline, this_z=redshift, this_m=logmass, nbins_sfh=self.nbins,
                                             logsfr_ratio_mini=self.logsfrmin,
-                                            logsfr_ratio_maxi=self.logsfrmax)
+                                            logsfr_ratio_maxi=self.logsfrmax, alpha=self.alpha)
         
         logsfr_ratios_rvs = pop.continuity_prior(1, 2, logsfr_ratios, np.array([self.tscale]*logsfr_ratios.shape[0]))
         return logsfr_ratios_rvs
@@ -46,7 +47,7 @@ def get_csfrd_spline(redshifts, csfrd_sample):
     return lookback_times, csfrd_sample_spline
 
 def expe_logsfr_ratios_modified(csfrd_spline, this_z, this_m, logsfr_ratio_mini, logsfr_ratio_maxi,
-                    nbins_sfh=7, amin=7.1295):
+                    nbins_sfh=7, amin=7.1295, alpha=False):
     """expectation values of logsfr_ratios
     """
 
@@ -90,4 +91,7 @@ def expe_logsfr_ratios_modified(csfrd_spline, this_z, this_m, logsfr_ratio_mini,
         for i in range(len(nan_idx)):
             logsfr_ratios_shifted[nan_idx[i]] = neigh * 1.
 
-    return logsfr_ratios_shifted
+    if(alpha):
+        return logsfr_ratios_shifted*0.0
+    else:
+        return logsfr_ratios_shifted

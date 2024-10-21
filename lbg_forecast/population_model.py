@@ -126,14 +126,14 @@ def truncated_normal(mu, sigma, min, max, samples):
     a, b = (min - mu) / sigma, (max - mu) / sigma
     return truncnorm.rvs(a, b, loc=mu, scale=sigma, size=samples)
 
-def modified_prospector_beta_sfh_prior(redshift, logmass, sigma):
+def modified_prospector_beta_sfh_prior(redshift, logmass, sigma, alpha=False):
     """Each call of this function will sample a different expected csfrd. Based
     off prospector-beta prior (Wang et al. 2023)
 
     redshift and logmass are arrays, sigma is float
     """
 
-    dym_sfh =  mpb.ModifiedDymSFH(sigma)
+    dym_sfh =  mpb.ModifiedDymSFH(sigma, alpha)
     
     logsfrratios_samples = np.empty((redshift.shape[0], 6))
 
