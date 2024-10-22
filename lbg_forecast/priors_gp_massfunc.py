@@ -36,7 +36,7 @@ class MassFunctionPrior():
         self.model_alpha1 = create_gp_model(0.0, sorted_train_alpha1_errs, sorted_train_redshift_alpha1, sorted_train_alpha1)[0]
         self.model_alpha1.load_state_dict(state_dict_alpha1)
         self.model_alpha1.eval()
-        self.alpha1_test_z = torch.linspace(0, 3.25, 100)
+        self.alpha1_test_z = torch.linspace(0, 7.0, 100)
 
         self.model_alpha2 = create_gp_model(0.0, sorted_train_alpha2_errs, sorted_train_redshift_alpha2, sorted_train_alpha2)[0]
         self.model_alpha2.load_state_dict(state_dict_alpha2)
@@ -89,14 +89,31 @@ class MassFunctionPrior():
                 train_y_errh = self.train_y_errh[indx]
                 test_x = self.test_x[indx]
 
+                anchor_points = np.array([0.2, 1.6, 3.0])
+                #find leja 2020 data
+                anchor_indexes = []
+                for a in anchor_points:
+                    anchor_indexes.append(np.where(train_x.numpy() == a)[0][0])
+
                 # Get upper and lower confidence bounds
                 lower, upper = prior.confidence_region()
-                # Plot training data as black stars
-                plot.errorbar(train_x.numpy(), train_y.numpy(), yerr=[train_y_errl, train_y_errh], fmt='ko', capsize=2)
-                # Plot predictive means as blue line
-                plot.plot(test_x.numpy(), prior.mean, 'b')
-                # Shade between the lower and upper confidence bounds
-                plot.fill_between(test_x.numpy(), lower, upper, alpha=0.5)
+                # Plot training data
+                if(indx!=2):
+                    plot.errorbar(np.delete(train_x.numpy(), anchor_indexes), np.delete(train_y.numpy(), anchor_indexes), yerr=[np.delete(train_y_errl, anchor_indexes), np.delete(train_y_errh, anchor_indexes)], fmt='kd', capsize=3, ms=6)
+                else:
+                    plot.errorbar(np.delete(train_x.numpy()[:-1], anchor_indexes), np.delete(train_y.numpy()[:-1], anchor_indexes), yerr=[np.delete(train_y_errl[:-1], anchor_indexes), np.delete(train_y_errh[:-1], anchor_indexes)], fmt='kd', capsize=3, ms=6)
+                    plot.scatter(train_x.numpy()[-1], train_y.numpy()[-1], marker='*', color='purple', zorder=1000, s=80)
+                
+                plot.errorbar(anchor_points, train_y.numpy()[anchor_indexes], yerr=[train_y_errl[anchor_indexes], train_y_errh[anchor_indexes]], fmt='ro', capsize=3, ms=6)
+
+                if(indx!=2):
+                    # Plot predictive means as blue line
+                    plot.plot(test_x.numpy(), prior.mean, 'b')
+                    # Shade between the lower and upper confidence bounds
+                    plot.fill_between(test_x.numpy(), lower, upper, alpha=0.5)
+                else:
+                    plot.plot(test_x.numpy(), np.where(test_x.numpy() < 3.25, prior.mean, -1.46), 'b')
+                    plot.fill_between(test_x.numpy(), np.where(test_x.numpy() < 3.25, lower, -1.46), np.where(test_x.numpy() < 3.25, upper, -1.46), alpha=0.5)
                 #ax.legend(['Observed Data', 'Mean', 'Confidence'])
                 plot.set_ylabel(self.param_names[indx])
                 plot.set_xlim(-0.2, 7.2)
