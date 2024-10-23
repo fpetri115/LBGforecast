@@ -3,13 +3,17 @@ import matplotlib.pyplot as plt
 import torch
 import torchvision
 import gpytorch
-
+import lbg_forecast.cosmology as cosmo
+import emcee
+from getdist import plots, MCSamples
 
 class MassFunctionPrior():
 
     def __init__(self):
 
         self.param_names = ["$\mathrm{log}\phi_{1}$", "$\mathrm{log}\phi_{2}$", "$\\alpha_{1}$", "$\\alpha_{2}$", "$\mathrm{log}M$"]
+        self.redshift_grid = np.linspace(0, 7, 100)
+        self.volume_grid = self.volume_elements(self.redshift_grid)
 
         state_dict_phi1 = torch.load('/Users/fpetri/repos/LBGForecast/gp_models/phi1.pth', weights_only=True)
         state_dict_phi2 = torch.load('/Users/fpetri/repos/LBGForecast/gp_models/phi2.pth', weights_only=True)
@@ -31,7 +35,7 @@ class MassFunctionPrior():
         self.model_phi2 = create_gp_model(0.0, sorted_train_logphi2_errs, sorted_train_redshift_logphi2, sorted_train_logphi2)[0]
         self.model_phi2.load_state_dict(state_dict_phi2)
         self.model_phi2.eval()
-        self.phi2_test_z = torch.linspace(0, 3, 100)
+        self.phi2_test_z = torch.linspace(0, 7, 100)
 
         self.model_alpha1 = create_gp_model(0.0, sorted_train_alpha1_errs, sorted_train_redshift_alpha1, sorted_train_alpha1)[0]
         self.model_alpha1.load_state_dict(state_dict_alpha1)
@@ -41,7 +45,7 @@ class MassFunctionPrior():
         self.model_alpha2 = create_gp_model(0.0, sorted_train_alpha2_errs, sorted_train_redshift_alpha2, sorted_train_alpha2)[0]
         self.model_alpha2.load_state_dict(state_dict_alpha2)
         self.model_alpha2.eval()
-        self.alpha2_test_z = torch.linspace(0, 3, 100)
+        self.alpha2_test_z = torch.linspace(0, 7, 100)
 
         self.model_logm = create_gp_model(0.0, sorted_train_logm_errs, sorted_train_redshift_logm, sorted_train_logm)[0]
         self.model_logm.load_state_dict(state_dict_logm)
@@ -61,17 +65,111 @@ class MassFunctionPrior():
         self.train_y_errh = [sorted_train_logphi1_errh, sorted_train_logphi2_errh, sorted_train_alpha1_errh, sorted_train_alpha2_errh, sorted_train_logm_errh]
         self.test_x = [self.phi1_test_z, self.phi2_test_z, self.alpha1_test_z, self.alpha2_test_z, self.logm_test_z]
 
+    def sample_log_n(self, nwalkers=101, steps=5000):
 
+        burnin = 10000
+        nsamples = nwalkers*steps-burnin
+
+        #sampling
+        ndim = 2
+        pz = np.random.uniform(1.01, 1.02, (nwalkers, 1))
+        plogm = np.random.uniform(9.9, 10.1, (nwalkers, 1))
+        p0 = np.hstack((pz, plogm))
+        prior_bounds=[0.0,7.0,7,13]
+        sparams = self.sample_prior()
+
+        sampler = emcee.EnsembleSampler(nwalkers, ndim, self.log_n, args=[sparams, prior_bounds])
+
+        state = sampler.run_mcmc(p0, 100)
+        sampler.reset()
+
+        sampler.run_mcmc(state, steps)
+
+        #plotting
+
+        samples = sampler.get_chain(flat=True)
+        redshift_samples = samples[:, 0]
+        mass_samples = samples[:, 1]
+        #s = MCSamples(samples=samples, names=["z", "logm"])
+        #plotter = plots.get_subplot_plotter()
+        #plotter.triangle_plot([s], Filled=True, contour_lws=2)
+        print(samples.shape, nsamples)
+
+        return redshift_samples[burnin:nsamples+burnin], mass_samples[burnin:nsamples+burnin]
+
+
+    def mass_function(self, z, logm, sparams):
+        """sparams=self.sample_prior()
+        """
+
+        logphi1, logphi2, alpha1, alpha2, logm_star = sparams
+        logphi1 = np.interp(z, self.phi1_test_z, logphi1)
+        logphi2 = np.interp(z, self.phi2_test_z, logphi2)
+        alpha1 = np.interp(z, self.alpha1_test_z, alpha1)
+        alpha2 = np.interp(z, self.alpha2_test_z, alpha2)
+        logm_star = np.interp(z, self.logm_test_z, logm_star)
+
+        mfunc = np.where(np.atleast_1d(z)>3, self.schechter_function(logm, logphi1, logm_star, alpha1), self.double_schechter_function(logm, logphi1, logphi2, alpha1, alpha2, logm_star))
+
+        return mfunc
+    
+    def log_n(self, x, sparams, prior_bounds=[0.0,7.0,7.0,13]):
+
+        z, logm = x
+
+        if(z < prior_bounds[0] or z > prior_bounds[1]):
+            return -np.inf
+        
+        if(logm < prior_bounds[2] or logm > prior_bounds[3]):
+            return -np.inf
+        
+        phi = self.mass_function(z, logm, sparams)
+        volumes = np.interp(z, self.redshift_grid, self.volume_grid)
+        ngalaxies = phi*volumes
+
+        return np.log(ngalaxies)
+    
+    def volume_elements(self, z_grid):
+        dz = z_grid[-1]-z_grid[-2]
+        volumes = []
+        for z in z_grid:
+            volumes.append(self.volume_element(z, dz))
+
+        return np.array(volumes)
+
+    def volume_element(self, z, dz):
+        return cosmo.get_cosmology().comoving_volume(z+dz).value - cosmo.get_cosmology().comoving_volume(z).value
+    
+    def schechter_function(self, logm, logphi, logm_star, alpha):
+        return np.log(10)*(10**logphi)*10**((logm-logm_star)*(alpha+1))*np.exp(-10**(logm-logm_star))
+    def double_schechter_function(self, logm, logphi1, logphi2, alpha1, alpha2, logm_star):
+        return self.schechter_function(logm, logphi1, logm_star, alpha1) + self.schechter_function(logm, logphi2, logm_star, alpha2)
+    
+    def sample_prior(self):
+        return[self.sample_phi1(), self.sample_phi2(), self.sample_alpha1(), self.sample_alpha2(), self.sample_logm()]
     def sample_phi1(self):
         return self.prior_phi1.sample().numpy()
     def sample_phi2(self):
         return self.prior_phi2.sample().numpy()
     def sample_alpha1(self):
-        return self.prior_alpha1.sample().numpy()
+        return np.where(self.test_x[2] <3.00, self.prior_alpha1.sample().numpy(), -1.46)
     def sample_alpha2(self):
         return self.prior_alpha2.sample().numpy()
     def sample_logm(self):
         return self.prior_logm.sample().numpy()
+    
+    def plot_prior_sample(self, prior_sample):
+
+        f, ax = plt.subplots(5, 1, figsize=(7, 15), sharex=True)
+        indx = 0
+        for plot in ax:
+            plot.plot(self.test_x[indx], prior_sample[indx])
+            plot.set_ylabel(self.param_names[indx])
+            plot.set_xlim(-0.2, 7.2)
+            indx+=1
+
+        plot.set_xlabel("redshift")
+        plt.tight_layout()
 
     def plot_confidence(self):
 
@@ -112,8 +210,8 @@ class MassFunctionPrior():
                     # Shade between the lower and upper confidence bounds
                     plot.fill_between(test_x.numpy(), lower, upper, alpha=0.5)
                 else:
-                    plot.plot(test_x.numpy(), np.where(test_x.numpy() < 3.25, prior.mean, -1.46), 'b')
-                    plot.fill_between(test_x.numpy(), np.where(test_x.numpy() < 3.25, lower, -1.46), np.where(test_x.numpy() < 3.25, upper, -1.46), alpha=0.5)
+                    plot.plot(test_x.numpy(), np.where(test_x.numpy() < 3.00, prior.mean, -1.46), 'b')
+                    plot.fill_between(test_x.numpy(), np.where(test_x.numpy() < 3.00, lower, -1.46), np.where(test_x.numpy() < 3.00, upper, -1.46), alpha=0.5)
                 #ax.legend(['Observed Data', 'Mean', 'Confidence'])
                 plot.set_ylabel(self.param_names[indx])
                 plot.set_xlim(-0.2, 7.2)
@@ -366,8 +464,8 @@ def get_alpha1_data(plotting=False):
     weaver_alpha_low_mass_norm_val = np.array([-1.42, -1.39, -1.32, -1.33, -1.48, -1.46, -1.46])#, -1.46, -1.46, -1.46, -1.46, -1.46, -1.46])
     weaver_alpha_low_mass_norm_errl = np.array([0.06, 0.07, 0.06, 0.05, 0.09, 0.06, 1e-10])#, 1e-6, 1e-6, 1e-6, 1e-6, 1e-6, 1e-6])
     weaver_alpha_low_mass_norm_errh = np.array([0.05, 0.05, 0.04, 0.05, 0.07, 0.05, 1e-10])#, 1e-6, 1e-6, 1e-6, 1e-6, 1e-6, 1e-6])
-    weaver_redshift_lower_bin_edge = np.array([0.2, 0.5, 0.8, 1.1, 1.5, 2.0, 3.0])#, 2.5, 3.0, 3.5, 4.5, 5.5, 6.5])
-    weaver_redshift_upper_bin_edge = np.array([0.5, 0.8, 1.1, 1.5, 2.0, 2.5, 3.5])#, 3.0, 3.5, 4.5, 5.5, 6.5, 7.5])
+    weaver_redshift_lower_bin_edge = np.array([0.2, 0.5, 0.8, 1.1, 1.5, 2.0, 2.75])#, 2.5, 3.0, 3.5, 4.5, 5.5, 6.5])
+    weaver_redshift_upper_bin_edge = np.array([0.5, 0.8, 1.1, 1.5, 2.0, 2.5, 3.26])#, 3.0, 3.5, 4.5, 5.5, 6.5, 7.5])
     weaver_redshift_midpoint = (weaver_redshift_lower_bin_edge + weaver_redshift_upper_bin_edge)/2
 
     cont_alpha_low_mass_norm_val = np.array([-1.48, -1.48, -1.48])
