@@ -27,27 +27,27 @@ class MassFunctionPrior():
         sorted_train_redshift_alpha2, sorted_train_alpha2, sorted_train_alpha2_errl, sorted_train_alpha2_errh, sorted_train_alpha2_errs = get_alpha2_data(plotting=False)
         sorted_train_redshift_logm, sorted_train_logm, sorted_train_logm_errl, sorted_train_logm_errh, sorted_train_logm_errs = get_logm_data(plotting=False)
 
-        self.model_phi1 = create_gp_model(0.0, sorted_train_logphi1_errs, sorted_train_redshift_logphi1, sorted_train_logphi1)[0]
+        self.model_phi1 = create_gp_model([0.0, 7.0], sorted_train_logphi1_errs, sorted_train_redshift_logphi1, sorted_train_logphi1)[0]
         self.model_phi1.load_state_dict(state_dict_phi1)
         self.model_phi1.eval()
         self.phi1_test_z = torch.linspace(0, 7, 100)
 
-        self.model_phi2 = create_gp_model(0.0, sorted_train_logphi2_errs, sorted_train_redshift_logphi2, sorted_train_logphi2)[0]
+        self.model_phi2 = create_gp_model([0.0, 3.0], sorted_train_logphi2_errs, sorted_train_redshift_logphi2, sorted_train_logphi2)[0]
         self.model_phi2.load_state_dict(state_dict_phi2)
         self.model_phi2.eval()
-        self.phi2_test_z = torch.linspace(0, 7, 100)
+        self.phi2_test_z = torch.linspace(0, 3.0, 100)
 
-        self.model_alpha1 = create_gp_model(0.0, sorted_train_alpha1_errs, sorted_train_redshift_alpha1, sorted_train_alpha1)[0]
+        self.model_alpha1 = create_gp_model([0.0, 7.0], sorted_train_alpha1_errs, sorted_train_redshift_alpha1, sorted_train_alpha1)[0]
         self.model_alpha1.load_state_dict(state_dict_alpha1)
         self.model_alpha1.eval()
         self.alpha1_test_z = torch.linspace(0, 7.0, 100)
 
-        self.model_alpha2 = create_gp_model(0.0, sorted_train_alpha2_errs, sorted_train_redshift_alpha2, sorted_train_alpha2)[0]
+        self.model_alpha2 = create_gp_model([0.0, 3.0], sorted_train_alpha2_errs, sorted_train_redshift_alpha2, sorted_train_alpha2)[0]
         self.model_alpha2.load_state_dict(state_dict_alpha2)
         self.model_alpha2.eval()
-        self.alpha2_test_z = torch.linspace(0, 7, 100)
+        self.alpha2_test_z = torch.linspace(0, 3.0, 100)
 
-        self.model_logm = create_gp_model(0.0, sorted_train_logm_errs, sorted_train_redshift_logm, sorted_train_logm)[0]
+        self.model_logm = create_gp_model([0.0, 7.0], sorted_train_logm_errs, sorted_train_redshift_logm, sorted_train_logm)[0]
         self.model_logm.load_state_dict(state_dict_logm)
         self.model_logm.eval()
         self.logm_test_z = torch.linspace(0, 7, 100)
@@ -152,7 +152,7 @@ class MassFunctionPrior():
     def sample_phi2(self):
         return self.prior_phi2.sample().numpy()
     def sample_alpha1(self):
-        return np.where(self.test_x[2] <3.00, self.prior_alpha1.sample().numpy(), -1.46)
+        return self.prior_alpha1.sample().numpy()
     def sample_alpha2(self):
         return self.prior_alpha2.sample().numpy()
     def sample_logm(self):
@@ -186,7 +186,7 @@ class MassFunctionPrior():
                 train_y_errl = self.train_y_errl[indx]
                 train_y_errh = self.train_y_errh[indx]
                 test_x = self.test_x[indx]
-
+                
                 anchor_points = np.array([0.2, 1.6, 3.0])
                 #find leja 2020 data
                 anchor_indexes = []
@@ -196,22 +196,14 @@ class MassFunctionPrior():
                 # Get upper and lower confidence bounds
                 lower, upper = prior.confidence_region()
                 # Plot training data
-                if(indx!=2):
-                    plot.errorbar(np.delete(train_x.numpy(), anchor_indexes), np.delete(train_y.numpy(), anchor_indexes), yerr=[np.delete(train_y_errl, anchor_indexes), np.delete(train_y_errh, anchor_indexes)], fmt='kd', capsize=3, ms=6)
-                else:
-                    plot.errorbar(np.delete(train_x.numpy()[:-1], anchor_indexes), np.delete(train_y.numpy()[:-1], anchor_indexes), yerr=[np.delete(train_y_errl[:-1], anchor_indexes), np.delete(train_y_errh[:-1], anchor_indexes)], fmt='kd', capsize=3, ms=6)
-                    plot.scatter(train_x.numpy()[-1], train_y.numpy()[-1], marker='*', color='purple', zorder=1000, s=80)
-                
+
+                plot.errorbar(np.delete(train_x.numpy(), anchor_indexes), np.delete(train_y.numpy(), anchor_indexes), yerr=[np.delete(train_y_errl, anchor_indexes), np.delete(train_y_errh, anchor_indexes)], fmt='kd', capsize=3, ms=6)
                 plot.errorbar(anchor_points, train_y.numpy()[anchor_indexes], yerr=[train_y_errl[anchor_indexes], train_y_errh[anchor_indexes]], fmt='ro', capsize=3, ms=6)
 
-                if(indx!=2):
-                    # Plot predictive means as blue line
-                    plot.plot(test_x.numpy(), prior.mean, 'b')
-                    # Shade between the lower and upper confidence bounds
-                    plot.fill_between(test_x.numpy(), lower, upper, alpha=0.5)
-                else:
-                    plot.plot(test_x.numpy(), np.where(test_x.numpy() < 3.00, prior.mean, -1.46), 'b')
-                    plot.fill_between(test_x.numpy(), np.where(test_x.numpy() < 3.00, lower, -1.46), np.where(test_x.numpy() < 3.00, upper, -1.46), alpha=0.5)
+                # Plot predictive means as blue line
+                plot.plot(test_x.numpy(), prior.mean, 'b')
+                # Shade between the lower and upper confidence bounds
+                plot.fill_between(test_x.numpy(), lower, upper, alpha=0.5)
                 #ax.legend(['Observed Data', 'Mean', 'Confidence'])
                 plot.set_ylabel(self.param_names[indx])
                 plot.set_xlim(-0.2, 7.2)
@@ -229,7 +221,7 @@ def create_gp_model(lengthscale, errors, train_x, train_y):
         def __init__(self, train_x, train_y, likelihood):
             super(GPModel, self).__init__(train_x, train_y, likelihood)
             self.mean_module = gpytorch.means.ZeroMean()
-            self.covar_module = gpytorch.kernels.ScaleKernel(gpytorch.kernels.RBFKernel(lengthscale_constraint=gpytorch.constraints.GreaterThan(lengthscale)))
+            self.covar_module = gpytorch.kernels.ScaleKernel(gpytorch.kernels.RBFKernel(lengthscale_prior=gpytorch.priors.SmoothedBoxPrior(lengthscale[0], lengthscale[1])))
 
         def forward(self, x):
             mean_x = self.mean_module(x)
@@ -380,11 +372,11 @@ def get_phi1_data(plotting=False):
     high_zlow_mass_norm_errh = (cont_low_mass_norm_errh[-1] + cont_low_mass_norm_val[-1] - weaver_low_mass_norm_val[zg3_index])
 
 
-    train_phi1 = torch.from_numpy(np.concatenate((weaver_low_mass_norm_val, cont_low_mass_norm_val)))
-    train_phi1_errl = torch.from_numpy(np.concatenate((weaver_low_mass_norm_errl, cont_low_mass_norm_errl)))
-    train_phi1_errh = torch.from_numpy(np.concatenate((weaver_low_mass_norm_errh, cont_low_mass_norm_errh)))
+    train_phi1 = torch.from_numpy(np.concatenate((weaver_low_mass_norm_val, cont_low_mass_norm_val)))[:-3]
+    train_phi1_errl = torch.from_numpy(np.concatenate((weaver_low_mass_norm_errl, cont_low_mass_norm_errl)))[:-3]
+    train_phi1_errh = torch.from_numpy(np.concatenate((weaver_low_mass_norm_errh, cont_low_mass_norm_errh)))[:-3]
     train_phi1_errs = train_phi1_errl + train_phi1_errh
-    train_redshift = torch.from_numpy(np.concatenate((weaver_redshift_midpoint, cont_redshift_anchor_points)))
+    train_redshift = torch.from_numpy(np.concatenate((weaver_redshift_midpoint, cont_redshift_anchor_points)))[:-3]
 
     sorted_redshift_inds = train_redshift.argsort()[:]
     sorted_train_phi1 = train_phi1[sorted_redshift_inds]
@@ -429,11 +421,11 @@ def get_phi2_data(plotting=False):
     cont_high_mass_norm_errh = (10**(log_cont_high_mass_norm_val + cont_high_mass_norm_log_errh))*1000 - cont_high_mass_norm_val
     cont_redshift_anchor_points = np.array([0.2, 1.6, 3.0])
 
-    train_phi2 = torch.from_numpy(np.concatenate((weaver_high_mass_norm_val, cont_high_mass_norm_val)))
-    train_phi2_errl = torch.from_numpy(np.concatenate((weaver_high_mass_norm_errl, cont_high_mass_norm_errl)))
-    train_phi2_errh = torch.from_numpy(np.concatenate((weaver_high_mass_norm_errh, cont_high_mass_norm_errh)))
+    train_phi2 = torch.from_numpy(np.concatenate((weaver_high_mass_norm_val, cont_high_mass_norm_val)))[:-3]
+    train_phi2_errl = torch.from_numpy(np.concatenate((weaver_high_mass_norm_errl, cont_high_mass_norm_errl)))[:-3]
+    train_phi2_errh = torch.from_numpy(np.concatenate((weaver_high_mass_norm_errh, cont_high_mass_norm_errh)))[:-3]
     train_phi2_errs = train_phi2_errl + train_phi2_errh
-    train_redshift = torch.from_numpy(np.concatenate((weaver_redshift_midpoint_lowz, cont_redshift_anchor_points)))
+    train_redshift = torch.from_numpy(np.concatenate((weaver_redshift_midpoint_lowz, cont_redshift_anchor_points)))[:-3]
 
     sorted_redshift_inds = train_redshift.argsort()[:]
     sorted_train_phi2 = train_phi2[sorted_redshift_inds]
@@ -461,11 +453,11 @@ def get_phi2_data(plotting=False):
 
 def get_alpha1_data(plotting=False):
 
-    weaver_alpha_low_mass_norm_val = np.array([-1.42, -1.39, -1.32, -1.33, -1.48, -1.46, -1.46])#, -1.46, -1.46, -1.46, -1.46, -1.46, -1.46])
-    weaver_alpha_low_mass_norm_errl = np.array([0.06, 0.07, 0.06, 0.05, 0.09, 0.06, 1e-10])#, 1e-6, 1e-6, 1e-6, 1e-6, 1e-6, 1e-6])
-    weaver_alpha_low_mass_norm_errh = np.array([0.05, 0.05, 0.04, 0.05, 0.07, 0.05, 1e-10])#, 1e-6, 1e-6, 1e-6, 1e-6, 1e-6, 1e-6])
-    weaver_redshift_lower_bin_edge = np.array([0.2, 0.5, 0.8, 1.1, 1.5, 2.0, 2.75])#, 2.5, 3.0, 3.5, 4.5, 5.5, 6.5])
-    weaver_redshift_upper_bin_edge = np.array([0.5, 0.8, 1.1, 1.5, 2.0, 2.5, 3.26])#, 3.0, 3.5, 4.5, 5.5, 6.5, 7.5])
+    weaver_alpha_low_mass_norm_val = np.array([-1.42, -1.39, -1.32, -1.33, -1.48, -1.46])#, -1.46, -1.46, -1.46, -1.46, -1.46, -1.46])
+    weaver_alpha_low_mass_norm_errl = np.array([0.06, 0.07, 0.06, 0.05, 0.09, 0.06])#, 1e-6, 1e-6, 1e-6, 1e-6, 1e-6, 1e-6])
+    weaver_alpha_low_mass_norm_errh = np.array([0.05, 0.05, 0.04, 0.05, 0.07, 0.05])#, 1e-6, 1e-6, 1e-6, 1e-6, 1e-6, 1e-6])
+    weaver_redshift_lower_bin_edge = np.array([0.2, 0.5, 0.8, 1.1, 1.5, 2.0])#, 2.5, 3.0, 3.5, 4.5, 5.5, 6.5])
+    weaver_redshift_upper_bin_edge = np.array([0.5, 0.8, 1.1, 1.5, 2.0, 2.5])#, 3.0, 3.5, 4.5, 5.5, 6.5, 7.5])
     weaver_redshift_midpoint = (weaver_redshift_lower_bin_edge + weaver_redshift_upper_bin_edge)/2
 
     cont_alpha_low_mass_norm_val = np.array([-1.48, -1.48, -1.48])
@@ -473,11 +465,11 @@ def get_alpha1_data(plotting=False):
     cont_alpha_low_mass_norm_errh = np.array([0.01, 0.01, 0.01])
     cont_redshift_anchor_points = np.array([0.2, 1.6, 3.0])
 
-    train_alpha1 = torch.from_numpy(np.concatenate((weaver_alpha_low_mass_norm_val, cont_alpha_low_mass_norm_val)))
-    train_alpha1_errl = torch.from_numpy(np.concatenate((weaver_alpha_low_mass_norm_errl, cont_alpha_low_mass_norm_errl)))
-    train_alpha1_errh = torch.from_numpy(np.concatenate((weaver_alpha_low_mass_norm_errh, cont_alpha_low_mass_norm_errh)))
+    train_alpha1 = torch.from_numpy(np.concatenate((weaver_alpha_low_mass_norm_val, cont_alpha_low_mass_norm_val)))[:-3]
+    train_alpha1_errl = torch.from_numpy(np.concatenate((weaver_alpha_low_mass_norm_errl, cont_alpha_low_mass_norm_errl)))[:-3]
+    train_alpha1_errh = torch.from_numpy(np.concatenate((weaver_alpha_low_mass_norm_errh, cont_alpha_low_mass_norm_errh)))[:-3]
     train_alpha1_errs = train_alpha1_errl + train_alpha1_errh
-    train_redshift = torch.from_numpy(np.concatenate((weaver_redshift_midpoint, cont_redshift_anchor_points)))
+    train_redshift = torch.from_numpy(np.concatenate((weaver_redshift_midpoint, cont_redshift_anchor_points)))[:-3]
 
     sorted_redshift_inds = train_redshift.argsort()[:]
     sorted_train_alpha1 = train_alpha1[sorted_redshift_inds]
@@ -510,11 +502,11 @@ def get_alpha2_data(plotting=False):
     cont_alpha_high_mass_norm_errh = np.array([0.07, 0.07, 0.07])
     cont_redshift_anchor_points = np.array([0.2, 1.6, 3.0])
 
-    train_alpha2 = torch.from_numpy(np.concatenate((weaver_alpha_high_mass_norm_val, cont_alpha_high_mass_norm_val)))
-    train_alpha2_errl = torch.from_numpy(np.concatenate((weaver_alpha_high_mass_norm_errl, cont_alpha_high_mass_norm_errl)))
-    train_alpha2_errh = torch.from_numpy(np.concatenate((weaver_alpha_high_mass_norm_errh, cont_alpha_high_mass_norm_errh)))
+    train_alpha2 = torch.from_numpy(np.concatenate((weaver_alpha_high_mass_norm_val, cont_alpha_high_mass_norm_val)))[:-3]
+    train_alpha2_errl = torch.from_numpy(np.concatenate((weaver_alpha_high_mass_norm_errl, cont_alpha_high_mass_norm_errl)))[:-3]
+    train_alpha2_errh = torch.from_numpy(np.concatenate((weaver_alpha_high_mass_norm_errh, cont_alpha_high_mass_norm_errh)))[:-3]
     train_alpha2_errs = train_alpha2_errl + train_alpha2_errh
-    train_redshift = torch.from_numpy(np.concatenate((weaver_redshift_midpoint_lowz, cont_redshift_anchor_points)))
+    train_redshift = torch.from_numpy(np.concatenate((weaver_redshift_midpoint_lowz, cont_redshift_anchor_points)))[:-3]
 
     sorted_redshift_inds = train_redshift.argsort()[:]
     sorted_train_alpha2 = train_alpha2[sorted_redshift_inds]
@@ -548,11 +540,11 @@ def get_logm_data(plotting=False):
     cont_logm_errh = np.array([0.02, 0.02, 0.04])
     cont_redshift_anchor_points = np.array([0.2, 1.6, 3.0])
 
-    train_logm = torch.from_numpy(np.concatenate((weaver_logm_val, cont_logm_val)))
-    train_logm_errl = torch.from_numpy(np.concatenate((weaver_logm_errl, cont_logm_errl)))
-    train_logm_errh = torch.from_numpy(np.concatenate((weaver_logm_errh, cont_logm_errh)))
+    train_logm = torch.from_numpy(np.concatenate((weaver_logm_val, cont_logm_val)))[:-3]
+    train_logm_errl = torch.from_numpy(np.concatenate((weaver_logm_errl, cont_logm_errl)))[:-3]
+    train_logm_errh = torch.from_numpy(np.concatenate((weaver_logm_errh, cont_logm_errh)))[:-3]
     train_logm_errs = train_logm_errl + train_logm_errh
-    train_redshift = torch.from_numpy(np.concatenate((weaver_redshift_midpoint, cont_redshift_anchor_points)))
+    train_redshift = torch.from_numpy(np.concatenate((weaver_redshift_midpoint, cont_redshift_anchor_points)))[:-3]
 
     sorted_redshift_inds = train_redshift.argsort()[:]
     sorted_train_logm = train_logm[sorted_redshift_inds]
