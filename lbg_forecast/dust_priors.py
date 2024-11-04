@@ -14,8 +14,8 @@ def dust_index_function(dust2):
     return truncated_normal(dust_index_mean, 0.4, -2.2, 0.4, len(dust_index_mean))
 
 def dust_ratio_prior(nsamples):
-    mean = np.random.uniform(0.8, 1.2)
-    sigma = np.random.uniform(0.1, 0.4)
+    mean = np.random.uniform(0.7, 1.3)
+    sigma = np.random.uniform(0.01, 0.4)
     return truncated_normal(mean, sigma, 0.0, 2.0, nsamples)
 
 def sample_dust1(dust2):

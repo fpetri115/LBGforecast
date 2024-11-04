@@ -313,7 +313,7 @@ class DustIndexPrior():
             # Plot training data as black stars
             ax.errorbar(self.train_av.numpy(), self.train_d.numpy(), yerr=[self.d_err_l_pop, self.d_err_h_pop], fmt='o', mfc='k', ecolor='k', mec='k', alpha=1.0, elinewidth=2.5, capsize=5, ms=12, lw=3,)
             # Plot predictive means as blue line
-            ax.plot(self.test_av.numpy(), self.get_prior_mean(), 'k')
+            #ax.plot(self.test_av.numpy(), self.get_prior_mean(), 'k')
             # Shade between the lower and upper confidence bounds
             ax.fill_between(self.test_av.numpy(), lower+self.mean, upper+self.mean, alpha=0.5)
             #ax.legend(['Observed Data', 'Mean', 'Confidence'])
@@ -387,6 +387,28 @@ class DiffuseDustPrior():
 
             ax[1].set_xlabel("log10SFR")
             ax[1].set_ylabel("Av")
+
+    def plot_model_single(self):
+
+        with torch.no_grad():
+            # Initialize plot
+            f, ax = plt.subplots(1, 1, figsize=(10, 7))
+
+            # Get upper and lower confidence bounds
+            lower, upper = self.prior.confidence_region()
+            # Plot training data as black stars
+            ax.errorbar(self.train_sfr.numpy(), self.train_av.numpy(), yerr=[self.av_err_l_popsfr, self.av_err_h_popsfr], fmt='o', mfc='k', ecolor='k', mec='k', alpha=1.0, elinewidth=2.5, capsize=5, ms=12, lw=3,)
+            # Plot predictive means as blue line
+            #ax.plot(self.test_av.numpy(), self.get_prior_mean(), 'k')
+            # Shade between the lower and upper confidence bounds
+            ax.fill_between(self.test_sfr.numpy(), lower+self.mean, upper+self.mean, alpha=0.5)
+            #ax.legend(['Observed Data', 'Mean', 'Confidence'])
+
+            ax.set_xlabel("Log$_{10}SFR$", fontsize=24)
+            ax.set_ylabel("Diffuse Dust Attenuation", fontsize=24)
+            ax.tick_params(axis='x', labelsize=24)
+            ax.tick_params(axis='y', labelsize=24)
+            ax.set_xlim(-5, 4)
 
 #data pre-processing
 def shift_csfrd(new_redshift, csfrd, redshift, mean):
