@@ -78,7 +78,7 @@ class MassFunctionPrior():
         prior_bounds=[0.0,7.0,7,13]
         sparams = self.sample_prior()
 
-        sampler = emcee.EnsembleSampler(nwalkers, ndim, self.log_n, args=[sparams, prior_bounds])
+        sampler = emcee.EnsembleSampler(nwalkers, ndim, self.n, args=[sparams, prior_bounds])
 
         state = sampler.run_mcmc(p0, 100)
         sampler.reset()
@@ -153,6 +153,31 @@ class MassFunctionPrior():
             nlogm.append(n)
 
         return nlogm
+    
+    def n(self, x, sparams, prior_bounds=[0.0,7.0,7.0,13]):
+
+        z, logm = x
+
+        if(z < prior_bounds[0] or z > prior_bounds[1]):
+            return -np.inf
+        
+        if(logm < prior_bounds[2] or logm > prior_bounds[3]):
+            return -np.inf
+
+        dzbin = 0.25
+        dlogmbin = 0.25
+        logmbins = np.arange(7, 13+dlogmbin, dlogmbin)
+        zbins = np.arange(0.0, 7.0+dzbin, dzbin)
+
+        binned_z = zbins[np.digitize(z, zbins)-1]
+        binned_logm = logmbins[np.digitize(logm, logmbins)-1]
+
+        dlogm = 0.025
+        dz = 0.025
+        logmgrid = np.arange(binned_logm, binned_logm+dlogmbin, dlogm)
+        zgrid = np.arange(binned_z, binned_z+dzbin, dz)
+
+        return np.log(self.number_of_galaxies(zgrid, logmgrid, sparams))
     
     def log_n(self, x, sparams, prior_bounds=[0.0,7.0,7.0,13]):
 
