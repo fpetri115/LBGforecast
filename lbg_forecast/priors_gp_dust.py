@@ -24,16 +24,16 @@ class DustPrior():
 
         #load dust2 model
         self.dust2_training_data = process_training_data_dust2(self.tau, self.sfr, self.recent_sfrs, self.dust2)
-        self.model_dust2 = create_gp_model_obs([4.0, 10.0], self.dust2_training_data[0], self.dust2_training_data[1], self.dust2_training_data[2])[0]
+        self.model_dust2 = create_gp_model_power(2, self.dust2_training_data[0], self.dust2_training_data[1], self.dust2_training_data[2])[0]
         self.model_dust2.load_state_dict(state_dict_dust2)
 
         #load dust index model
-        self.dust_index_training_data = process_training_data_dust_index(self.n, self.tau, self.dust2, self.dust_index)
+        self.dust_index_training_data = process_training_data_dust_index(self.n, self.ne, self.tau, self.dust2, self.dust_index)
         self.model_dust_index = create_gp_model_obs([2.0, 6.0], self.dust_index_training_data[0], self.dust_index_training_data[1], self.dust_index_training_data[2])[0]
         self.model_dust_index.load_state_dict(state_dict_dust_index)
 
         #load dust1 model
-        self.dust1_training_data = process_training_data_dust1(self.tau1, self.tau, self.dust2, self.dust1)
+        self.dust1_training_data = process_training_data_dust1(self.tau1, self.tau1e, self.tau, self.dust2, self.dust1)
         self.model_dust1 = create_gp_model_obs([4.0, 10.0], self.dust1_training_data[0], self.dust1_training_data[1], self.dust1_training_data[2])[0]
         self.model_dust1.load_state_dict(state_dict_dust1)
 
@@ -50,24 +50,31 @@ def train_gp_model(train_x, train_y, train_yerrs, lengthscales, lr=0.1, training
 
     return trained_model, trained_likelihood
 
+def train_gp_model_power(train_x, train_y, train_yerrs, power, lr=0.1, training_iter=20000):
+
+    model, likelihood = create_gp_model_power(power, train_x, train_y, train_yerrs)
+    trained_model, trained_likelihood = gp_training_loop(model, likelihood, train_x, train_y, training_iter=training_iter, lr=lr)
+
+    return trained_model, trained_likelihood
+
 def process_training_data_dust2(tau, sfr, recent_sfrs, dust2):
 
-    bin_centers_de, bin_means_de, bin_std_de = proccess_nagaraj22_samples(sfr, tau, -8, 3)
-    bin_centers, bin_means, bin_std = process_popcosmos_samples(recent_sfrs, dust2)
+    bin_centers_de, bin_means_de, bin_std_de = process_samples(sfr, tau, -2.5, 2.5, 25)
+    bin_centers, bin_means, bin_std = process_samples(recent_sfrs, dust2, -5, 3, 25)
     train_sfr, train_dust2, train_dust2errs = training_data_to_torch(bin_centers, bin_means, bin_std, bin_centers_de, bin_means_de, bin_std_de)
     return [train_sfr, train_dust2, train_dust2errs]
 
-def process_training_data_dust_index(n, tau, dust2, dust_index):
+def process_training_data_dust_index(n, ne, tau, dust2, dust_index):
 
-    bin_centers_de, bin_means_de, bin_std_de = process_popcosmos_samples(tau, n)
-    bin_centers, bin_means, bin_std = process_popcosmos_samples(dust2, dust_index)
+    bin_centers_de, bin_means_de, bin_std_de = process_samples_modified(tau, n, ne, 0.25, 1.5, 25)
+    bin_centers, bin_means, bin_std = process_samples(dust2, dust_index, 0.0, 3.0, 25)
     train_dust2, train_dust_index, train_dust_index_errs = training_data_to_torch(bin_centers, bin_means, bin_std, bin_centers_de, bin_means_de, bin_std_de)
     return [train_dust2, train_dust_index, train_dust_index_errs]
 
-def process_training_data_dust1(tau1, tau, dust2, dust1):
+def process_training_data_dust1(tau1, tau1e, tau, dust2, dust1):
 
-    bin_centers_de, bin_means_de, bin_std_de = process_popcosmos_samples(tau, tau1)
-    bin_centers, bin_means, bin_std = process_popcosmos_samples(dust2, dust1)
+    bin_centers_de, bin_means_de, bin_std_de = process_samples_modified(tau, tau1, tau1e, 0.0, 1.5, 25)
+    bin_centers, bin_means, bin_std = process_samples(dust2, dust1, 0.0, 3.0, 25)
     train_dust2, train_dust1, train_dust1_errs = training_data_to_torch(bin_centers, bin_means, bin_std, bin_centers_de, bin_means_de, bin_std_de)
     return [train_dust2, train_dust1, train_dust1_errs]
 
@@ -82,6 +89,22 @@ def training_data_to_torch(x1, y1, y1err, x2, y2, y2err):
     train_y = torch.from_numpy(np.delete(train_y.numpy(), np.where(np.isnan(train_y)==1)[0]))
 
     return train_x, train_y, train_y_errs
+
+def process_samples(x, y, xl, xh, ngrid=15):
+
+    bin_means, bin_edges, binnumber = sc.stats.binned_statistic(x, y, 'mean', np.linspace(xl, xh, ngrid))
+    bin_std, bin_edges, binnumber = sc.stats.binned_statistic(x, y, 'std', np.linspace(xl, xh, ngrid))
+    bin_width = (bin_edges[1] - bin_edges[0])
+    bin_centers = bin_edges[1:] - bin_width/2
+
+    return bin_centers, bin_means, bin_std
+
+def process_samples_modified(x, y, yerr, xl, xh, ngrid=15):
+
+    bins = np.linspace(xl, xh, ngrid)
+    x, y, yerr = binned_weighted_mean_std(x, y, yerr, bins)
+
+    return x, y, yerr
 
 def get_pop_cosmos_samples(nsamples):
 
@@ -141,6 +164,26 @@ def create_gp_model_obs(lengthscale, train_x, train_y, noise):
             covar_x = self.covar_module(x)
             return gpytorch.distributions.MultivariateNormal(mean_x, covar_x)
 
+    # initialize likelihood and model
+    likelihood = gpytorch.likelihoods.FixedNoiseGaussianLikelihood(noise=noise)
+    model = GPModel(train_x, train_y, likelihood).to(torch.double)
+
+    return model, likelihood
+
+def create_gp_model_power(power, train_x, train_y, noise):
+
+    class GPModel(gpytorch.models.ExactGP):
+
+        def __init__(self, train_x, train_y, likelihood):
+            super(GPModel, self).__init__(train_x, train_y, likelihood)
+            self.mean_module = gpytorch.means.ZeroMean()
+            self.covar_module = gpytorch.kernels.PolynomialKernel(power=power)
+
+        def forward(self, x):
+            mean_x = self.mean_module(x)
+            covar_x = self.covar_module(x)
+            return gpytorch.distributions.MultivariateNormal(mean_x, covar_x)
+    
     # initialize likelihood and model
     likelihood = gpytorch.likelihoods.FixedNoiseGaussianLikelihood(noise=noise)
     model = GPModel(train_x, train_y, likelihood).to(torch.double)
