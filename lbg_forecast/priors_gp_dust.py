@@ -17,16 +17,28 @@ class DustPrior():
         self.recent_sfrs, self.dust2, self.dust_index, self.dust1 = get_pop_cosmos_samples(nsamples=500000)
         print("Loading Complete")
 
+        #load saved models
         state_dict_dust2 = torch.load('/Users/fpetri/repos/LBGForecast/gp_models/dust2.pth', weights_only=True)
-        #state_dict_dust_index = torch.load('/Users/fpetri/repos/LBGForecast/gp_models/dust_index.pth', weights_only=True)
-        #state_dict_dust_1 = torch.load('/Users/fpetri/repos/LBGForecast/gp_models/dust1.pth', weights_only=True)
+        state_dict_dust_index = torch.load('/Users/fpetri/repos/LBGForecast/gp_models/dust_index.pth', weights_only=True)
+        state_dict_dust1 = torch.load('/Users/fpetri/repos/LBGForecast/gp_models/dust1.pth', weights_only=True)
 
+        #load dust2 model
         self.dust2_training_data = process_training_data_dust2(self.tau, self.sfr, self.recent_sfrs, self.dust2)
         self.model_dust2 = create_gp_model_obs([4.0, 10.0], self.dust2_training_data[0], self.dust2_training_data[1], self.dust2_training_data[2])[0]
         self.model_dust2.load_state_dict(state_dict_dust2)
 
-    def evaluate_dust2(self, test_x, mul, muh, sigl, sigh):
-        f_preds = gp_evaluate_model(self.model_dust2, torch.from_numpy(test_x))
+        #load dust index model
+        self.dust_index_training_data = process_training_data_dust_index(self.n, self.tau, self.dust2, self.dust_index)
+        self.model_dust_index = create_gp_model_obs([2.0, 6.0], self.dust_index_training_data[0], self.dust_index_training_data[1], self.dust_index_training_data[2])[0]
+        self.model_dust_index.load_state_dict(state_dict_dust_index)
+
+        #load dust1 model
+        self.dust1_training_data = process_training_data_dust1(self.tau1, self.tau, self.dust2, self.dust1)
+        self.model_dust1 = create_gp_model_obs([4.0, 10.0], self.dust1_training_data[0], self.dust1_training_data[1], self.dust1_training_data[2])[0]
+        self.model_dust1.load_state_dict(state_dict_dust1)
+
+    def evaluate_model(self, model, test_x, mul, muh, sigl, sigh):
+        f_preds = gp_evaluate_model(model, torch.from_numpy(test_x))
         mean = f_preds.sample().numpy()
         scatter = np.random.uniform(sigl, sigh)
         return dp.truncated_normal(mean, scatter, mul, muh, len(test_x))
@@ -45,14 +57,19 @@ def process_training_data_dust2(tau, sfr, recent_sfrs, dust2):
     train_sfr, train_dust2, train_dust2errs = training_data_to_torch(bin_centers, bin_means, bin_std, bin_centers_de, bin_means_de, bin_std_de)
     return [train_sfr, train_dust2, train_dust2errs]
 
-#to do
-#def process_training_data_dust_index(n, tau, dust2, dust_index):
+def process_training_data_dust_index(n, tau, dust2, dust_index):
 
-#    bin_centers_de, bin_means_de, bin_std_de = process_popcosmos_samples(tau, n)
-#    bin_centers, bin_means, bin_std = process_popcosmos_samples(dust2, dust_index)
-#    train_dust2, train_dust_index, train_dust_index_errs = training_data_to_torch(bin_centers, bin_means, bin_std, bin_centers_de, bin_means_de, bin_std_de)
-#    return [train_dust2, train_dust_index, train_dust_index_errs]
+    bin_centers_de, bin_means_de, bin_std_de = process_popcosmos_samples(tau, n)
+    bin_centers, bin_means, bin_std = process_popcosmos_samples(dust2, dust_index)
+    train_dust2, train_dust_index, train_dust_index_errs = training_data_to_torch(bin_centers, bin_means, bin_std, bin_centers_de, bin_means_de, bin_std_de)
+    return [train_dust2, train_dust_index, train_dust_index_errs]
 
+def process_training_data_dust1(tau1, tau, dust2, dust1):
+
+    bin_centers_de, bin_means_de, bin_std_de = process_popcosmos_samples(tau, tau1)
+    bin_centers, bin_means, bin_std = process_popcosmos_samples(dust2, dust1)
+    train_dust2, train_dust1, train_dust1_errs = training_data_to_torch(bin_centers, bin_means, bin_std, bin_centers_de, bin_means_de, bin_std_de)
+    return [train_dust2, train_dust1, train_dust1_errs]
 
 def training_data_to_torch(x1, y1, y1err, x2, y2, y2err):
 
@@ -109,7 +126,6 @@ def proccess_nagaraj22_samples(x, y, xl, xh, ngrid=15):
     bin_centers_de = bin_edges_de[1:] - bin_width_de/2
 
     return bin_centers_de, bin_means_de, bin_std_de
-
 
 def create_gp_model_obs(lengthscale, train_x, train_y, noise):
 
