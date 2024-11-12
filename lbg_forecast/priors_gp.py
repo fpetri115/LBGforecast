@@ -418,34 +418,19 @@ def shift_csfrd_inverse(new_redshift, csfrd, redshift, mean):
 
 def process_training_data_csfrd(training_data):
 
-
     data = ascii.read("csfr_data/csfrs.dat")  
     scale = np.array(data["Scale"])
     redshift = cosmo.scale_to_z(scale)
     total_obs_csfr = np.array(data["Total_Obs_CSFR"])
 
     train_redshift = torch.from_numpy(training_data[0])
-    train_csfrd = torch.from_numpy(training_data[1])
-    train_csfrd_errors_l = torch.from_numpy(training_data[3])
-    train_csfrd_errors_h = torch.from_numpy(training_data[4])
-    log_train_csfrd_errors_l = torch.from_numpy(training_data[5])
-    log_train_csfrd_errors_h = torch.from_numpy(training_data[6])
+    log_train_csfrd = torch.from_numpy(training_data[1])
+    log_train_csfrd_errors = torch.from_numpy(training_data[2])
 
-
-    log_train_csfrd = torch.log10(train_csfrd)
     log_train_shifted_csfrd = shift_csfrd(train_redshift, log_train_csfrd, np.flip(redshift), np.flip(np.log10(total_obs_csfr)))
-    log_train_csfrd_errors = log_train_csfrd_errors_l+log_train_csfrd_errors_h
+    return train_redshift, log_train_shifted_csfrd, log_train_csfrd_errors, log_train_csfrd
 
-    return train_redshift, log_train_shifted_csfrd, log_train_csfrd_errors, log_train_csfrd, train_csfrd_errors_l, train_csfrd_errors_h
-
-# Function x**(1/2)
-def forward(x):
-    return abs(x)**(1/1.5)
-
-def inverse(x):
-    return x**(1.5)
-
-def get_training_data_csfrd(plot=False):
+def get_training_data(plot=False):
 
     data = ascii.read("csfr_data/obs.txt")
     csfr_rows = data['Type']=="csfr"
@@ -456,38 +441,25 @@ def get_training_data_csfrd(plot=False):
     z2 = np.array(data["Z2"])[rows]
     redshift = (z2+z1)/2
 
-    z_err_l = redshift-z1
-    z_err_h = z2-redshift
-
     log_val = np.array(data["Val"])[rows]
     log_err_h = np.array(data["Err_h"])[rows]
     log_err_l = np.array(data["Err_l"])[rows]
-
-    log_val_err_h = log_val + log_err_h
-    log_val_err_l = log_val - log_err_l
-
-    val = 10**log_val
-    val_err_h = 10**log_val_err_h
-    val_err_l = 10**log_val_err_l
-
-    err_h = val_err_h - val
-    err_l = val - val_err_l
+    log_err = np.maximum(log_err_l, log_err_h)
 
     train_redshift = redshift
-    train_csfrd = val
-    train_csfrd_errors = err_h+err_l
+    train_csfrd = log_val
+    train_csfrd_errors = log_err
 
-    #if(plot):
-    #plt.errorbar(redshift, val, yerr=[err_l, err_h], fmt='ko', capsize=2, alpha=0.5)
+    if(plot):
+        plt.errorbar(train_redshift, train_csfrd, yerr=train_csfrd_errors, fmt='ko', capsize=2, alpha=1.0)
     #plt.yscale("log")
-    #plt.xscale('function', functions=(forward, inverse))
-    #plt.xlabel("redshift")
-    #plt.ylabel("csfrd")
+        plt.xlabel("redshift")
+        plt.ylabel("csfrd")
     #plt.xticks(np.arange(0, 10, 1.0))
     #plt.xlim(0, 10)
     #plt.ylim(0.001, 0.2)
 
-    return train_redshift, train_csfrd, train_csfrd_errors, err_l, err_h, log_err_l, log_err_h, log_val_err_l, log_val_err_h
+    return train_redshift, train_csfrd, train_csfrd_errors
 
 def extract_from_file(file):
     #https://iopscience.iop.org/article/10.3847/1538-4357/aabf3c
