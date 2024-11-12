@@ -5,7 +5,69 @@ import lbg_forecast.cosmology as cosmo
 from astropy.io import ascii
 import matplotlib.pyplot as plt
 import lbg_forecast.population_model as pop
+from uncertainties import unumpy as upy
 
+class CSFRDPrior():
+
+    def __init__(self):
+
+        self.train_data = get_training_data(False)
+        state_dict = torch.load('/Users/fpetri/repos/LBGForecast/gp_models/csfrd.pth', weights_only=True)
+        self.model = create_gp_model(self.train_data[0], self.train_data[2], self.train_data[3], [1.0, 7.0], [0.5, 100])[0]
+        self.model.load_state_dict(state_dict)
+        self.test_redshift = torch.linspace(0, 30, 3000).to(torch.double)
+        self.prior = gp_evaluate_model(self.model, self.test_redshift)
+
+    def sample_prior_corrected(self):
+        return self.prior.sample().numpy() + mean_obs_behroozi(self.test_redshift.numpy(), log=True) - systematic_shift(self.test_redshift.numpy())
+    
+    def get_prior_mean(self):
+        return self.prior.mean.numpy() + mean_obs_behroozi(self.test_redshift.numpy(), log=True)
+    
+    def get_prior_mean_corrected(self):
+        return self.prior.mean.numpy() + mean_obs_behroozi(self.test_redshift.numpy(), log=True) - systematic_shift(self.test_redshift.numpy())
+    
+    def get_prior_confidence_region(self):
+        lower, upper = self.prior.confidence_region()
+        lower = lower + mean_obs_behroozi(self.test_redshift.numpy(), log=True)
+        upper = upper + mean_obs_behroozi(self.test_redshift.numpy(), log=True)
+        return [lower, upper]
+    
+    def get_prior_confidence_region_corrected(self):
+        lower, upper = self.prior.confidence_region()
+        lower = lower + mean_obs_behroozi(self.test_redshift.numpy(), log=True) - systematic_shift(self.test_redshift.numpy())
+        upper = upper + mean_obs_behroozi(self.test_redshift.numpy(), log=True) - systematic_shift(self.test_redshift.numpy())
+        return [lower, upper]
+    
+    def plot_combined(self):
+
+        train_redshift, train_log_csfrd, train_log_shifted_csfrd, train_log_csfrd_errors = self.train_data
+        behroozi19 = get_behroozi19_curves()
+        with torch.no_grad():
+
+            f, ax = plt.subplots(1, 1, figsize=(22, 16))
+
+            ax.errorbar(train_redshift, train_log_csfrd, yerr=train_log_csfrd_errors, fmt='o', mfc='k', ecolor='k', mec='k', alpha=1.0, elinewidth=2.5, capsize=5, ms=12, lw=3, label="Observed CSFRD (Behroozi et al. 2019)")
+            
+            ax.plot(self.test_redshift.numpy(), self.get_prior_mean(), lw=7, zorder=1200, c="k", label="Gaussian Process Mean")
+            lower, upper = self.get_prior_confidence_region()
+            ax.fill_between(self.test_redshift.numpy(), lower, upper, alpha=0.4, lw=0, color="k", label="$2\sigma $ Confidence")
+            ax.plot(behroozi19[0], behroozi19[1], zorder=1100, ls="--", c="k", lw=7, label="Behroozi et al. (2019) Fit")
+
+
+            ax.plot(self.test_redshift.numpy(), self.get_prior_mean_corrected(), lw=7, zorder=1200, c='red', ls="-", label="Gaussian Process Mean (Corrected)")
+            lower_corrected, upper_corrected = self.get_prior_confidence_region_corrected()
+            ax.fill_between(self.test_redshift.numpy(), lower_corrected, upper_corrected, alpha=0.4, lw=0, color="red", label="$2\sigma $ Confidence (Corrected)")
+            ax.plot(behroozi19[0], behroozi19[2], zorder=1100, c="red", ls="--", lw=7, label="Behroozi et al. (2019) Fit (Corrected)")
+
+            ax.set_xlabel("Redshift", fontsize=32)
+            ax.set_ylabel("Cosmic Star Formation Rate Density [$\mathrm{M}_{\odot} \mathrm{yr}^{-1} \mathrm{Mpc}^{-3}$]", fontsize=32)
+            ax.set_xlim(0, 10)
+            ax.tick_params(axis='y', labelsize=32)
+            ax.tick_params(axis='x', labelsize=32)
+            ax.set_ylim(-2.7, -0.5)
+            ax.set_xscale('function', functions=(forward, inverse))
+            ax.legend(frameon=False, fontsize=22)
 
 def create_gp_model(train_redshift, train_log_csfrd_shifted, train_log_csfrd_errors, lengthscale, scale):
 
@@ -72,20 +134,6 @@ def shift_csfrd(new_redshift, csfrd, redshift, mean):
 def shift_csfrd_inverse(new_redshift, csfrd, redshift, mean):
     return csfrd + np.interp(new_redshift, redshift, mean)
 
-def process_training_data_csfrd(training_data):
-
-    data = ascii.read("csfr_data/csfrs.dat")  
-    scale = np.array(data["Scale"])
-    redshift = cosmo.scale_to_z(scale)
-    total_obs_csfr = np.log10(np.array(data["Total_Obs_CSFR"]))
-
-    train_redshift = torch.from_numpy(training_data[0])
-    log_train_csfrd = torch.from_numpy(training_data[1])
-    log_train_csfrd_errors = torch.from_numpy(training_data[2])
-
-    log_train_shifted_csfrd = shift_csfrd(train_redshift, log_train_csfrd, np.flip(redshift), np.flip(total_obs_csfr))
-    return train_redshift, log_train_shifted_csfrd, log_train_csfrd_errors, log_train_csfrd
-
 def get_training_data(plot=False):
 
     data = ascii.read("csfr_data/obs.txt")
@@ -111,4 +159,60 @@ def get_training_data(plot=False):
         plt.xlabel("redshift")
         plt.ylabel("csfrd")
 
-    return train_redshift, train_csfrd, train_csfrd_errors
+    train_redshift = torch.from_numpy(train_redshift)
+    train_log_csfrd = torch.from_numpy(train_csfrd)
+    train_log_shifted_csfrd = train_log_csfrd - torch.from_numpy(mean_obs_behroozi(train_redshift.numpy(), log=True))
+    train_log_csfrd_errors = torch.from_numpy(train_csfrd_errors)
+
+    return [train_redshift, train_log_csfrd, train_log_shifted_csfrd, train_log_csfrd_errors]
+
+def log_to_lin(train_log_csfrd, train_log_csfrd_errors):
+
+    log_csfrd_arr = upy.uarray(train_log_csfrd, train_log_csfrd_errors)
+    csfrd_arr = 10**log_csfrd_arr
+    train_csfrd = upy.nominal_values(csfrd_arr)
+    train_csfrd_errors = upy.std_devs(csfrd_arr)
+
+    return train_csfrd, train_csfrd_errors
+
+def mean_obs_behroozi(zgrid, log):
+
+    data = ascii.read("csfr_data/csfrs.dat")  
+    scale = np.array(data["Scale"])
+    redshift = cosmo.scale_to_z(scale)
+
+    if(log):
+        total_obs_csfr = np.log10(np.array(data["Total_Obs_CSFR"]))
+    else:
+        total_obs_csfr = np.array(data["Total_Obs_CSFR"])
+
+    return np.interp(zgrid, np.flip(redshift), np.flip(total_obs_csfr))
+
+def systematic_shift(zgrid):
+
+    data = ascii.read("csfr_data/csfrs.dat")  
+
+    scale = np.array(data["Scale"])
+    redshift = cosmo.scale_to_z(scale)
+    total_obs_csfr = np.log10(np.array(data["Total_Obs_CSFR"]))
+    true_csfr = np.log10(np.array(data["True_CSFR"]))
+
+    sys_shift = total_obs_csfr - true_csfr
+
+    return np.interp(zgrid, np.flip(redshift), np.flip(sys_shift))
+
+def get_behroozi19_curves():
+
+        data = ascii.read("csfr_data/csfrs.dat")  
+
+        scale = np.array(data["Scale"])
+        redshift = cosmo.scale_to_z(scale)
+        total_obs_csfr = np.log10(np.array(data["Total_Obs_CSFR"]))
+        true_csfr = np.log10(np.array(data["True_CSFR"]))
+
+        return redshift, total_obs_csfr, true_csfr
+
+def inverse(x):
+    return x**2
+def forward(x):
+    return np.sqrt(x)

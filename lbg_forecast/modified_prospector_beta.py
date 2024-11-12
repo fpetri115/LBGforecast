@@ -3,7 +3,7 @@ from prospect.models import priors_beta as pb
 from prospect.models.priors_beta import DymSFHfixZred
 from prospect.models import priors
 from prospect.models import transforms as ts
-import lbg_forecast.priors_gp as gp
+import lbg_forecast.priors_gp_csfrd as gp
 from scipy.interpolate import UnivariateSpline
 import lbg_forecast.cosmology as cosmology
 import lbg_forecast.population_model as pop
