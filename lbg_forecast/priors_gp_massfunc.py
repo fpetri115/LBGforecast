@@ -67,10 +67,13 @@ class MassFunctionPrior():
         self.train_yerr = [sorted_train_logphi1_errs, sorted_train_logphi2_errs, sorted_train_alpha1_errs, sorted_train_alpha2_errs, sorted_train_logm_errs]
         self.test_x = [self.phi1_test_z, self.phi2_test_z, self.alpha1_test_z, self.alpha2_test_z, self.logm_test_z]
 
-    def sample_log_n(self, nwalkers=101, steps=5000):
+    def sample_log_n(self, nsamples = 1000):
 
-        burnin = 10000
-        nsamples = nwalkers*steps-burnin
+        burnin=1000
+        nwalkers=100
+        
+        steps = int((burnin+nsamples)/nwalkers)
+
 
         #sampling
         ndim = 2
@@ -80,7 +83,7 @@ class MassFunctionPrior():
         prior_bounds=[0.0,7.0,7,13]
         sparams = self.sample_prior()
 
-        sampler = emcee.EnsembleSampler(nwalkers, ndim, self.n, args=[sparams, prior_bounds])
+        sampler = emcee.EnsembleSampler(nwalkers, ndim, self.log_n, args=[sparams, prior_bounds])
 
         state = sampler.run_mcmc(p0, 100)
         sampler.reset()
@@ -115,12 +118,39 @@ class MassFunctionPrior():
 
         return mfunc
     
-    def number_density(self, z, logm_grid, sparams):
-        
-        phi = self.mass_function(z, logm_grid, sparams)
+    def number_density(self, logm_grid, phi):
+        """gives number density at z phi is calculated at, over logm"""
         n_phi = np.trapz(phi, logm_grid)
-
         return n_phi
+    def number(self, z, n_phi):
+        """gives number of galaxies in small volume at z. z must be
+        the same as one calculated for n_phi"""
+        volume = np.interp(z, self.redshift_grid, self.volume_grid)
+        return n_phi*volume
+    def log_n(self, x, sparams, prior_bounds=[0.0,7.0,7.0,13]):
+
+        z, logm = x
+
+        if(z < prior_bounds[0] or z > prior_bounds[1]):
+            return -np.inf
+        
+        if(logm < prior_bounds[2] or logm > prior_bounds[3]):
+            return -np.inf
+        
+        dlogm = 0.1
+        logm_grid = np.linspace(logm, logm+dlogm, 10)
+        phi = self.mass_function(z, logm_grid, sparams)#per volume, per logmass
+        n_phi = self.number_density(logm_grid, phi)
+        ngalaxies = self.number(z, n_phi)
+
+        return np.log(ngalaxies)
+
+    #def number_density(self, z, logm_grid, sparams):
+    #    
+    #    phi = self.mass_function(z, logm_grid, sparams)
+    #    n_phi = np.trapz(phi, logm_grid)
+
+    #    return n_phi
     
     def number_of_galaxies(self, z_grid, logm_grid, sparams):
 
@@ -181,30 +211,30 @@ class MassFunctionPrior():
 
         return np.log(self.number_of_galaxies(zgrid, logmgrid, sparams))
     
-    def log_n(self, x, sparams, prior_bounds=[0.0,7.0,7.0,13]):
+    #def log_n(self, x, sparams, prior_bounds=[0.0,7.0,7.0,13]):
 
-        z, logm = x
+    #    z, logm = x
 
-        if(z < prior_bounds[0] or z > prior_bounds[1]):
-            return -np.inf
+    #    if(z < prior_bounds[0] or z > prior_bounds[1]):
+    #        return -np.inf
         
-        if(logm < prior_bounds[2] or logm > prior_bounds[3]):
-            return -np.inf
+    #    if(logm < prior_bounds[2] or logm > prior_bounds[3]):
+    #        return -np.inf
         
         #dlogm = 0.1
         #dz = 0.05
         #mbin = np.linspace(logm-dlogm, logm+dlogm, 5)
         #zbin = np.linspace(z-dz, z+dz, 3)
         #ngalaxies = self.number_of_galaxies(zbin, mbin, sparams)
-        dlogm = 1e-3
-        phi = self.mass_function(z, logm, sparams)#per volume, per logmass
+    #    dlogm = 0.1
+    #    phi = self.mass_function(z, logm, sparams)#per volume, per logmass
+    #    n_phi = self.number_density(z, np.arange(logm, logm+dlogm, 0.01), sparams)
+    #    ngalaxies = self.number_of_galaxies(z_grid, logm_grid, sparams)
 
-        n_phi = phi*dlogm
+    #    volumes = np.interp(z, self.redshift_grid, self.volume_grid)
+    #    ngalaxies = n_phi*volumes
 
-        volumes = np.interp(z, self.redshift_grid, self.volume_grid)
-        ngalaxies = n_phi*volumes
-
-        return np.log(ngalaxies)
+    #    return np.log(ngalaxies)
     
     def volume_elements(self, z_grid):
         dz = z_grid[-1]-z_grid[-2]
@@ -521,13 +551,13 @@ def get_phi2_data(plotting=False):
 
 def get_alpha1_data(plotting=False):
 
-    weaver_alpha_low_mass_norm_val = np.array([-1.42, -1.39, -1.32, -1.33, -1.48, -1.46])#, -1.46, -1.46, -1.46, -1.46, -1.46, -1.46])
-    weaver_alpha_low_mass_norm_errl = np.array([0.06, 0.07, 0.06, 0.05, 0.09, 0.06])#, 1e-6, 1e-6, 1e-6, 1e-6, 1e-6, 1e-6])
-    weaver_alpha_low_mass_norm_errh = np.array([0.05, 0.05, 0.04, 0.05, 0.07, 0.05])#, 1e-6, 1e-6, 1e-6, 1e-6, 1e-6, 1e-6])
+    weaver_alpha_low_mass_norm_val = np.array([-1.42, -1.39, -1.32, -1.33, -1.48, -1.46, -1.46])#, -1.46, -1.46, -1.46, -1.46, -1.46, -1.46])
+    weaver_alpha_low_mass_norm_errl = np.array([0.06, 0.07, 0.06, 0.05, 0.09, 0.06, 0.1])#, 1e-6, 1e-6, 1e-6, 1e-6, 1e-6, 1e-6])
+    weaver_alpha_low_mass_norm_errh = np.array([0.05, 0.05, 0.04, 0.05, 0.07, 0.05, 0.1])#, 1e-6, 1e-6, 1e-6, 1e-6, 1e-6, 1e-6])
     weaver_alpha_low_mass_norm_errs = np.maximum(weaver_alpha_low_mass_norm_errl, weaver_alpha_low_mass_norm_errh)
 
-    weaver_redshift_lower_bin_edge = np.array([0.2, 0.5, 0.8, 1.1, 1.5, 2.0])#, 2.5, 3.0, 3.5, 4.5, 5.5, 6.5])
-    weaver_redshift_upper_bin_edge = np.array([0.5, 0.8, 1.1, 1.5, 2.0, 2.5])#, 3.0, 3.5, 4.5, 5.5, 6.5, 7.5])
+    weaver_redshift_lower_bin_edge = np.array([0.2, 0.5, 0.8, 1.1, 1.5, 2.0, 6.0])#, 2.5, 3.0, 3.5, 4.5, 5.5, 6.5])
+    weaver_redshift_upper_bin_edge = np.array([0.5, 0.8, 1.1, 1.5, 2.0, 2.5, 7.0])#, 3.0, 3.5, 4.5, 5.5, 6.5, 7.5])
     weaver_redshift_midpoint = (weaver_redshift_lower_bin_edge + weaver_redshift_upper_bin_edge)/2
 
     cont_alpha_low_mass_norm_val = np.array([-1.48, -1.48, -1.48])
