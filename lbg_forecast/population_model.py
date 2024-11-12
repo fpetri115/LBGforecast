@@ -12,7 +12,7 @@ from scipy.stats import t
 import lbg_forecast.modified_prospector_beta as mpb
 
 
-def generate_sps_parameters(nsamples, prior_parameters, redshift_mass_prior_data, uniform_redshift_mass=False, uniform_logf=False):
+def generate_sps_parameters(nsamples, prior_parameters, redshift_mass_prior_data, dust_prior, uniform_redshift_mass=False, uniform_logf=False):
     """Sample sps parameters given some prior parameters.
 
     :param nsamples: 
@@ -99,7 +99,9 @@ def generate_sps_parameters(nsamples, prior_parameters, redshift_mass_prior_data
     else:
         log_sfr_ratios = modified_prospector_beta_sfh_prior(redshift, mass, 0.3)
     
-    dust_index, dust1, dust2 = dpr.sample_dust_model(redshift, mass, log_sfr_ratios)
+    #dust params
+    recent_sfrs = np.log10(sfh.calculate_recent_sfr(redshift, 10**mass, log_sfr_ratios))
+    dust_index, dust1, dust2 = dust_prior.draw_dust_parameters(recent_sfrs)
 
     sps_parameters.append(redshift)
     sps_parameters.append(logzsol)
