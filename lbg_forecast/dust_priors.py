@@ -3,6 +3,81 @@ import lbg_forecast.sfh as sfh
 import lbg_forecast.priors_gp as gp
 from scipy.stats import truncnorm
 
+
+class DustPrior():
+    def __init__(self, samples=9999999999):
+
+        self.popcosmos_samples = self.initialise_popcosmos_samples(samples)
+        self.number_of_samples = self.popcosmos_samples.shape[0]
+
+    def initialise_popcosmos_samples(self, nsamples=999999999):
+
+        popcosmos_samples = np.load("dust_data/popcosmos_parameters_rmag_lt_25.npy")[:nsamples, :]
+
+        dust_samples = popcosmos_samples[:, 8:11]
+        logsfrratios = popcosmos_samples[:, 2:8]
+        redshifts = popcosmos_samples[:, -1]
+        logmasses = popcosmos_samples[:, 0]
+        recent_sfrs = np.log10(sfh.calculate_recent_sfr(redshifts, 10**logmasses, logsfrratios))
+
+        dust2 = dust_samples[:, 0]
+        dust_index = dust_samples[:, 1]
+        dust1frac = dust_samples[:, 2]
+        dust1 = dust1frac*dust2
+
+        dustparams = np.vstack((recent_sfrs, dust2, dust_index, dust1)).T
+
+        return dustparams
+
+    def draw_dust2(self, sfrs):
+
+        recent_sfrs, dust2, dust_index, dust1 = extract_samples(self.popcosmos_samples)
+
+        sorted_inds = recent_sfrs.argsort()[:]
+        sorted_sfrs = recent_sfrs[sorted_inds]
+        sorted_dust2 = dust2[sorted_inds]
+
+        return np.interp(sfrs, sorted_sfrs, sorted_dust2)
+    
+    def draw_dust_index(self, dust2_samples):
+
+        recent_sfrs, dust2, dust_index, dust1 = extract_samples(self.popcosmos_samples)
+
+        sorted_inds = dust2.argsort()[:]
+        sorted_dust2 = dust2[sorted_inds]
+        sorted_dust_index = dust_index[sorted_inds]
+
+        return np.interp(dust2_samples, sorted_dust2, sorted_dust_index)
+    
+    def draw_dust1(self, dust2_samples):
+
+        recent_sfrs, dust2, dust_index, dust1 = extract_samples(self.popcosmos_samples)
+
+        sorted_inds = dust2.argsort()[:]
+        sorted_dust2 = dust2[sorted_inds]
+        sorted_dust1 = dust1[sorted_inds]
+
+        return np.interp(dust2_samples, sorted_dust2, sorted_dust1)
+    
+    def draw_dust_parameters(self, sfrs):
+        """is this factorised??"""
+
+        dust2 = self.draw_dust2(sfrs)
+        dust_index = self.draw_dust_index(dust2)
+        dust1 = self.draw_dust1(dust2)
+
+        return [dust2, dust_index, dust1]
+
+
+def extract_samples(dust_params):
+
+    recent_sfrs = dust_params[:, 0]
+    dust2 = dust_params[:, 1]
+    dust_index = dust_params[:, 2]
+    dust1 = dust_params[:, 3]
+
+    return [recent_sfrs, dust2, dust_index, dust1]
+
 def truncated_normal(mu, sigma, min, max, samples):
     """Samples truncated normal distribution from scipy
     """
