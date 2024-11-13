@@ -90,15 +90,10 @@ class MassFunctionPrior():
 
         sampler.run_mcmc(state, steps)
 
-        #plotting
 
         samples = sampler.get_chain(flat=True)
         redshift_samples = samples[:, 0]
         mass_samples = samples[:, 1]
-        #s = MCSamples(samples=samples, names=["z", "logm"])
-        #plotter = plots.get_subplot_plotter()
-        #plotter.triangle_plot([s], Filled=True, contour_lws=2)
-        print(samples.shape, nsamples)
 
         return redshift_samples[burnin:nsamples+burnin], mass_samples[burnin:nsamples+burnin]
 
@@ -145,97 +140,6 @@ class MassFunctionPrior():
 
         return np.log(ngalaxies)
 
-    #def number_density(self, z, logm_grid, sparams):
-    #    
-    #    phi = self.mass_function(z, logm_grid, sparams)
-    #    n_phi = np.trapz(phi, logm_grid)
-
-    #    return n_phi
-    
-    def number_of_galaxies(self, z_grid, logm_grid, sparams):
-
-        volumes = np.interp(z_grid, self.redshift_grid, self.volume_grid)
-
-        n_gals = 0
-        for z, v in zip(z_grid, volumes):
-            n_phi = self.number_density(z, logm_grid, sparams)
-            n = n_phi*v
-            n_gals+=n
-        
-        return n_gals
-    
-    def calculate_nz_marginal(self, z_grid, sparams):
-
-        logm_grid = np.linspace(7, 13, 100)
-        nz = []
-        for z in z_grid:
-            nz.append(self.number_of_galaxies(np.atleast_1d(z), logm_grid, sparams))
-
-        return np.array(nz)
-    
-    def calculate_nlogm_marginal(self, mbins, sparams):
-
-        z_grid = np.arange(0.0, 7.0, 0.1)
-        nlogm = []
-        for bin in mbins:
-            n = 0
-            for z in z_grid:
-                n+=self.number_of_galaxies(np.atleast_1d(z), bin, sparams)
-
-            nlogm.append(n)
-
-        return nlogm
-    
-    def n(self, x, sparams, prior_bounds=[0.0,7.0,7.0,13]):
-
-        z, logm = x
-
-        if(z < prior_bounds[0] or z > prior_bounds[1]):
-            return -np.inf
-        
-        if(logm < prior_bounds[2] or logm > prior_bounds[3]):
-            return -np.inf
-
-        dzbin = 0.25
-        dlogmbin = 0.25
-        logmbins = np.arange(7, 13+dlogmbin, dlogmbin)
-        zbins = np.arange(0.0, 7.0+dzbin, dzbin)
-
-        binned_z = zbins[np.digitize(z, zbins)-1]
-        binned_logm = logmbins[np.digitize(logm, logmbins)-1]
-
-        dlogm = 0.025
-        dz = 0.025
-        logmgrid = np.arange(binned_logm, binned_logm+dlogmbin, dlogm)
-        zgrid = np.arange(binned_z, binned_z+dzbin, dz)
-
-        return np.log(self.number_of_galaxies(zgrid, logmgrid, sparams))
-    
-    #def log_n(self, x, sparams, prior_bounds=[0.0,7.0,7.0,13]):
-
-    #    z, logm = x
-
-    #    if(z < prior_bounds[0] or z > prior_bounds[1]):
-    #        return -np.inf
-        
-    #    if(logm < prior_bounds[2] or logm > prior_bounds[3]):
-    #        return -np.inf
-        
-        #dlogm = 0.1
-        #dz = 0.05
-        #mbin = np.linspace(logm-dlogm, logm+dlogm, 5)
-        #zbin = np.linspace(z-dz, z+dz, 3)
-        #ngalaxies = self.number_of_galaxies(zbin, mbin, sparams)
-    #    dlogm = 0.1
-    #    phi = self.mass_function(z, logm, sparams)#per volume, per logmass
-    #    n_phi = self.number_density(z, np.arange(logm, logm+dlogm, 0.01), sparams)
-    #    ngalaxies = self.number_of_galaxies(z_grid, logm_grid, sparams)
-
-    #    volumes = np.interp(z, self.redshift_grid, self.volume_grid)
-    #    ngalaxies = n_phi*volumes
-
-    #    return np.log(ngalaxies)
-    
     def volume_elements(self, z_grid):
         dz = z_grid[-1]-z_grid[-2]
         volumes = []

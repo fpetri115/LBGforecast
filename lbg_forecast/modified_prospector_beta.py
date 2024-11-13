@@ -11,39 +11,17 @@ from scipy.stats import t
 import matplotlib.pyplot as plt
 
 
-class ModifiedDymSFH():
+def sample_logsfrratios(csfrd_spline, redshift, logmass, sigma, alpha):
 
-    def __init__(self, tscale, alpha, logsfrmin=-5.0, logsfrmax=5.0):
-
-        self._test_z, self._csfrd_sample = get_csfrd_prior()
-        self.csfrd_spline = get_csfrd_spline(self._test_z, self._csfrd_sample)[1]
-        self.nbins=7
-        self.logsfrmin = logsfrmin
-        self.logsfrmax = logsfrmax
-        self.tscale = tscale
-        self.alpha= alpha
-
-    def sample(self, redshift, logmass):
-
-        logsfr_ratios = expe_logsfr_ratios_modified(self.csfrd_spline, this_z=redshift, this_m=logmass, nbins_sfh=self.nbins,
-                                            logsfr_ratio_mini=self.logsfrmin,
-                                            logsfr_ratio_maxi=self.logsfrmax, alpha=self.alpha)
-        
-        logsfr_ratios_rvs = pop.continuity_prior(1, 2, logsfr_ratios, np.array([self.tscale]*logsfr_ratios.shape[0]))
-        return logsfr_ratios_rvs
+    logsfr_ratios = expe_logsfr_ratios_modified(csfrd_spline, this_z=redshift, this_m=logmass, nbins_sfh=7,
+                                        logsfr_ratio_mini=-5,
+                                        logsfr_ratio_maxi=5, alpha=alpha)
     
+    logsfr_ratios_rvs = pop.continuity_prior(1, 2, logsfr_ratios, np.array([sigma]*logsfr_ratios.shape[0]))
+    return logsfr_ratios_rvs
 
-def get_csfrd_prior():
-    csfrd_prior = gp.CSFRDPrior()
-    csfrd_sample = csfrd_prior.sample_prior_corrected()
-    redshifts = csfrd_prior.test_z
-    return redshifts, csfrd_sample
-
-def get_csfrd_spline(redshifts, csfrd_sample):
-
-    lookback_times = cosmology.get_cosmology().lookback_time(redshifts).value*1e9
+def get_csfrd_spline(lookback_times, csfrd_sample):
     csfrd_sample_spline = UnivariateSpline(lookback_times, csfrd_sample, s=0, ext=3)
-    plt.plot()
     return lookback_times, csfrd_sample_spline
 
 def expe_logsfr_ratios_modified(csfrd_spline, this_z, this_m, logsfr_ratio_mini, logsfr_ratio_maxi,

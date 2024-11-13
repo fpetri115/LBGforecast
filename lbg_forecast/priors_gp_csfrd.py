@@ -15,8 +15,9 @@ class CSFRDPrior():
         state_dict = torch.load('/Users/fpetri/repos/LBGForecast/gp_models/csfrd.pth', weights_only=True)
         self.model = create_gp_model(self.train_data[0], self.train_data[2], self.train_data[3], [1.0, 7.0], [0.5, 100])[0]
         self.model.load_state_dict(state_dict)
-        self.test_redshift = torch.linspace(0, 30, 3000).to(torch.double)
+        self.test_redshift = torch.linspace(0, 30, 500).to(torch.double)
         self.prior = gp_evaluate_model(self.model, self.test_redshift)
+        self.lookback_times = cosmo.get_cosmology().lookback_time(self.test_redshift.numpy()).value*1e9
 
     def sample_prior_corrected(self):
         return self.prior.sample().numpy() + mean_obs_behroozi(self.test_redshift.numpy(), log=True) - systematic_shift(self.test_redshift.numpy())
@@ -87,9 +88,6 @@ def create_gp_model(train_redshift, train_log_csfrd_shifted, train_log_csfrd_err
     likelihood = gpytorch.likelihoods.FixedNoiseGaussianLikelihood(noise=train_log_csfrd_errors)
     model = CSFRDModel(train_redshift, train_log_csfrd_shifted, likelihood).to(torch.double)
 
-    for param_name, param in model.named_parameters():
-        print(f'Parameter name: {param_name:42} value = {param.item()}')
-
     return model, likelihood
 
 def gp_training_loop(model, likelihood, train_x, train_y, training_iter=5000, lr=0.1):
@@ -127,12 +125,6 @@ def gp_evaluate_model(model, test_x):
     f_preds = model(test_x.to(torch.double))
 
     return f_preds
-
-def shift_csfrd(new_redshift, csfrd, redshift, mean):
-    return csfrd - np.interp(new_redshift, redshift, mean)
-
-def shift_csfrd_inverse(new_redshift, csfrd, redshift, mean):
-    return csfrd + np.interp(new_redshift, redshift, mean)
 
 def get_training_data(plot=False):
 
