@@ -33,7 +33,7 @@ for n in range(nrealisations):
     sps_params = pop.generate_sps_parameters(ngals, mass_function_prior, dust_prior, csfrd_prior)
     spsp.append(sps_params)
     if(rank == 0):
-        print("Realisation: ", n, flush=True)
+        print("Realisation: ", n+1, flush=True)
 
 if(rank == 0):
     print("Waiting For Other Processes ... ", flush=True)

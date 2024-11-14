@@ -13,10 +13,10 @@ model = em.fsps_emulator(path)
 sps_parameters = np.load(path+"/sps_parameter_samples/sps_"+str(run)+".npy")
 
 nzs = []
-batch_size=100
 for n in range(sps_parameters.shape[0]):    
     lbg_nzs = nz.simulate_nzs(sps_parameters[n, :, :], model, batch_size)
     nzs.append(lbg_nzs)
+    print("Realisation: ", n+1, flush=True)
 
 #save
 nz_data = np.asarray(nzs)
