@@ -43,9 +43,9 @@ class DustPrior():
         scatter = np.random.uniform(sigl, sigh)
         return dp.truncated_normal(mean, scatter, mul, muh, len(test_x))
 
-def train_gp_model(train_x, train_y, train_yerrs, lengthscales, lr=0.1, training_iter=20000):
+def train_gp_model(train_x, train_y, train_yerrs, lengthscales, scales, lr=0.1, training_iter=20000):
 
-    model, likelihood = create_gp_model_obs([lengthscales[0], lengthscales[1]], train_x, train_y, train_yerrs)
+    model, likelihood = create_gp_model_obs([lengthscales[0], lengthscales[1]], train_x, train_y, train_yerrs, scales)
     trained_model, trained_likelihood = gp_training_loop(model, likelihood, train_x, train_y, training_iter=training_iter, lr=lr)
 
     return trained_model, trained_likelihood
@@ -135,7 +135,7 @@ def process_popcosmos_samples(x, y, ngrid=15):
 def get_nagaraj22_samples(ngal):
 
     logM = np.random.uniform(8.74,11.30,ngal)
-    sfr = np.random.uniform(-2.06,2.11,ngal)
+    sfr = np.random.uniform(-5,2.5,ngal)
     logZ = np.random.uniform(-1.70,0.18,ngal)
     dobj = DustAttnCalc(sfr=sfr, logM=logM, logZ=logZ, bv=True, eff=False)
     dac, dac1, n, tau, tau1, ne, taue, tau1e = dobj.calcDust(max_num_plot=0)
@@ -150,14 +150,14 @@ def proccess_nagaraj22_samples(x, y, xl, xh, ngrid=15):
 
     return bin_centers_de, bin_means_de, bin_std_de
 
-def create_gp_model_obs(lengthscale, train_x, train_y, noise):
+def create_gp_model_obs(lengthscale, train_x, train_y, noise, scale):
 
     class GPModel(gpytorch.models.ExactGP):
 
         def __init__(self, train_x, train_y, likelihood):
             super(GPModel, self).__init__(train_x, train_y, likelihood)
             self.mean_module = gpytorch.means.ZeroMean()
-            self.covar_module = gpytorch.kernels.ScaleKernel(gpytorch.kernels.RBFKernel(lengthscale_prior=gpytorch.priors.SmoothedBoxPrior(lengthscale[0], lengthscale[1])))
+            self.covar_module = gpytorch.kernels.ConstantKernel() + gpytorch.kernels.ScaleKernel(gpytorch.kernels.RBFKernel(lengthscale_prior=gpytorch.priors.SmoothedBoxPrior(lengthscale[0], lengthscale[1])), outputscale_prior=gpytorch.priors.SmoothedBoxPrior(scale[0], scale[1]))
 
         def forward(self, x):
             mean_x = self.mean_module(x)
