@@ -50,6 +50,13 @@ def train_gp_model(train_x, train_y, train_yerrs, lengthscales, scales, lr=0.1, 
 
     return trained_model, trained_likelihood
 
+def train_gp_model_noerr(train_x, train_y, lengthscales, scales, lr=0.1, training_iter=20000):
+
+    model, likelihood = create_gp_model_noerr([lengthscales[0], lengthscales[1]], train_x, train_y, scales)
+    trained_model, trained_likelihood = gp_training_loop(model, likelihood, train_x, train_y, training_iter=training_iter, lr=lr)
+
+    return trained_model, trained_likelihood
+
 def train_gp_model_power(train_x, train_y, train_yerrs, power, lr=0.1, training_iter=20000):
 
     model, likelihood = create_gp_model_power(power, train_x, train_y, train_yerrs)
@@ -166,6 +173,27 @@ def create_gp_model_obs(lengthscale, train_x, train_y, noise, scale):
 
     # initialize likelihood and model
     likelihood = gpytorch.likelihoods.FixedNoiseGaussianLikelihood(noise=noise)
+    model = GPModel(train_x, train_y, likelihood).to(torch.double)
+
+    return model, likelihood
+
+
+def create_gp_model_noerr(lengthscale, train_x, train_y, scale):
+
+    class GPModel(gpytorch.models.ExactGP):
+
+        def __init__(self, train_x, train_y, likelihood):
+            super(GPModel, self).__init__(train_x, train_y, likelihood)
+            self.mean_module = gpytorch.means.ZeroMean()
+            self.covar_module = gpytorch.kernels.ConstantKernel() + gpytorch.kernels.ScaleKernel(gpytorch.kernels.RBFKernel(lengthscale_prior=gpytorch.priors.SmoothedBoxPrior(lengthscale[0], lengthscale[1])), outputscale_prior=gpytorch.priors.SmoothedBoxPrior(scale[0], scale[1]))
+
+        def forward(self, x):
+            mean_x = self.mean_module(x)
+            covar_x = self.covar_module(x)
+            return gpytorch.distributions.MultivariateNormal(mean_x, covar_x)
+
+    # initialize likelihood and model
+    likelihood = gpytorch.likelihoods.GaussianLikelihood()
     model = GPModel(train_x, train_y, likelihood).to(torch.double)
 
     return model, likelihood
