@@ -2,7 +2,7 @@ import sys
 import numpy as np
 import lbg_forecast.population_model as pop
 import lbg_forecast.priors_gp_massfunc as gpmf
-import lbg_forecast.dust_priors as dpr
+import lbg_forecast.priors_gp_dust as gpdp
 import lbg_forecast.priors_gp_csfrd as gpsf
 from mpi4py import MPI
 
@@ -20,10 +20,17 @@ path = sys.argv[4]
 
 if(rank == 0):
     print("Loading Priors ... ", flush=True)
+    mass_function_prior = gpmf.MassFunctionPrior()
+    dust_prior = gpdp.DustPrior()
+    csfrd_prior = gpsf.CSFRDPrior()
+else:
+    mass_function_prior = None
+    dust_prior = None
+    csfrd_prior = None
 
-mass_function_prior = gpmf.MassFunctionPrior()
-dust_prior = dpr.DustPrior()
-csfrd_prior = gpsf.CSFRDPrior()
+mass_function_prior = comm.bcast(mass_function_prior, root=0)
+dust_prior = comm.bcast(dust_prior, root=0)
+csfrd_prior = comm.bcast(csfrd_prior, root=0)
 
 if(rank == 0):
     print("Begin Sampling ... ", flush=True)
