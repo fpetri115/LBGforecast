@@ -10,6 +10,18 @@ from uncertainties import ufloat
 from uncertainties.umath import log
 from uncertainties import unumpy
 
+class GPModel(gpytorch.models.ExactGP):
+
+        def __init__(self, train_x, train_y, lengthscale, likelihood):
+            super(GPModel, self).__init__(train_x, train_y, likelihood)
+            self.mean_module = gpytorch.means.ZeroMean()
+            self.covar_module = gpytorch.kernels.ScaleKernel(gpytorch.kernels.RBFKernel(lengthscale_prior=gpytorch.priors.SmoothedBoxPrior(lengthscale[0], lengthscale[1])))
+
+        def forward(self, x):
+            mean_x = self.mean_module(x)
+            covar_x = self.covar_module(x)
+            return gpytorch.distributions.MultivariateNormal(mean_x, covar_x)
+
 class MassFunctionPrior():
 
     def __init__(self):
@@ -248,27 +260,13 @@ class MassFunctionPrior():
             plot.set_xlabel("Redshift", fontsize=24)
             plt.tight_layout()
 
-
 def create_gp_model(lengthscale, errors, train_x, train_y):
-
-    class GPModel(gpytorch.models.ExactGP):
-
-        def __init__(self, train_x, train_y, likelihood):
-            super(GPModel, self).__init__(train_x, train_y, likelihood)
-            self.mean_module = gpytorch.means.ZeroMean()
-            self.covar_module = gpytorch.kernels.ScaleKernel(gpytorch.kernels.RBFKernel(lengthscale_prior=gpytorch.priors.SmoothedBoxPrior(lengthscale[0], lengthscale[1])))
-
-        def forward(self, x):
-            mean_x = self.mean_module(x)
-            covar_x = self.covar_module(x)
-            return gpytorch.distributions.MultivariateNormal(mean_x, covar_x)
 
     # initialize likelihood and model
     likelihood = gpytorch.likelihoods.FixedNoiseGaussianLikelihood(torch.square(errors), learn_additional_noise=False, noise_constraint=gpytorch.constraints.GreaterThan(0.0))
-    model = GPModel(train_x, train_y, likelihood)
+    model = GPModel(train_x, train_y, lengthscale, likelihood)
 
     return model, likelihood
-
 
 def gp_training_loop(model, likelihood, train_x, train_y, training_iter, lr=1e-4):
 

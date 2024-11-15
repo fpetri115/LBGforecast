@@ -9,6 +9,18 @@ import duste.DustAttnCalc as dd
 import lbg_forecast.dust_priors as dp
 import scipy as sc
 
+class GPModel(gpytorch.models.ExactGP):
+
+        def __init__(self, train_x, train_y, lengthscale, scale, likelihood):
+            super(GPModel, self).__init__(train_x, train_y, likelihood)
+            self.mean_module = gpytorch.means.ZeroMean()
+            self.covar_module = gpytorch.kernels.ConstantKernel() + gpytorch.kernels.ScaleKernel(gpytorch.kernels.RBFKernel(lengthscale_prior=gpytorch.priors.SmoothedBoxPrior(lengthscale[0], lengthscale[1])), outputscale_prior=gpytorch.priors.SmoothedBoxPrior(scale[0], scale[1]))
+
+        def forward(self, x):
+            mean_x = self.mean_module(x)
+            covar_x = self.covar_module(x)
+            return gpytorch.distributions.MultivariateNormal(mean_x, covar_x)
+
 class DustPrior():
     def __init__(self):
         
@@ -184,7 +196,7 @@ def proccess_nagaraj22_samples(x, y, xl, xh, ngrid=15):
 
     return bin_centers_de, bin_means_de, bin_std_de
 
-def create_gp_model_obs(lengthscale, train_x, train_y, noise, scale):
+""" def create_gp_model_obs(lengthscale, train_x, train_y, noise, scale):
 
     class GPModel(gpytorch.models.ExactGP):
 
@@ -202,30 +214,17 @@ def create_gp_model_obs(lengthscale, train_x, train_y, noise, scale):
     likelihood = gpytorch.likelihoods.FixedNoiseGaussianLikelihood(noise=noise)
     model = GPModel(train_x, train_y, likelihood).to(torch.double)
 
-    return model, likelihood
-
+    return model, likelihood """
 
 def create_gp_model_noerr(lengthscale, train_x, train_y, scale):
 
-    class GPModel(gpytorch.models.ExactGP):
-
-        def __init__(self, train_x, train_y, likelihood):
-            super(GPModel, self).__init__(train_x, train_y, likelihood)
-            self.mean_module = gpytorch.means.ZeroMean()
-            self.covar_module = gpytorch.kernels.ConstantKernel() + gpytorch.kernels.ScaleKernel(gpytorch.kernels.RBFKernel(lengthscale_prior=gpytorch.priors.SmoothedBoxPrior(lengthscale[0], lengthscale[1])), outputscale_prior=gpytorch.priors.SmoothedBoxPrior(scale[0], scale[1]))
-
-        def forward(self, x):
-            mean_x = self.mean_module(x)
-            covar_x = self.covar_module(x)
-            return gpytorch.distributions.MultivariateNormal(mean_x, covar_x)
-
     # initialize likelihood and model
     likelihood = gpytorch.likelihoods.GaussianLikelihood()
-    model = GPModel(train_x, train_y, likelihood).to(torch.double)
+    model = GPModel(train_x, train_y, lengthscale, scale, likelihood).to(torch.double)
 
     return model, likelihood
 
-def create_gp_model_power(power, train_x, train_y, noise):
+""" def create_gp_model_power(power, train_x, train_y, noise):
 
     class GPModel(gpytorch.models.ExactGP):
 
@@ -243,7 +242,7 @@ def create_gp_model_power(power, train_x, train_y, noise):
     likelihood = gpytorch.likelihoods.FixedNoiseGaussianLikelihood(noise=noise)
     model = GPModel(train_x, train_y, likelihood).to(torch.double)
 
-    return model, likelihood
+    return model, likelihood """
 
 def gp_training_loop(model, likelihood, train_x, train_y, training_iter, lr=1e-4):
 

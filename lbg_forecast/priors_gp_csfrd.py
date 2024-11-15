@@ -7,6 +7,18 @@ import matplotlib.pyplot as plt
 import lbg_forecast.population_model as pop
 from uncertainties import unumpy as upy
 
+class CSFRDModel(gpytorch.models.ExactGP):
+
+    def __init__(self, train_x, train_y, lengthscale, scale, likelihood):
+        super(CSFRDModel, self).__init__(train_x, train_y, likelihood)
+        self.mean_module = gpytorch.means.ZeroMean()
+        self.covar_module = gpytorch.kernels.ScaleKernel(gpytorch.kernels.RBFKernel(lengthscale_prior=gpytorch.priors.SmoothedBoxPrior(lengthscale[0], lengthscale[1])), outputscale_prior=gpytorch.priors.SmoothedBoxPrior(scale[0], scale[1]))
+
+    def forward(self, x):
+        mean_x = self.mean_module(x)
+        covar_x = self.covar_module(x)
+        return gpytorch.distributions.MultivariateNormal(mean_x, covar_x)
+
 class CSFRDPrior():
 
     def __init__(self):
@@ -71,22 +83,10 @@ class CSFRDPrior():
             ax.legend(frameon=False, fontsize=22)
 
 def create_gp_model(train_redshift, train_log_csfrd_shifted, train_log_csfrd_errors, lengthscale, scale):
-
-    class CSFRDModel(gpytorch.models.ExactGP):
-
-        def __init__(self, train_x, train_y, likelihood):
-            super(CSFRDModel, self).__init__(train_x, train_y, likelihood)
-            self.mean_module = gpytorch.means.ZeroMean()
-            self.covar_module = gpytorch.kernels.ScaleKernel(gpytorch.kernels.RBFKernel(lengthscale_prior=gpytorch.priors.SmoothedBoxPrior(lengthscale[0], lengthscale[1])), outputscale_prior=gpytorch.priors.SmoothedBoxPrior(scale[0], scale[1]))
-
-        def forward(self, x):
-            mean_x = self.mean_module(x)
-            covar_x = self.covar_module(x)
-            return gpytorch.distributions.MultivariateNormal(mean_x, covar_x)
         
     # initialize likelihood and model
     likelihood = gpytorch.likelihoods.FixedNoiseGaussianLikelihood(noise=train_log_csfrd_errors)
-    model = CSFRDModel(train_redshift, train_log_csfrd_shifted, likelihood).to(torch.double)
+    model = CSFRDModel(train_redshift, train_log_csfrd_shifted, lengthscale, scale, likelihood).to(torch.double)
 
     return model, likelihood
 
