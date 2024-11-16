@@ -39,11 +39,13 @@ class DustPrior():
         self.dust2_training_data = process_training_data_dust2(self.tau, self.sfr, self.recent_sfrs, self.dust2)
         self.model_dust2 = create_gp_model_noerr([5.0, 15.0], self.dust2_training_data[0], self.dust2_training_data[1], [-100, 100])[0]
         self.model_dust2.load_state_dict(state_dict_dust2)
+        self.dust2_grid = np.linspace(-5, 3, 1000)
 
         #load dust index model
         self.dust_index_training_data = process_training_data_dust_index(self.n, self.ne, self.tau, self.dust2, self.dust_index)
         self.model_dust_index = create_gp_model_noerr([2.0, 10.0], self.dust_index_training_data[0], self.dust_index_training_data[1], [-100, 100])[0]
         self.model_dust_index.load_state_dict(state_dict_dust_index)
+        self.dust_index_grid = np.linspace(-2.2, 0.4, 1000)
 
         #load dust1 model
         self.dust1_training_data = process_training_data_dust1(self.tau1, self.tau1e, self.tau, self.dust2, self.dust1)
@@ -51,6 +53,7 @@ class DustPrior():
         self.model_dust1_sig = create_gp_model_noerr([2.0, 10.0], self.dust1_training_data[0], self.dust1_training_data[2], [-100, 100])[0]
         self.model_dust1.load_state_dict(state_dict_dust1)
         self.model_dust1_sig.load_state_dict(state_dict_dust1sig)
+        self.dust1_grid = np.linspace(-2.2, 0.4, 1000)
 
     def sample_dust_model(self, sfrs):
 
@@ -60,45 +63,37 @@ class DustPrior():
 
         return [dust2, dust_index, dust1]
 
-    def sample_dust2(self, test_x):
-        f_preds = gp_evaluate_model(self.model_dust2, torch.from_numpy(test_x))
+    def sample_dust2(self, sfrs):
+
+        f_preds = gp_evaluate_model(self.model_dust2, torch.from_numpy(self.dust2_grid))
         mean = f_preds.sample().numpy()
+        samples_on_grid = np.interp(sfrs, self.dust2_grid, mean)
         scatter = np.random.uniform(0.1, 0.3)
-        return dp.truncated_normal(mean, scatter, 0.0, 4.0, len(test_x))
+        return dp.truncated_normal(samples_on_grid, scatter, 0.0, 4.0, len(sfrs))
     
-    def sample_dust_index(self, test_x):
-        f_preds = gp_evaluate_model(self.model_dust_index, torch.from_numpy(test_x))
+    def sample_dust_index(self, dust2):
+
+        f_preds = gp_evaluate_model(self.model_dust_index, torch.from_numpy(self.dust_index_grid))
         mean = f_preds.sample().numpy()
+        samples_on_grid = np.interp(dust2, self.dust_index_grid, mean)
         scatter = np.random.uniform(0.1, 0.4)
-        return dp.truncated_normal(mean, scatter, -2.2, 0.4, len(test_x))
+        return dp.truncated_normal(samples_on_grid, scatter, -2.2, 0.4, len(dust2))
     
-    def sample_dust1(self, test_x):
-        f_preds = gp_evaluate_model(self.model_dust1, torch.from_numpy(test_x))
-        f_preds_sig = gp_evaluate_model(self.model_dust1_sig, torch.from_numpy(test_x))
+    def sample_dust1(self, dust2):
+        f_preds = gp_evaluate_model(self.model_dust1, torch.from_numpy(self.dust1_grid))
+        f_preds_sig = gp_evaluate_model(self.model_dust1_sig, torch.from_numpy(self.dust1_grid))
         
         mean = f_preds.sample().numpy()
+        samples_on_grid = np.interp(dust2, self.dust1_grid, mean)
         sig_dust1 = f_preds_sig.sample().numpy()
         sig_dust1 = np.where(sig_dust1<0.001, 0.001, sig_dust1)
+        samples_on_grid_sig = np.interp(dust2, self.dust1_grid, sig_dust1)
 
-        return dp.truncated_normal(mean, sig_dust1, 0.0, 4.0, len(test_x))
-
-def train_gp_model(train_x, train_y, train_yerrs, lengthscales, scales, lr=0.1, training_iter=20000):
-
-    model, likelihood = create_gp_model_obs([lengthscales[0], lengthscales[1]], train_x, train_y, train_yerrs, scales)
-    trained_model, trained_likelihood = gp_training_loop(model, likelihood, train_x, train_y, training_iter=training_iter, lr=lr)
-
-    return trained_model, trained_likelihood
+        return dp.truncated_normal(samples_on_grid, samples_on_grid_sig, 0.0, 4.0, len(dust2))
 
 def train_gp_model_noerr(train_x, train_y, lengthscales, scales, lr=0.1, training_iter=20000):
 
     model, likelihood = create_gp_model_noerr([lengthscales[0], lengthscales[1]], train_x, train_y, scales)
-    trained_model, trained_likelihood = gp_training_loop(model, likelihood, train_x, train_y, training_iter=training_iter, lr=lr)
-
-    return trained_model, trained_likelihood
-
-def train_gp_model_power(train_x, train_y, train_yerrs, power, lr=0.1, training_iter=20000):
-
-    model, likelihood = create_gp_model_power(power, train_x, train_y, train_yerrs)
     trained_model, trained_likelihood = gp_training_loop(model, likelihood, train_x, train_y, training_iter=training_iter, lr=lr)
 
     return trained_model, trained_likelihood
@@ -157,10 +152,8 @@ def get_pop_cosmos_samples(nsamples):
     popcosmos_samples = np.load("dust_data/popcosmos_parameters_rmag_lt_25.npy")[:nsamples, :]
 
     dust_samples = popcosmos_samples[:, 8:11]
-    logsfrratios = popcosmos_samples[:, 2:8]
-    redshifts = popcosmos_samples[:, -1]
-    logmasses = popcosmos_samples[:, 0]
-    recent_sfrs = np.log10(sfh.calculate_recent_sfr(redshifts, 10**logmasses, logsfrratios))
+    recent_sfrs = np.load("dust_data/popcosmos_recentsfrs.npy")[:nsamples]
+    #np.log10(sfh.calculate_recent_sfr(redshifts, 10**logmasses, logsfrratios))
 
     dust2 = dust_samples[:, 0]
     dust_index = dust_samples[:, 1]
@@ -180,12 +173,13 @@ def process_popcosmos_samples(x, y, ngrid=15):
 
 def get_nagaraj22_samples(ngal):
 
-    logM = np.random.uniform(8.74,11.30,ngal)
-    sfr = np.random.uniform(-5,2.5,ngal)
-    logZ = np.random.uniform(-1.70,0.18,ngal)
-    dobj = DustAttnCalc(sfr=sfr, logM=logM, logZ=logZ, bv=True, eff=False)
-    dac, dac1, n, tau, tau1, ne, taue, tau1e = dobj.calcDust(max_num_plot=0)
-    return n, tau, tau1, ne, taue, tau1e, sfr
+    #logM = np.random.uniform(8.74,11.30,ngal)
+    #sfr = np.random.uniform(-5,2.5,ngal)
+    #logZ = np.random.uniform(-1.70,0.18,ngal)
+    #dobj = DustAttnCalc(sfr=sfr, logM=logM, logZ=logZ, bv=True, eff=False)
+    #dac, dac1, n, tau, tau1, ne, taue, tau1e = dobj.calcDust(max_num_plot=0)
+    #return n, tau, tau1, ne, taue, tau1e, sfr
+    return np.load("dust_data/saved_nagaraj22samples.npy")
 
 def proccess_nagaraj22_samples(x, y, xl, xh, ngrid=15):
 
@@ -196,26 +190,6 @@ def proccess_nagaraj22_samples(x, y, xl, xh, ngrid=15):
 
     return bin_centers_de, bin_means_de, bin_std_de
 
-""" def create_gp_model_obs(lengthscale, train_x, train_y, noise, scale):
-
-    class GPModel(gpytorch.models.ExactGP):
-
-        def __init__(self, train_x, train_y, likelihood):
-            super(GPModel, self).__init__(train_x, train_y, likelihood)
-            self.mean_module = gpytorch.means.ZeroMean()
-            self.covar_module = gpytorch.kernels.ConstantKernel() + gpytorch.kernels.ScaleKernel(gpytorch.kernels.RBFKernel(lengthscale_prior=gpytorch.priors.SmoothedBoxPrior(lengthscale[0], lengthscale[1])), outputscale_prior=gpytorch.priors.SmoothedBoxPrior(scale[0], scale[1]))
-
-        def forward(self, x):
-            mean_x = self.mean_module(x)
-            covar_x = self.covar_module(x)
-            return gpytorch.distributions.MultivariateNormal(mean_x, covar_x)
-
-    # initialize likelihood and model
-    likelihood = gpytorch.likelihoods.FixedNoiseGaussianLikelihood(noise=noise)
-    model = GPModel(train_x, train_y, likelihood).to(torch.double)
-
-    return model, likelihood """
-
 def create_gp_model_noerr(lengthscale, train_x, train_y, scale):
 
     # initialize likelihood and model
@@ -223,26 +197,6 @@ def create_gp_model_noerr(lengthscale, train_x, train_y, scale):
     model = GPModel(train_x, train_y, lengthscale, scale, likelihood).to(torch.double)
 
     return model, likelihood
-
-""" def create_gp_model_power(power, train_x, train_y, noise):
-
-    class GPModel(gpytorch.models.ExactGP):
-
-        def __init__(self, train_x, train_y, likelihood):
-            super(GPModel, self).__init__(train_x, train_y, likelihood)
-            self.mean_module = gpytorch.means.ZeroMean()
-            self.covar_module = gpytorch.kernels.PolynomialKernel(power=power)
-
-        def forward(self, x):
-            mean_x = self.mean_module(x)
-            covar_x = self.covar_module(x)
-            return gpytorch.distributions.MultivariateNormal(mean_x, covar_x)
-    
-    # initialize likelihood and model
-    likelihood = gpytorch.likelihoods.FixedNoiseGaussianLikelihood(noise=noise)
-    model = GPModel(train_x, train_y, likelihood).to(torch.double)
-
-    return model, likelihood """
 
 def gp_training_loop(model, likelihood, train_x, train_y, training_iter, lr=1e-4):
 
