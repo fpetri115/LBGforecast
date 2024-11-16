@@ -45,15 +45,15 @@ class DustPrior():
         self.dust_index_training_data = process_training_data_dust_index(self.n, self.ne, self.tau, self.dust2, self.dust_index)
         self.model_dust_index = create_gp_model_noerr([2.0, 10.0], self.dust_index_training_data[0], self.dust_index_training_data[1], [-100, 100])[0]
         self.model_dust_index.load_state_dict(state_dict_dust_index)
-        self.dust_index_grid = np.linspace(-2.2, 0.4, 1000)
+        self.dust_index_grid = np.linspace(0.0, 4.0, 1000)
 
         #load dust1 model
         self.dust1_training_data = process_training_data_dust1(self.tau1, self.tau1e, self.tau, self.dust2, self.dust1)
-        self.model_dust1 = create_gp_model_noerr([2.0, 10.0], self.dust1_training_data[0], self.dust1_training_data[1], [-100, 100])[0]
+        self.model_dust1 = create_gp_model_noerr([20.0, 100.0], self.dust1_training_data[0], self.dust1_training_data[1], [-100, 100])[0]
         self.model_dust1_sig = create_gp_model_noerr([2.0, 10.0], self.dust1_training_data[0], self.dust1_training_data[2], [-100, 100])[0]
         self.model_dust1.load_state_dict(state_dict_dust1)
         self.model_dust1_sig.load_state_dict(state_dict_dust1sig)
-        self.dust1_grid = np.linspace(-2.2, 0.4, 1000)
+        self.dust1_grid = np.linspace(0.0, 4.0, 1000)
 
     def sample_dust_model(self, sfrs):
 
@@ -100,21 +100,21 @@ def train_gp_model_noerr(train_x, train_y, lengthscales, scales, lr=0.1, trainin
 
 def process_training_data_dust2(tau, sfr, recent_sfrs, dust2):
 
-    bin_centers_de, bin_means_de, bin_std_de = process_samples(sfr, tau, -5, 2.5, 50)
+    bin_centers_de, bin_means_de, bin_std_de = process_samples(sfr, tau, 2.0, 2.5, 5)
     bin_centers, bin_means, bin_std = process_samples(recent_sfrs, dust2, -5, 3, 50)
     train_sfr, train_dust2, train_dust2errs = training_data_to_torch(bin_centers, bin_means, bin_std, bin_centers_de, bin_means_de, bin_std_de)
     return [train_sfr, train_dust2, train_dust2errs]
 
 def process_training_data_dust_index(n, ne, tau, dust2, dust_index):
 
-    bin_centers_de, bin_means_de, bin_std_de = process_samples_modified(tau, n, ne, 0.25, 1.5, 50)
+    bin_centers_de, bin_means_de, bin_std_de = process_samples_modified(tau, n, ne, 0.25, 2.0, 50)
     bin_centers, bin_means, bin_std = process_samples(dust2, dust_index, 0.0, 3.0, 50)
     train_dust2, train_dust_index, train_dust_index_errs = training_data_to_torch(bin_centers, bin_means, bin_std, bin_centers_de, bin_means_de, bin_std_de)
     return [train_dust2, train_dust_index, train_dust_index_errs]
 
 def process_training_data_dust1(tau1, tau1e, tau, dust2, dust1):
 
-    bin_centers_de, bin_means_de, bin_std_de = process_samples_modified(tau, tau1, tau1e, 0.0, 1.7, 50)
+    bin_centers_de, bin_means_de, bin_std_de = process_samples_modified(tau, tau1, tau1e, 0.0, 2.0, 50)
     bin_centers, bin_means, bin_std = process_samples(dust2, dust1, 0.0, 3.0, 50)
     train_dust2, train_dust1, train_dust1_errs = training_data_to_torch(bin_centers, bin_means, bin_std, bin_centers_de, bin_means_de, bin_std_de)
     return [train_dust2, train_dust1, train_dust1_errs]
@@ -176,7 +176,9 @@ def get_nagaraj22_samples(ngal):
     #logM = np.random.uniform(8.74,11.30,ngal)
     #sfr = np.random.uniform(-5,2.5,ngal)
     #logZ = np.random.uniform(-1.70,0.18,ngal)
-    #dobj = DustAttnCalc(sfr=sfr, logM=logM, logZ=logZ, bv=True, eff=False)
+    #z=np.random.uniform(0.51,2.83,ngal)
+    #i=np.random.uniform(0.09,0.97,ngal)
+    #dobj = DustAttnCalc(sfr=sfr, logM=logM, logZ=logZ, z=z, i=i, bv=True, eff=False)
     #dac, dac1, n, tau, tau1, ne, taue, tau1e = dobj.calcDust(max_num_plot=0)
     #return n, tau, tau1, ne, taue, tau1e, sfr
     return np.load("dust_data/saved_nagaraj22samples.npy")
