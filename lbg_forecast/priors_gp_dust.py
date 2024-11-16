@@ -114,8 +114,8 @@ def process_training_data_dust_index(n, ne, tau, dust2, dust_index):
 
 def process_training_data_dust1(tau1, tau1e, tau, dust2, dust1):
 
-    bin_centers_de, bin_means_de, bin_std_de = process_samples_modified(tau, tau1, tau1e, 0.0, 1.5, 25)
-    bin_centers, bin_means, bin_std = process_samples(dust2, dust1, 0.0, 3.0, 25)
+    bin_centers_de, bin_means_de, bin_std_de = process_samples_modified(tau, tau1, tau1e, 0.0, 1.7, 50)
+    bin_centers, bin_means, bin_std = process_samples(dust2, dust1, 0.0, 3.0, 50)
     train_dust2, train_dust1, train_dust1_errs = training_data_to_torch(bin_centers, bin_means, bin_std, bin_centers_de, bin_means_de, bin_std_de)
     return [train_dust2, train_dust1, train_dust1_errs]
 
