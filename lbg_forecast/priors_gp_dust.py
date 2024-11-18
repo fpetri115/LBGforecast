@@ -31,25 +31,31 @@ class DustPrior():
 
         #load saved models
         state_dict_dust2 = torch.load('/Users/fpetri/repos/LBGForecast/gp_models/dust2.pth', weights_only=True)
+        state_dict_dust2sig = torch.load('/Users/fpetri/repos/LBGForecast/gp_models/dust2sig.pth', weights_only=True)
         state_dict_dust_index = torch.load('/Users/fpetri/repos/LBGForecast/gp_models/dust_index.pth', weights_only=True)
+        state_dict_dust_indexsig = torch.load('/Users/fpetri/repos/LBGForecast/gp_models/dust_indexsig.pth', weights_only=True)
         state_dict_dust1 = torch.load('/Users/fpetri/repos/LBGForecast/gp_models/dust1.pth', weights_only=True)
         state_dict_dust1sig = torch.load('/Users/fpetri/repos/LBGForecast/gp_models/dust1sig.pth', weights_only=True)
 
         #load dust2 model
         self.dust2_training_data = process_training_data_dust2(self.tau, self.sfr, self.recent_sfrs, self.dust2)
         self.model_dust2 = create_gp_model_noerr([5.0, 15.0], self.dust2_training_data[0], self.dust2_training_data[1], [-100, 100])[0]
+        self.model_dust2_sig = create_gp_model_noerr([5.0, 15.0], self.dust2_training_data[0], self.dust2_training_data[2], [-100, 100])[0]
         self.model_dust2.load_state_dict(state_dict_dust2)
+        self.model_dust2_sig.load_state_dict(state_dict_dust2sig)
         self.dust2_grid = np.linspace(-5, 3, 1000)
 
         #load dust index model
         self.dust_index_training_data = process_training_data_dust_index(self.n, self.ne, self.tau, self.dust2, self.dust_index)
         self.model_dust_index = create_gp_model_noerr([2.0, 10.0], self.dust_index_training_data[0], self.dust_index_training_data[1], [-100, 100])[0]
+        self.model_dust_index_sig = create_gp_model_noerr([2.0, 10.0], self.dust_index_training_data[0], self.dust_index_training_data[2], [-100, 100])[0]
         self.model_dust_index.load_state_dict(state_dict_dust_index)
+        self.model_dust_index_sig.load_state_dict(state_dict_dust_indexsig)
         self.dust_index_grid = np.linspace(0.0, 4.0, 1000)
 
         #load dust1 model
         self.dust1_training_data = process_training_data_dust1(self.tau1, self.tau1e, self.tau, self.dust2, self.dust1)
-        self.model_dust1 = create_gp_model_noerr([20.0, 100.0], self.dust1_training_data[0], self.dust1_training_data[1], [-100, 100])[0]
+        self.model_dust1 = create_gp_model_noerr([2.0, 10.0], self.dust1_training_data[0], self.dust1_training_data[1], [-100, 100])[0]
         self.model_dust1_sig = create_gp_model_noerr([2.0, 10.0], self.dust1_training_data[0], self.dust1_training_data[2], [-100, 100])[0]
         self.model_dust1.load_state_dict(state_dict_dust1)
         self.model_dust1_sig.load_state_dict(state_dict_dust1sig)
@@ -100,21 +106,21 @@ def train_gp_model_noerr(train_x, train_y, lengthscales, scales, lr=0.1, trainin
 
 def process_training_data_dust2(tau, sfr, recent_sfrs, dust2):
 
-    bin_centers_de, bin_means_de, bin_std_de = process_samples(sfr, tau, 2.0, 2.5, 5)
+    bin_centers_de, bin_means_de, bin_std_de = process_samples(sfr, tau, -10, -5, 5)
     bin_centers, bin_means, bin_std = process_samples(recent_sfrs, dust2, -5, 3, 50)
     train_sfr, train_dust2, train_dust2errs = training_data_to_torch(bin_centers, bin_means, bin_std, bin_centers_de, bin_means_de, bin_std_de)
     return [train_sfr, train_dust2, train_dust2errs]
 
 def process_training_data_dust_index(n, ne, tau, dust2, dust_index):
 
-    bin_centers_de, bin_means_de, bin_std_de = process_samples_modified(tau, n, ne, 0.25, 2.0, 50)
+    bin_centers_de, bin_means_de, bin_std_de = process_samples_modified(tau, n, ne, -10, -5, 2)
     bin_centers, bin_means, bin_std = process_samples(dust2, dust_index, 0.0, 3.0, 50)
     train_dust2, train_dust_index, train_dust_index_errs = training_data_to_torch(bin_centers, bin_means, bin_std, bin_centers_de, bin_means_de, bin_std_de)
     return [train_dust2, train_dust_index, train_dust_index_errs]
 
 def process_training_data_dust1(tau1, tau1e, tau, dust2, dust1):
 
-    bin_centers_de, bin_means_de, bin_std_de = process_samples_modified(tau, tau1, tau1e, 0.0, 2.0, 50)
+    bin_centers_de, bin_means_de, bin_std_de = process_samples_modified(tau, tau1, tau1e, -10, -5, 2)
     bin_centers, bin_means, bin_std = process_samples(dust2, dust1, 0.0, 3.0, 50)
     train_dust2, train_dust1, train_dust1_errs = training_data_to_torch(bin_centers, bin_means, bin_std, bin_centers_de, bin_means_de, bin_std_de)
     return [train_dust2, train_dust1, train_dust1_errs]
