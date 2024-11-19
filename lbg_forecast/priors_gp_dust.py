@@ -69,30 +69,57 @@ class DustPrior():
 
         return [dust2, dust_index, dust1]
 
-    def sample_dust2(self, sfrs):
+    def sample_dust2_old(self, sfrs):
 
         f_preds = gp_evaluate_model(self.model_dust2, torch.from_numpy(self.dust2_grid))
+        f_preds_sig = gp_evaluate_model(self.model_dust2_sig, torch.from_numpy(self.dust2_grid))
         mean = f_preds.sample().numpy()
-        samples_on_grid = np.interp(sfrs, self.dust2_grid, mean)
-        scatter = np.random.uniform(0.1, 0.3)
-        return dp.truncated_normal(samples_on_grid, scatter, 0.0, 4.0, len(sfrs))
+        sig = f_preds_sig.sample().numpy()
+        sig = np.where(sig<0.001, 0.001, sig)
+        means_on_grid = np.interp(sfrs, self.dust2_grid, mean)
+        sigs_on_grid = np.interp(sfrs, self.dust2_grid, sig)
+        #scatter = np.random.uniform(0.1, 0.3)
+        return dp.truncated_normal(means_on_grid, sigs_on_grid, 0.0, 4.0, len(sfrs))
+    
+    def sample_dust2(self, sfrs):
+        
+        f_preds_mu = gp_evaluate_model(self.model_dust2, torch.from_numpy(self.dust2_grid))
+        mean_dust2_sample = f_preds_mu.sample().numpy()
+        mean_dust2 = f_preds_mu.mean.detach().numpy()
+        delta_dust2 = mean_dust2_sample - mean_dust2
+        delta = np.interp(self.recent_sfrs, self.dust2_grid, delta_dust2)
+
+        sorted_inds = self.recent_sfrs.argsort()[:]
+        sorted_sfrs = self.recent_sfrs[sorted_inds]
+        sorted_dust2 = self.dust2[sorted_inds]
+        sorted_delta = delta[sorted_inds]
+
+        dust2 = np.interp(sfrs, sorted_sfrs, sorted_dust2)
+        delta = np.interp(sfrs, sorted_sfrs, sorted_delta)
+
+        return abs(dust2 + delta)
     
     def sample_dust_index(self, dust2):
 
         f_preds = gp_evaluate_model(self.model_dust_index, torch.from_numpy(self.dust_index_grid))
+        f_preds_sig = gp_evaluate_model(self.model_dust_index_sig, torch.from_numpy(self.dust_index_grid))
         mean = f_preds.sample().numpy()
-        samples_on_grid = np.interp(dust2, self.dust_index_grid, mean)
-        scatter = np.random.uniform(0.1, 0.4)
-        return dp.truncated_normal(samples_on_grid, scatter, -2.2, 0.4, len(dust2))
+        sig = f_preds_sig.sample().numpy()
+        sig = np.where(sig<0.001, 0.001, sig)
+        means_on_grid = np.interp(dust2, self.dust_index_grid, mean)
+        sigs_on_grid = np.interp(dust2, self.dust_index_grid, sig)
+        #scatter = np.random.uniform(0.1, 0.4)
+        return dp.truncated_normal(means_on_grid, sigs_on_grid, -2.2, 0.4, len(dust2))
     
     def sample_dust1(self, dust2):
         f_preds = gp_evaluate_model(self.model_dust1, torch.from_numpy(self.dust1_grid))
         f_preds_sig = gp_evaluate_model(self.model_dust1_sig, torch.from_numpy(self.dust1_grid))
         
         mean = f_preds.sample().numpy()
-        samples_on_grid = np.interp(dust2, self.dust1_grid, mean)
         sig_dust1 = f_preds_sig.sample().numpy()
         sig_dust1 = np.where(sig_dust1<0.001, 0.001, sig_dust1)
+
+        samples_on_grid = np.interp(dust2, self.dust1_grid, mean)
         samples_on_grid_sig = np.interp(dust2, self.dust1_grid, sig_dust1)
 
         return dp.truncated_normal(samples_on_grid, samples_on_grid_sig, 0.0, 4.0, len(dust2))

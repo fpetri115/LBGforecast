@@ -18,7 +18,7 @@ class DustPrior():
         logsfrratios = popcosmos_samples[:, 2:8]
         redshifts = popcosmos_samples[:, -1]
         logmasses = popcosmos_samples[:, 0]
-        recent_sfrs = np.log10(sfh.calculate_recent_sfr(redshifts, 10**logmasses, logsfrratios))
+        recent_sfrs = np.log10(sfh.calculate_recent_sfr(redshifts, 10**logmasses, logsfrratios))[:nsamples]
 
         dust2 = dust_samples[:, 0]
         dust_index = dust_samples[:, 1]
@@ -59,7 +59,7 @@ class DustPrior():
 
         return np.interp(dust2_samples, sorted_dust2, sorted_dust1)
     
-    def draw_dust_parameters(self, sfrs):
+    def sample_dust_model(self, sfrs):
         """is this factorised??"""
 
         dust2 = self.draw_dust2(sfrs)
