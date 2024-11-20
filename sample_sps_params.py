@@ -22,7 +22,7 @@ path = sys.argv[4]
 if(rank == 0):
     print("Loading Priors ... ", flush=True)
     mass_function_prior = gpmf.MassFunctionPrior()
-    dust_prior = dpr.DustPrior()
+    dust_prior = gpdp.DustPrior()
     csfrd_prior = gpsf.CSFRDPrior()
 else:
     mass_function_prior = None
