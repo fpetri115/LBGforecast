@@ -21,9 +21,9 @@ path = sys.argv[4]
 
 if(rank == 0):
     print("Loading Priors ... ", flush=True)
-    mass_function_prior = gpmf.MassFunctionPrior(path=path)
-    dust_prior = gpdp.DustPrior(path=path)
-    csfrd_prior = gpsf.CSFRDPrior(path=path)
+    mass_function_prior = gpmf.MassFunctionPrior(path=path[:-1])
+    dust_prior = gpdp.DustPrior(path=path[:-1])
+    csfrd_prior = gpsf.CSFRDPrior(path=path[:-1])
 else:
     mass_function_prior = None
     dust_prior = None
@@ -49,5 +49,5 @@ if(rank == 0):
 all_realisations = comm.gather(spsp, root=0)
 
 if(rank == 0):
-    np.save(path+"/sps_parameter_samples/sps_"+str(run)+".npy",np.concatenate(np.array(all_realisations)))
+    np.save(path+"sps_parameter_samples/sps_"+str(run)+".npy",np.concatenate(np.array(all_realisations)))
     print("Complete.", flush=True)
