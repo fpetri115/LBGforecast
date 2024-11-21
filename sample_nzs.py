@@ -5,12 +5,12 @@ import lbg_forecast.emulator as em
 
 path = sys.argv[1]
 batch_size = int(sys.argv[2])
-run = int(sys.argv[3])
+run = sys.argv[3]
 
 # initalise fsps emulator
-model = em.fsps_emulator(path)
+model = em.fsps_emulator(path[:-1])
 
-sps_parameters = np.load(path+"/sps_parameter_samples/sps_"+str(run)+".npy")
+sps_parameters = np.load(path[:-1]+"/sps_parameter_samples/sps_"+run+".npy")
 
 nzs = []
 for n in range(sps_parameters.shape[0]):    
@@ -20,5 +20,5 @@ for n in range(sps_parameters.shape[0]):
 
 #save
 nz_data = np.asarray(nzs)
-np.save(path+"/nz_samples/nz_"+str(run)+".npy", nz_data)
+np.save(path+"/nz_samples/nz_"+run+".npy", nz_data)
 print("Complete.", flush=True)
