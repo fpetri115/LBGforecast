@@ -5,14 +5,14 @@ def sources_inside_u_cuts(umg, gmr):
     colours, return indexes of lbgs
     """
     
-    return [np.where((umg > 1.5) & (gmr > -1.0) & (gmr < 1.2) & (umg > 0.75 + 1.5*gmr))[0]]
+    return [np.where((umg > 0.88) & (gmr < 1.2) & (umg > 0.68 + 1.88*gmr))[0]]
 
 def sources_inside_g_cuts(gmr, rmi):
     """Given two (ndim,) arrays of g-r and r-i
     colours, return indexes of lbgs
     """
     
-    return [np.where((gmr > 1.0) & (rmi < 1.0) & (gmr > 0.8 + 1.5*rmi))[0]]
+    return [np.where((gmr > 1.0) & (rmi < 1.0) & (rmi > -1.5) & (gmr > 0.8 + 1.5*rmi))[0]]
 
 def sources_inside_r_cuts(rmi, imz):
     """Given two (ndim,) arrays of r-i and i-z
