@@ -16,7 +16,7 @@ if(rank == 0):
 
 ngals = int(sys.argv[1])
 nrealisations = int(sys.argv[2])
-run = int(sys.argv[3])
+run = sys.argv[3]
 path = sys.argv[4]
 
 if(rank == 0):
@@ -49,5 +49,5 @@ if(rank == 0):
 all_realisations = comm.gather(spsp, root=0)
 
 if(rank == 0):
-    np.save(path+"sps_parameter_samples/sps_"+str(run)+".npy",np.concatenate(np.array(all_realisations)))
+    np.save(path+"sps_parameter_samples/sps_"+run+".npy",np.concatenate(np.array(all_realisations)))
     print("Complete.", flush=True)
