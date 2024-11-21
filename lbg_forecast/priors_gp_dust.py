@@ -22,20 +22,20 @@ class GPModel(gpytorch.models.ExactGP):
             return gpytorch.distributions.MultivariateNormal(mean_x, covar_x)
 
 class DustPrior():
-    def __init__(self):
+    def __init__(self, path):
         
         print("Loading Models")
-        self.n, self.tau, self.tau1, self.ne, self.taue, self.tau1e, self.sfr = get_nagaraj22_samples(ngal=20000)
-        self.recent_sfrs, self.dust2, self.dust_index, self.dust1 = get_pop_cosmos_samples(nsamples=500000)
+        self.n, self.tau, self.tau1, self.ne, self.taue, self.tau1e, self.sfr = get_nagaraj22_samples(path=path)
+        self.recent_sfrs, self.dust2, self.dust_index, self.dust1 = get_pop_cosmos_samples(nsamples=500000, path=path)
         print("Loading Complete")
 
         #load saved models
-        state_dict_dust2 = torch.load('/Users/fpetri/repos/LBGForecast/gp_models/dust2.pth', weights_only=True)
-        state_dict_dust2sig = torch.load('/Users/fpetri/repos/LBGForecast/gp_models/dust2sig.pth', weights_only=True)
-        state_dict_dust_index = torch.load('/Users/fpetri/repos/LBGForecast/gp_models/dust_index.pth', weights_only=True)
-        state_dict_dust_indexsig = torch.load('/Users/fpetri/repos/LBGForecast/gp_models/dust_indexsig.pth', weights_only=True)
-        state_dict_dust1 = torch.load('/Users/fpetri/repos/LBGForecast/gp_models/dust1.pth', weights_only=True)
-        state_dict_dust1sig = torch.load('/Users/fpetri/repos/LBGForecast/gp_models/dust1sig.pth', weights_only=True)
+        state_dict_dust2 = torch.load(path+'/gp_models/dust2.pth', weights_only=True)
+        state_dict_dust2sig = torch.load(path+'/gp_models/dust2sig.pth', weights_only=True)
+        state_dict_dust_index = torch.load(path+'/gp_models/dust_index.pth', weights_only=True)
+        state_dict_dust_indexsig = torch.load(path+'/gp_models/dust_indexsig.pth', weights_only=True)
+        state_dict_dust1 = torch.load(path+'/gp_models/dust1.pth', weights_only=True)
+        state_dict_dust1sig = torch.load(path+'/gp_models/dust1sig.pth', weights_only=True)
 
         #load dust2 model
         self.dust2_training_data = process_training_data_dust2(self.tau, self.sfr, self.recent_sfrs, self.dust2)
@@ -180,12 +180,12 @@ def process_samples_modified(x, y, yerr, xl, xh, ngrid=15):
 
     return x, y, yerr
 
-def get_pop_cosmos_samples(nsamples):
+def get_pop_cosmos_samples(nsamples, path):
 
-    popcosmos_samples = np.load("dust_data/popcosmos_parameters_rmag_lt_25.npy")[:nsamples, :]
+    popcosmos_samples = np.load(path+"/dust_data/popcosmos_parameters_rmag_lt_25.npy")[:nsamples, :]
 
     dust_samples = popcosmos_samples[:, 8:11]
-    recent_sfrs = np.load("dust_data/popcosmos_recentsfrs.npy")[:nsamples]
+    recent_sfrs = np.load(path+"/dust_data/popcosmos_recentsfrs.npy")[:nsamples]
     #np.log10(sfh.calculate_recent_sfr(redshifts, 10**logmasses, logsfrratios))
 
     dust2 = dust_samples[:, 0]
@@ -204,7 +204,7 @@ def process_popcosmos_samples(x, y, ngrid=15):
 
     return bin_centers, bin_means, bin_std
 
-def get_nagaraj22_samples(ngal):
+def get_nagaraj22_samples(path):
 
     #logM = np.random.uniform(8.74,11.30,ngal)
     #sfr = np.random.uniform(-5,2.5,ngal)
@@ -214,7 +214,7 @@ def get_nagaraj22_samples(ngal):
     #dobj = DustAttnCalc(sfr=sfr, logM=logM, logZ=logZ, z=z, i=i, bv=True, eff=False)
     #dac, dac1, n, tau, tau1, ne, taue, tau1e = dobj.calcDust(max_num_plot=0)
     #return n, tau, tau1, ne, taue, tau1e, sfr
-    return np.load("dust_data/saved_nagaraj22samples.npy")
+    return np.load(path+"/dust_data/saved_nagaraj22samples.npy")
 
 def proccess_nagaraj22_samples(x, y, xl, xh, ngrid=15):
 

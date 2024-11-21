@@ -21,10 +21,11 @@ class CSFRDModel(gpytorch.models.ExactGP):
 
 class CSFRDPrior():
 
-    def __init__(self):
+    def __init__(self, path):
 
-        self.train_data = get_training_data(False)
-        state_dict = torch.load('/Users/fpetri/repos/LBGForecast/gp_models/csfrd.pth', weights_only=True)
+        self.path = path
+        self.train_data = get_training_data(path=self.path, plot=False)
+        state_dict = torch.load(path+'/gp_models/csfrd.pth', weights_only=True)
         self.model = create_gp_model(self.train_data[0], self.train_data[2], self.train_data[3], [1.0, 7.0], [0.5, 100])[0]
         self.model.load_state_dict(state_dict)
         self.test_redshift = torch.linspace(0, 30, 500).to(torch.double)
@@ -32,30 +33,30 @@ class CSFRDPrior():
         self.lookback_times = cosmo.get_cosmology().lookback_time(self.test_redshift.numpy()).value*1e9
 
     def sample_prior_corrected(self):
-        return self.prior.sample().numpy() + mean_obs_behroozi(self.test_redshift.numpy(), log=True) - systematic_shift(self.test_redshift.numpy())
+        return self.prior.sample().numpy() + mean_obs_behroozi(self.test_redshift.numpy(), log=True, path=self.path) - systematic_shift(self.test_redshift.numpy(), path=self.path)
     
     def get_prior_mean(self):
-        return self.prior.mean.numpy() + mean_obs_behroozi(self.test_redshift.numpy(), log=True)
+        return self.prior.mean.numpy() + mean_obs_behroozi(self.test_redshift.numpy(), log=True, path=self.path)
     
     def get_prior_mean_corrected(self):
-        return self.prior.mean.numpy() + mean_obs_behroozi(self.test_redshift.numpy(), log=True) - systematic_shift(self.test_redshift.numpy())
+        return self.prior.mean.numpy() + mean_obs_behroozi(self.test_redshift.numpy(), log=True, path=self.path) - systematic_shift(self.test_redshift.numpy(), path=self.path)
     
     def get_prior_confidence_region(self):
         lower, upper = self.prior.confidence_region()
-        lower = lower + mean_obs_behroozi(self.test_redshift.numpy(), log=True)
-        upper = upper + mean_obs_behroozi(self.test_redshift.numpy(), log=True)
+        lower = lower + mean_obs_behroozi(self.test_redshift.numpy(), log=True, path=self.path)
+        upper = upper + mean_obs_behroozi(self.test_redshift.numpy(), log=True, path=self.path)
         return [lower, upper]
     
     def get_prior_confidence_region_corrected(self):
         lower, upper = self.prior.confidence_region()
-        lower = lower + mean_obs_behroozi(self.test_redshift.numpy(), log=True) - systematic_shift(self.test_redshift.numpy())
-        upper = upper + mean_obs_behroozi(self.test_redshift.numpy(), log=True) - systematic_shift(self.test_redshift.numpy())
+        lower = lower + mean_obs_behroozi(self.test_redshift.numpy(), log=True, path=self.path) - systematic_shift(self.test_redshift.numpy(), path=self.path)
+        upper = upper + mean_obs_behroozi(self.test_redshift.numpy(), log=True, path=self.path) - systematic_shift(self.test_redshift.numpy(), path=self.path)
         return [lower, upper]
     
     def plot_combined(self):
 
         train_redshift, train_log_csfrd, train_log_shifted_csfrd, train_log_csfrd_errors = self.train_data
-        behroozi19 = get_behroozi19_curves()
+        behroozi19 = get_behroozi19_curves(path=self.path)
         with torch.no_grad():
 
             f, ax = plt.subplots(1, 1, figsize=(22, 16))
@@ -126,9 +127,9 @@ def gp_evaluate_model(model, test_x):
 
     return f_preds
 
-def get_training_data(plot=False):
+def get_training_data(path, plot=False):
 
-    data = ascii.read("csfr_data/obs.txt")
+    data = ascii.read(path+"/csfr_data/obs.txt")
     csfr_rows = data['Type']=="csfr"
     csfr_uv_rows = data['Type']=="csfr_(uv)"
     rows = np.logical_or(csfr_rows, csfr_uv_rows)
@@ -153,7 +154,7 @@ def get_training_data(plot=False):
 
     train_redshift = torch.from_numpy(train_redshift)
     train_log_csfrd = torch.from_numpy(train_csfrd)
-    train_log_shifted_csfrd = train_log_csfrd - torch.from_numpy(mean_obs_behroozi(train_redshift.numpy(), log=True))
+    train_log_shifted_csfrd = train_log_csfrd - torch.from_numpy(mean_obs_behroozi(train_redshift.numpy(), log=True, path=path))
     train_log_csfrd_errors = torch.from_numpy(train_csfrd_errors)
 
     return [train_redshift, train_log_csfrd, train_log_shifted_csfrd, train_log_csfrd_errors]
@@ -167,9 +168,9 @@ def log_to_lin(train_log_csfrd, train_log_csfrd_errors):
 
     return train_csfrd, train_csfrd_errors
 
-def mean_obs_behroozi(zgrid, log):
+def mean_obs_behroozi(zgrid, log, path):
 
-    data = ascii.read("csfr_data/csfrs.dat")  
+    data = ascii.read(path+"/csfr_data/csfrs.dat")  
     scale = np.array(data["Scale"])
     redshift = cosmo.scale_to_z(scale)
 
@@ -180,9 +181,9 @@ def mean_obs_behroozi(zgrid, log):
 
     return np.interp(zgrid, np.flip(redshift), np.flip(total_obs_csfr))
 
-def systematic_shift(zgrid):
+def systematic_shift(zgrid, path):
 
-    data = ascii.read("csfr_data/csfrs.dat")  
+    data = ascii.read(path+"/csfr_data/csfrs.dat")  
 
     scale = np.array(data["Scale"])
     redshift = cosmo.scale_to_z(scale)
@@ -193,9 +194,9 @@ def systematic_shift(zgrid):
 
     return np.interp(zgrid, np.flip(redshift), np.flip(sys_shift))
 
-def get_behroozi19_curves():
+def get_behroozi19_curves(path):
 
-        data = ascii.read("csfr_data/csfrs.dat")  
+        data = ascii.read(path+"/csfr_data/csfrs.dat")  
 
         scale = np.array(data["Scale"])
         redshift = cosmo.scale_to_z(scale)

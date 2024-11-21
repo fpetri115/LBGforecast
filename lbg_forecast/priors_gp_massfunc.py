@@ -24,17 +24,18 @@ class GPModel(gpytorch.models.ExactGP):
 
 class MassFunctionPrior():
 
-    def __init__(self):
+    def __init__(self, path):
 
+        self.path = path
         self.param_names = ["$\mathrm{log}_{10}\phi_{1}^{*}$", "$\mathrm{log}_{10}\phi_{2}^{*}$", "$\\alpha_{1}$", "$\\alpha_{2}$", "$\mathrm{log}_{10}\mathcal{M}_{*}$"]
         self.redshift_grid = np.linspace(0, 7, 100)
         self.volume_grid = self.volume_elements(self.redshift_grid)
 
-        state_dict_phi1 = torch.load('/Users/fpetri/repos/LBGForecast/gp_models/phi1.pth', weights_only=True)
-        state_dict_phi2 = torch.load('/Users/fpetri/repos/LBGForecast/gp_models/phi2.pth', weights_only=True)
-        state_dict_alpha1 = torch.load('/Users/fpetri/repos/LBGForecast/gp_models/alpha1.pth', weights_only=True)
-        state_dict_alpha2 = torch.load('/Users/fpetri/repos/LBGForecast/gp_models/alpha2.pth', weights_only=True)
-        state_dict_logm = torch.load('/Users/fpetri/repos/LBGForecast/gp_models/logm.pth', weights_only=True)
+        state_dict_phi1 = torch.load(self.path+'/gp_models/phi1.pth', weights_only=True)
+        state_dict_phi2 = torch.load(self.path+'/gp_models/phi2.pth', weights_only=True)
+        state_dict_alpha1 = torch.load(self.path+'/gp_models/alpha1.pth', weights_only=True)
+        state_dict_alpha2 = torch.load(self.path+'/gp_models/alpha2.pth', weights_only=True)
+        state_dict_logm = torch.load(self.path+'/gp_models/logm.pth', weights_only=True)
 
         sorted_train_redshift_logphi1, sorted_train_logphi1, sorted_train_logphi1_errs = get_phi1_data(plotting=False)
         sorted_train_redshift_logphi2, sorted_train_logphi2, sorted_train_logphi2_errs = get_phi2_data(plotting=False)

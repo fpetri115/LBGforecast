@@ -5,14 +5,15 @@ from scipy.stats import truncnorm
 
 
 class DustPrior():
-    def __init__(self, samples=9999999999):
+    def __init__(self, path, samples=9999999999):
 
+        self.path = path
         self.popcosmos_samples = self.initialise_popcosmos_samples(samples)
         self.number_of_samples = self.popcosmos_samples.shape[0]
 
     def initialise_popcosmos_samples(self, nsamples=999999999):
 
-        popcosmos_samples = np.load("dust_data/popcosmos_parameters_rmag_lt_25.npy")[:nsamples, :]
+        popcosmos_samples = np.load(self.path+"/dust_data/popcosmos_parameters_rmag_lt_25.npy")[:nsamples, :]
 
         dust_samples = popcosmos_samples[:, 8:11]
         logsfrratios = popcosmos_samples[:, 2:8]
