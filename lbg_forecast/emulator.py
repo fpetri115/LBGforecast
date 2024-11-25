@@ -9,10 +9,11 @@ class fsps_emulator:
         #Define attrributes
         self._models = []
         self._filters = ['u','g','r','i','z']
+        self.path = path
 
         #load photulator
         for f in self._filters:
-            self._models.append(Photulator(restore=True, restore_filename = path+"/trained_models/model_0x0lsst_"+f))
+            self._models.append(Photulator(restore=True, restore_filename = self.path+"/trained_models/model_0x0lsst_"+f))
 
     #forward pass for all filters
     def mimic_photometry_wmap1(self, sps_params, batch_size):
@@ -43,7 +44,7 @@ class fsps_emulator:
 
         data_size = sps_params.shape[0]
         redshifts = sps_params[:, 0]
-        photo_corrections = cosmo.wmap1_to_9(redshifts)
+        photo_corrections = cosmo.wmap1_to_9(redshifts, path=self.path)
 
         if(data_size%batch_size != 0):
             raise Exception("batch sizes do not fit")

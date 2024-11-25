@@ -17,7 +17,7 @@ def scale_to_z(scale):
     """
     return 1/scale - 1.0
 
-def wmap1_to_9(new_redshifts):
+def wmap1_to_9(new_redshifts, path='.'):
     """convert wmap1 photometry to wmap9
     (all bands)
 
@@ -31,7 +31,7 @@ def wmap1_to_9(new_redshifts):
     photometry (any band) at wmap9 for given redshifts
     """
     
-    wmap1_to_9 = np.loadtxt("corrections/wmap1_to_9.txt")
+    wmap1_to_9 = np.loadtxt(path+"/corrections/wmap1_to_9.txt")
     redshifts = wmap1_to_9[0,:]
     phot_corrections = wmap1_to_9[1,:]
 
