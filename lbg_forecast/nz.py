@@ -1,7 +1,5 @@
 
 import numpy as np
-import matplotlib.pyplot as plt
-import lbg_forecast.selection as sel
 import lbg_forecast.colour_cuts as cuts
 import lbg_forecast.noise as noise
 
