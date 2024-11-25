@@ -40,3 +40,19 @@ def build_redshift_distribution_samples_object(u_data, g_data, r_data):
     redshift_array[:] = [u_redshifts, g_redshifts, r_redshifts]     
 
     return redshift_array
+
+def calculate_nzs_from_photometry(sps_params, source_photometry):
+
+    #apply noise, the perform SNR, brightness and faintness cuts
+    all_dropouts_mags = noise.get_noisy_magnitudes(sps_params, source_photometry, random_state=np.random.randint(0, 100000))
+
+    #convert magnitudes to colours
+    all_dropouts_colours = cuts.colours(all_dropouts_mags)
+    
+    #apply LBG colour cuts
+    u_data, g_data, r_data = cuts.apply_cuts_to_colours(all_dropouts_colours)
+
+    #get selected redshift samples and combine into object array
+    nzs = build_redshift_distribution_samples_object(u_data, g_data, r_data)
+
+    return nzs
