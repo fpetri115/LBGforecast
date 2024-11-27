@@ -5,17 +5,17 @@ def sample_gaussian_prior_parameters():
         
     mu_bounds = np.array([[-2.5, 0.5],    #logzsol
                             [0.5, 1.5],   #igm_factor 
-                            [-1.0, -1.0], #gas_logu
+                            [-4.0, -1.0], #gas_logu
                             [-2.0, 0.5],  #gas_logz
-                            [-5.0, -5.0],  #log10(fagn)
-                            [5, 5]])    #agn_tau  
+                            [-5.0, 1.0],  #log10(fagn)
+                            [5, 150]])    #agn_tau  
 
     sig_bounds = np.array([[0.01, 3.0],   #logzsol
                             [0.1, 0.5],   #igm_factor 
-                            [0.001, 0.001],  #gas_logu
+                            [0.001, 3.0],  #gas_logu
                             [0.01, 2.5],  #gas_logz
-                            [0.01, 0.01],  #log10(fagn)
-                            [0.01, 0.01]])  #agn_tau
+                            [0.01, 6.0],  #log10(fagn)
+                            [0.01, 145]])  #agn_tau
     
     mu = []
     sigma = []
