@@ -60,6 +60,7 @@ if(rank == 0):
 #gather arrays
 comm.Gather(sps_buf, recv_buf, root=0)
 
+#save
 if(rank == 0):
     np.save(path+"sps_parameter_samples/sps_"+run+".npy", recv_buf)
     print("Complete.", flush=True)
