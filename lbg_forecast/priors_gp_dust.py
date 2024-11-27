@@ -88,8 +88,7 @@ class DustPrior():
         dust2 = np.interp(sfrs, sorted_sfrs, sorted_dust2)
         delta = np.interp(sfrs, sorted_sfrs, sorted_delta)
 
-        return abs(dust2 + delta*0)
-    
+        return np.clip(abs(dust2 + delta), 0.0, 4.0)
 
     def sample_dust_index(self, dust2s):
 
@@ -107,20 +106,25 @@ class DustPrior():
         dust_index = np.interp(dust2s, sorted_dust2, sorted_dust_index)
         delta = np.interp(dust2s, sorted_dust2, sorted_delta)
 
-        return np.clip(dust_index + delta*0, -2.2, 0.4)
+        return np.clip(dust_index + delta, -2.2, 0.4)
     
-    def sample_dust1(self, dust2):
-        f_preds = gp_evaluate_model(self.model_dust1, torch.from_numpy(self.dust1_grid))
-        f_preds_sig = gp_evaluate_model(self.model_dust1_sig, torch.from_numpy(self.dust1_grid))
-        
-        mean = f_preds.sample().numpy()
-        sig_dust1 = f_preds_sig.sample().numpy()
-        sig_dust1 = np.where(sig_dust1<0.001, 0.001, sig_dust1)
+    def sample_dust1(self, dust2s):
 
-        samples_on_grid = np.interp(dust2, self.dust1_grid, mean)
-        samples_on_grid_sig = np.interp(dust2, self.dust1_grid, sig_dust1)
+        f_preds_mu = gp_evaluate_model(self.model_dust1, torch.from_numpy(self.dust1_grid))
+        mean_dust1_sample = f_preds_mu.sample().numpy()
+        mean_dust1 = f_preds_mu.mean.detach().numpy()
+        delta_dust1 = mean_dust1_sample - mean_dust1
+        delta = np.interp(self.dust2, self.dust1_grid, delta_dust1)
 
-        return dp.truncated_normal(samples_on_grid, samples_on_grid_sig, 0.0, 4.0, len(dust2))
+        sorted_inds = self.dust2.argsort()[:]
+        sorted_dust2 = self.dust2[sorted_inds]
+        sorted_dust1 = self.dust1[sorted_inds]
+        sorted_delta = delta[sorted_inds]
+
+        dust1 = np.interp(dust2s, sorted_dust2, sorted_dust1)
+        delta = np.interp(dust2s, sorted_dust2, sorted_delta)
+
+        return np.clip(abs(dust1 + delta), 0.0, 4.0)
     
     def get_pop_cosmos_samples(self, nsamples):
 
