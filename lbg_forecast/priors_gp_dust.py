@@ -24,9 +24,12 @@ class GPModel(gpytorch.models.ExactGP):
 class DustPrior():
     def __init__(self, path):
         
+        self.path = path
         print("Loading Models")
+        self.preloaded_popcosmos_samples = np.load(self.path+"/dust_data/popcosmos_parameters_rmag_lt_25.npy")
+        self.preloaded_recent_sfrs = np.load(self.path+"/dust_data/popcosmos_recentsfrs.npy")
         self.n, self.tau, self.tau1, self.ne, self.taue, self.tau1e, self.sfr = get_nagaraj22_samples(path=path)
-        self.recent_sfrs, self.dust2, self.dust_index, self.dust1 = get_pop_cosmos_samples(nsamples=500000, path=path)
+        self.recent_sfrs, self.dust2, self.dust_index, self.dust1 = self.get_pop_cosmos_samples(nsamples=500000)
         print("Loading Complete")
 
         #load saved models
@@ -68,19 +71,7 @@ class DustPrior():
         dust1 = self.sample_dust1(dust2)
 
         return [dust2, dust_index, dust1]
-
-    def sample_dust2_old(self, sfrs):
-
-        f_preds = gp_evaluate_model(self.model_dust2, torch.from_numpy(self.dust2_grid))
-        f_preds_sig = gp_evaluate_model(self.model_dust2_sig, torch.from_numpy(self.dust2_grid))
-        mean = f_preds.sample().numpy()
-        sig = f_preds_sig.sample().numpy()
-        sig = np.where(sig<0.001, 0.001, sig)
-        means_on_grid = np.interp(sfrs, self.dust2_grid, mean)
-        sigs_on_grid = np.interp(sfrs, self.dust2_grid, sig)
-        #scatter = np.random.uniform(0.1, 0.3)
-        return dp.truncated_normal(means_on_grid, sigs_on_grid, 0.0, 4.0, len(sfrs))
-    
+   
     def sample_dust2(self, sfrs):
         
         f_preds_mu = gp_evaluate_model(self.model_dust2, torch.from_numpy(self.dust2_grid))
@@ -97,19 +88,26 @@ class DustPrior():
         dust2 = np.interp(sfrs, sorted_sfrs, sorted_dust2)
         delta = np.interp(sfrs, sorted_sfrs, sorted_delta)
 
-        return abs(dust2 + delta)
+        return abs(dust2 + delta*0)
     
-    def sample_dust_index(self, dust2):
 
-        f_preds = gp_evaluate_model(self.model_dust_index, torch.from_numpy(self.dust_index_grid))
-        f_preds_sig = gp_evaluate_model(self.model_dust_index_sig, torch.from_numpy(self.dust_index_grid))
-        mean = f_preds.sample().numpy()
-        sig = f_preds_sig.sample().numpy()
-        sig = np.where(sig<0.001, 0.001, sig)
-        means_on_grid = np.interp(dust2, self.dust_index_grid, mean)
-        sigs_on_grid = np.interp(dust2, self.dust_index_grid, sig)
-        #scatter = np.random.uniform(0.1, 0.4)
-        return dp.truncated_normal(means_on_grid, sigs_on_grid, -2.2, 0.4, len(dust2))
+    def sample_dust_index(self, dust2s):
+
+        f_preds_mu = gp_evaluate_model(self.model_dust_index, torch.from_numpy(self.dust_index_grid))
+        mean_dust_index_sample = f_preds_mu.sample().numpy()
+        mean_dust_index = f_preds_mu.mean.detach().numpy()
+        delta_dust_index = mean_dust_index_sample - mean_dust_index
+        delta = np.interp(self.dust2, self.dust_index_grid, delta_dust_index)
+
+        sorted_inds = self.dust2.argsort()[:]
+        sorted_dust2 = self.dust2[sorted_inds]
+        sorted_dust_index = self.dust_index[sorted_inds]
+        sorted_delta = delta[sorted_inds]
+
+        dust_index = np.interp(dust2s, sorted_dust2, sorted_dust_index)
+        delta = np.interp(dust2s, sorted_dust2, sorted_delta)
+
+        return np.clip(dust_index + delta*0, -2.2, 0.4)
     
     def sample_dust1(self, dust2):
         f_preds = gp_evaluate_model(self.model_dust1, torch.from_numpy(self.dust1_grid))
@@ -123,6 +121,33 @@ class DustPrior():
         samples_on_grid_sig = np.interp(dust2, self.dust1_grid, sig_dust1)
 
         return dp.truncated_normal(samples_on_grid, samples_on_grid_sig, 0.0, 4.0, len(dust2))
+    
+    def get_pop_cosmos_samples(self, nsamples):
+
+        popcosmos_samples = self.preloaded_popcosmos_samples[:nsamples, :]
+
+        dust_samples = popcosmos_samples[:, 8:11]
+        recent_sfrs = self.preloaded_recent_sfrs[:nsamples]
+        #np.log10(sfh.calculate_recent_sfr(redshifts, 10**logmasses, logsfrratios))
+
+        dust2 = dust_samples[:, 0]
+        dust_index = dust_samples[:, 1]
+        dust1frac = dust_samples[:, 2]
+        dust1 = dust1frac*dust2
+
+        return recent_sfrs, dust2, dust_index, dust1
+    
+    def draw_popcosmos_samples(self, nsamples):
+
+        recent_sfrs, dust2, dust_index, dust1 = self.get_pop_cosmos_samples(nsamples)
+
+        indexes = np.random.uniform(0, nsamples, nsamples)
+        drawn_sfrs = recent_sfrs[indexes]
+        drawn_dust2 = dust2[indexes]
+        drawn_dust_index = dust_index[indexes]
+        drawn_dust1 = dust1[indexes]
+
+        return drawn_sfrs, drawn_dust2, drawn_dust_index, drawn_dust1
 
 def train_gp_model_noerr(train_x, train_y, lengthscales, scales, lr=0.1, training_iter=20000):
 
@@ -179,21 +204,6 @@ def process_samples_modified(x, y, yerr, xl, xh, ngrid=15):
     x, y, yerr = binned_weighted_mean_std(x, y, yerr, bins)
 
     return x, y, yerr
-
-def get_pop_cosmos_samples(nsamples, path):
-
-    popcosmos_samples = np.load(path+"/dust_data/popcosmos_parameters_rmag_lt_25.npy")[:nsamples, :]
-
-    dust_samples = popcosmos_samples[:, 8:11]
-    recent_sfrs = np.load(path+"/dust_data/popcosmos_recentsfrs.npy")[:nsamples]
-    #np.log10(sfh.calculate_recent_sfr(redshifts, 10**logmasses, logsfrratios))
-
-    dust2 = dust_samples[:, 0]
-    dust_index = dust_samples[:, 1]
-    dust1frac = dust_samples[:, 2]
-    dust1 = dust1frac*dust2
-
-    return recent_sfrs, dust2, dust_index, dust1
 
 def process_popcosmos_samples(x, y, ngrid=15):
 

@@ -1,5 +1,6 @@
 import numpy as np
 from speculator import Photulator
+import tensorflow as tf
 import lbg_forecast.cosmology as cosmo
 
 class fsps_emulator:
@@ -10,6 +11,7 @@ class fsps_emulator:
         self._models = []
         self._filters = ['u','g','r','i','z']
         self.path = path
+        print("Physical Devices:", tf.config.list_physical_devices())
 
         #load photulator
         for f in self._filters:
@@ -51,11 +53,15 @@ class fsps_emulator:
         
         nbatches = int(data_size/batch_size)
 
+        sps_params_tensor = tf.cast(tf.convert_to_tensor(sps_params), tf.float32)
+
         i = 0
         for f in self._filters:
             photometry_band = []
             for n in range(nbatches):
-                photometry_band.append(self._models[i].magnitudes_(sps_params[n*batch_size:(n+1)*batch_size]))
+                batch_size_l = n*batch_size
+                batch_size_h = (n+1)*batch_size
+                photometry_band.append(self._models[i].magnitudes(sps_params_tensor[batch_size_l:batch_size_h]).numpy())
             i+=1
             photometry_all.append(np.reshape(np.asarray(photometry_band), (data_size, 1)) + np.reshape(photo_corrections, (data_size, 1)))
 
