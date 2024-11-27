@@ -58,7 +58,7 @@ if(rank == 0):
     print("Waiting For Other Processes ... ", flush=True)
 
 #gather arrays
-comm.Gather(sps_buf, recv_buf, root=0)
+#comm.Gather(sps_buf, recv_buf, root=0)
 
 #save
 if(rank == 0):
