@@ -28,12 +28,13 @@ class DustPrior():
         print("Loading Models")
         self.preloaded_popcosmos_samples = np.load(self.path+"/dust_data/popcosmos_parameters_rmag_lt_25.npy")
         self.preloaded_recent_sfrs = np.load(self.path+"/dust_data/popcosmos_recentsfrs.npy")
-        self.n, self.tau, self.tau1, self.ne, self.taue, self.tau1e, self.sfr = get_nagaraj22_samples(path=path)
+        self.n, self.tau, self.tau1, self.ne, self.taue, self.tau1e, self.sfr = self.get_nagaraj22_samples()
         self.recent_sfrs, self.dust2, self.dust_index, self.dust1 = self.get_pop_cosmos_samples(nsamples=500000)
         print("Loading Complete")
 
         #load saved models
         state_dict_dust2 = torch.load(path+'/gp_models/dust2.pth', weights_only=True)
+        state_dict_dust2nag = torch.load(path+'/gp_models/dust2nag.pth', weights_only=True)
         state_dict_dust2sig = torch.load(path+'/gp_models/dust2sig.pth', weights_only=True)
         state_dict_dust_index = torch.load(path+'/gp_models/dust_index.pth', weights_only=True)
         state_dict_dust_indexsig = torch.load(path+'/gp_models/dust_indexsig.pth', weights_only=True)
@@ -42,9 +43,12 @@ class DustPrior():
 
         #load dust2 model
         self.dust2_training_data = process_training_data_dust2(self.tau, self.sfr, self.recent_sfrs, self.dust2)
-        self.model_dust2 = create_gp_model_noerr([5.0, 15.0], self.dust2_training_data[0], self.dust2_training_data[1], [-100, 100])[0]
+        self.dust2_training_data_nag = process_training_data_dust2_nag(self.tau, self.sfr)
+        self.model_dust2 = create_gp_model_noerr([1.0, 15.0], self.dust2_training_data[0], self.dust2_training_data[1], [-100, 100])[0]
+        self.model_dust2_nag = create_gp_model_noerr([1.0, 15.0], self.dust2_training_data_nag[0], self.dust2_training_data_nag[1], [-100, 100])[0]
         self.model_dust2_sig = create_gp_model_noerr([5.0, 15.0], self.dust2_training_data[0], self.dust2_training_data[2], [-100, 100])[0]
         self.model_dust2.load_state_dict(state_dict_dust2)
+        self.model_dust2_nag.load_state_dict(state_dict_dust2nag)
         self.model_dust2_sig.load_state_dict(state_dict_dust2sig)
         self.dust2_grid = np.linspace(-5, 3, 1000)
 
@@ -71,7 +75,23 @@ class DustPrior():
         dust1 = self.sample_dust1(dust2)
 
         return [dust2, dust_index, dust1]
+    
+    def dust2_mean(self):
+        
+        f_preds_mu = gp_evaluate_model(self.model_dust2, torch.from_numpy(self.dust2_grid))
+        mean_dust2 = f_preds_mu.mean.detach().numpy()
+        return mean_dust2
+    
+    def dust2_mean_nagaraj(self):
+        
+        f_preds_mu = gp_evaluate_model(self.model_dust2_nag, torch.from_numpy(self.dust2_grid))
+        mean_dust2 = f_preds_mu.mean.detach().numpy()
+        return mean_dust2
    
+    def interpolate_models(self, f):
+
+        return (1-f)*self.dust2_mean() + (f)*self.dust2_mean_nagaraj()
+
     def sample_dust2(self, sfrs):
         
         f_preds_mu = gp_evaluate_model(self.model_dust2, torch.from_numpy(self.dust2_grid))
@@ -80,15 +100,21 @@ class DustPrior():
         delta_dust2 = mean_dust2_sample - mean_dust2
         delta = np.interp(self.recent_sfrs, self.dust2_grid, delta_dust2)
 
+        f = np.random.uniform(0, 1)
+        sys_shift = self.interpolate_models(f) - mean_dust2
+        sys_shift = np.interp(self.recent_sfrs, self.dust2_grid, sys_shift)
+
         sorted_inds = self.recent_sfrs.argsort()[:]
         sorted_sfrs = self.recent_sfrs[sorted_inds]
         sorted_dust2 = self.dust2[sorted_inds]
         sorted_delta = delta[sorted_inds]
+        sorted_shift = sys_shift[sorted_inds]
 
         dust2 = np.interp(sfrs, sorted_sfrs, sorted_dust2)
         delta = np.interp(sfrs, sorted_sfrs, sorted_delta)
+        sys_shift = np.interp(sfrs, sorted_sfrs, sorted_shift)
 
-        return np.clip(abs(dust2 + delta), 0.0, 4.0)
+        return np.clip(abs(dust2 + delta + sys_shift), 0.0, 4.0)
 
     def sample_dust_index(self, dust2s):
 
@@ -152,6 +178,18 @@ class DustPrior():
         drawn_dust1 = dust1[indexes]
 
         return drawn_sfrs, drawn_dust2, drawn_dust_index, drawn_dust1
+    
+    def get_nagaraj22_samples(self):
+
+        #logM = np.random.uniform(8.74,11.30,ngal)
+        #sfr = np.random.uniform(-5,2.5,ngal)
+        #logZ = np.random.uniform(-1.70,0.18,ngal)
+        #z=np.random.uniform(0.51,2.83,ngal)
+        #i=np.random.uniform(0.09,0.97,ngal)
+        #dobj = DustAttnCalc(sfr=sfr, logM=logM, logZ=logZ, z=z, i=i, bv=True, eff=False)
+        #dac, dac1, n, tau, tau1, ne, taue, tau1e = dobj.calcDust(max_num_plot=0)
+        #return n, tau, tau1, ne, taue, tau1e, sfr
+        return np.load(self.path+"/dust_data/saved_nagaraj22samples.npy")
 
 def train_gp_model_noerr(train_x, train_y, lengthscales, scales, lr=0.1, training_iter=20000):
 
@@ -166,6 +204,13 @@ def process_training_data_dust2(tau, sfr, recent_sfrs, dust2):
     bin_centers, bin_means, bin_std = process_samples(recent_sfrs, dust2, -5, 3, 50)
     train_sfr, train_dust2, train_dust2errs = training_data_to_torch(bin_centers, bin_means, bin_std, bin_centers_de, bin_means_de, bin_std_de)
     return [train_sfr, train_dust2, train_dust2errs]
+
+def process_training_data_dust2_nag(tau, sfr):
+
+    bin_centers_de, bin_means_de, bin_std_de = process_samples(sfr, tau, -5, 3, 15)
+    train_sfrs, train_tau, train_tau_errs = torch.from_numpy(bin_centers_de), torch.from_numpy(bin_means_de), torch.from_numpy(bin_std_de)
+
+    return [train_sfrs, train_tau, train_tau_errs]
 
 def process_training_data_dust_index(n, ne, tau, dust2, dust_index):
 
@@ -217,18 +262,6 @@ def process_popcosmos_samples(x, y, ngrid=15):
     bin_centers = bin_edges[1:] - bin_width/2
 
     return bin_centers, bin_means, bin_std
-
-def get_nagaraj22_samples(path):
-
-    #logM = np.random.uniform(8.74,11.30,ngal)
-    #sfr = np.random.uniform(-5,2.5,ngal)
-    #logZ = np.random.uniform(-1.70,0.18,ngal)
-    #z=np.random.uniform(0.51,2.83,ngal)
-    #i=np.random.uniform(0.09,0.97,ngal)
-    #dobj = DustAttnCalc(sfr=sfr, logM=logM, logZ=logZ, z=z, i=i, bv=True, eff=False)
-    #dac, dac1, n, tau, tau1, ne, taue, tau1e = dobj.calcDust(max_num_plot=0)
-    #return n, tau, tau1, ne, taue, tau1e, sfr
-    return np.load(path+"/dust_data/saved_nagaraj22samples.npy")
 
 def proccess_nagaraj22_samples(x, y, xl, xh, ngrid=15):
 
