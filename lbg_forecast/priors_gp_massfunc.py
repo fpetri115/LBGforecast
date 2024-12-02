@@ -135,6 +135,18 @@ class MassFunctionPrior():
         the same as one calculated for n_phi"""
         volume = np.interp(z, self.redshift_grid, self.volume_grid)
         return n_phi*volume
+    def total_number(self, sparams):
+
+        logm_grid = np.linspace(7, 13, 100)
+        zgrid = np.linspace(0, 7, 100)
+        n_tot = 0
+        for z in zgrid:
+            phi = self.mass_function(z, logm_grid, sparams)
+            n_phi = self.number_density(logm_grid, phi)
+            ngalaxies = self.number(z, n_phi)
+            n_tot += ngalaxies
+        
+        return n_tot
     def log_n(self, x, sparams, prior_bounds=[0.0,7.0,7.0,13]):
 
         z, logm = x
