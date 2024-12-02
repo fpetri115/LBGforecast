@@ -150,7 +150,7 @@ class DustPrior():
         dust1 = np.interp(dust2s, sorted_dust2, sorted_dust1)
         delta = np.interp(dust2s, sorted_dust2, sorted_delta)
 
-        return np.clip(abs(dust1 + delta), 0.0, 4.0)
+        return np.clip(dust1 + delta, 0.0, 4.0)
     
     def get_pop_cosmos_samples(self, nsamples):
 
