@@ -2,23 +2,23 @@ from photerr import LsstErrorModel
 import pandas as pd
 import numpy as np
 
-def select_u_dropouts(observed_catalog):
+def select_u_dropouts(observed_catalog, depth):
     
     udrop = observed_catalog.copy(deep=True)
 
     #udrop = udrop.dropna(axis=0, subset=['g5'])
     #udrop = udrop.dropna(axis=0, subset=['r5'])
-    #udrop = udrop.dropna(axis=0, subset=['u']) 
+    #udrop = udrop.dropna(axis=0, subset=['u5']) 
 
     #udrop = udrop.drop(udrop[np.isnan(udrop.u2) == False].index)
     #udrop['u'].replace(np.nan, 30.0, inplace=True)
 
-    udrop = udrop.drop(udrop[udrop.r < 22.5].index)
-    udrop = udrop.drop(udrop[udrop.r > 24.5].index)
+    udrop = udrop.drop(udrop[udrop.r < 23].index)
+    udrop = udrop.drop(udrop[udrop.r > depth].index)
 
     return udrop.filter(['u','g','r','i','z'])
 
-def select_g_dropouts(observed_catalog):
+def select_g_dropouts(observed_catalog, depth):
     
     gdrop = observed_catalog.copy(deep=True)
 
@@ -26,35 +26,32 @@ def select_g_dropouts(observed_catalog):
     #gdrop = gdrop.dropna(axis=0, subset=['i5'])
     #gdrop = gdrop.dropna(axis=0, subset=['g']) 
 
-    gdrop = gdrop.drop(gdrop[gdrop.i < 22.5].index)
-    gdrop = gdrop.drop(gdrop[gdrop.i > 25.5].index)
+    gdrop = gdrop.drop(gdrop[gdrop.i < 23].index)
+    gdrop = gdrop.drop(gdrop[gdrop.i > depth].index)
 
     #gdrop = gdrop.drop(gdrop[np.isnan(gdrop.g5) == False].index)
-    #gdrop = gdrop.drop(gdrop[np.isnan(gdrop.u2) == False].index)
+    gdrop = gdrop.drop(gdrop[np.isnan(gdrop.u2) == False].index)
 
-    
     return gdrop.filter(['u','g','r','i','z'])
 
-def select_r_dropouts(observed_catalog):
+def select_r_dropouts(observed_catalog, depth):
 
     rdrop = observed_catalog.copy(deep=True)
 
     #rdrop = rdrop.dropna(axis=0, subset=['i5'])
-    rdrop = rdrop.dropna(axis=0, subset=['z5'])
+    #rdrop = rdrop.dropna(axis=0, subset=['z5'])
     #rdrop = rdrop.dropna(axis=0, subset=['r']) 
 
-    rdrop = rdrop.drop(rdrop[rdrop.z5 < 23].index)
-    rdrop = rdrop.drop(rdrop[rdrop.z5 > 25].index)
+    rdrop = rdrop.drop(rdrop[rdrop.z < 23.5].index)
+    rdrop = rdrop.drop(rdrop[rdrop.z > depth].index)
     
     #rdrop = rdrop.drop(rdrop[np.isnan(rdrop.r5) == False].index)
     rdrop = rdrop.drop(rdrop[np.isnan(rdrop.g2) == False].index)
+
+    return rdrop.filter(['u','g','r','i','z'])
+
+def setup_catalog(noiseless_photometry, random_state=42):
     
-    return rdrop.filter(['u','g','r','i5','z5'])
-
-def get_noisy_magnitudes(sps_params, noiseless_photometry, random_state=42):
-
-    #noiseless_photometry = np.load("/Users/fpetri/repos/LBGforecast/data/data/training_data.npy")[:1000000, :6]
-    #sps_params = np.load("/Users/fpetri/repos/LBGforecast/data/data/training_params.npy")[:1000000, :]
     catalog = pd.DataFrame(noiseless_photometry, columns=['u', 'g', 'r', 'i', 'z'])
 
     errModel = LsstErrorModel(sigLim=0, absFlux=True)
@@ -70,30 +67,53 @@ def get_noisy_magnitudes(sps_params, noiseless_photometry, random_state=42):
     catalog_sig2.rename(columns={"u": "u2", "g": "g2", "r": "r2", "i": "i2", "z": "z2"}, inplace=True)
 
     observed_catalog = observed_catalog.join(catalog_sig5).join(catalog_sig2)
+
+    return observed_catalog
+
+def pack_dropout_data(dropouts, sps_params):
+
+    dropout_mags_numpy = dropouts.to_numpy()
+    dropout_index = dropouts.index.to_numpy()
+    dropout_params = sps_params[dropout_index,:]
+    dropout_data = [dropout_params, dropout_mags_numpy]
+
+    return dropout_data
+
+def unpack_z(dropout_data):
+
+    dropout_params = dropout_data[0]
+
+    return dropout_params[:, 0]
+
+def unpack_spsparams(dropout_data):
+
+    dropout_params = dropout_data[0]
+
+    return dropout_params
+
+def unpack_mags(dropout_data, band):
+
+    dropout_mags = dropout_data[1]
     
-    #brightness_cut = 23 #19  #uncomment to go back to og (4/4)
-    #observed_catalog.dropna(axis=0, subset=['i5'], inplace=True) #require 5sigma detection in i band
-    #observed_catalog.drop(observed_catalog[observed_catalog['i5'] < brightness_cut].index, inplace=True)
+    return dropout_mags[:, band]
 
-    udrop = select_u_dropouts(observed_catalog)
-    gdrop = select_g_dropouts(observed_catalog)
-    rdrop = select_r_dropouts(observed_catalog)
+def unpack_mags_all(dropout_data):
 
-    u_dropouts = udrop.to_numpy()
-    g_dropouts = gdrop.to_numpy()
-    r_dropouts = rdrop.to_numpy()
+    dropout_mags = dropout_data[1]
+    
+    return dropout_mags
 
-    u_index = udrop.index.to_numpy()
-    g_index = gdrop.index.to_numpy()
-    r_index = rdrop.index.to_numpy()
+def get_noisy_magnitudes(sps_params, noiseless_photometry, random_state=42, udepth=25, gdepth=25.2, rdepth=25.7):
 
-    u_params = sps_params[u_index,:]
-    g_params = sps_params[g_index,:]
-    r_params = sps_params[r_index,:]
+    observed_catalog = setup_catalog(noiseless_photometry, random_state)
 
-    u_data = [u_params, u_dropouts]
-    g_data = [g_params, g_dropouts]
-    r_data = [r_params, r_dropouts]
+    u_dropouts = select_u_dropouts(observed_catalog, udepth)
+    g_dropouts = select_g_dropouts(observed_catalog, gdepth)
+    r_dropouts = select_r_dropouts(observed_catalog, rdepth)
+
+    u_data = pack_dropout_data(u_dropouts, sps_params)
+    g_data = pack_dropout_data(g_dropouts, sps_params)
+    r_data = pack_dropout_data(r_dropouts, sps_params)
 
 
     return (u_data, g_data, r_data)

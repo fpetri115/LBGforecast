@@ -69,7 +69,7 @@ def select_dropouts_full(dropout, dropout_colour_data):
     if(dropout == 'r'):
         inds = sources_inside_r_cuts(rmi, imz)
 
-    return (sps_params[inds, :], colours[inds, :])
+    return sps_params[inds, :], colours[inds, :], inds
 
 def apply_cuts(dropout_data):
     """takes output from colours() and returns
@@ -96,13 +96,13 @@ def apply_cuts_to_colours(dropout_data):
     u_dropouts, g_dropouts, r_dropouts = dropout_data
 
     #Select dropout sources
-    u_params, u_colours = select_dropouts_full('u', u_dropouts)
-    g_params, g_colours = select_dropouts_full('g', g_dropouts)
-    r_params, r_colours = select_dropouts_full('r', r_dropouts)
+    u_params, u_colours, u_inds = select_dropouts_full('u', u_dropouts)
+    g_params, g_colours, g_inds = select_dropouts_full('g', g_dropouts)
+    r_params, r_colours, r_inds = select_dropouts_full('r', r_dropouts)
 
-    u_data = [u_params, u_colours]
-    g_data = [g_params, g_colours]
-    r_data = [r_params, r_colours]
+    u_data = [u_params, u_colours, u_inds]
+    g_data = [g_params, g_colours, g_inds]
+    r_data = [r_params, r_colours, r_inds]
 
     return (u_data, g_data, r_data)
 
@@ -136,9 +136,9 @@ def calculate_colours(photometry):
     return colours
 
 def get_zs(data):
-    """Get redshift samples from [sps_params, colours] object
+    """Get redshift samples from [sps_params, colours, inds] object
     """
-    params, colours = data
+    params, colours, inds = data
     redshifts = np.squeeze(params[:, :, 0])
 
     return redshifts
