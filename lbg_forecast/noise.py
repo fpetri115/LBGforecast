@@ -50,8 +50,9 @@ def select_r_dropouts(observed_catalog, depth):
 
     return rdrop.filter(['u','g','r','i','z'])
 
-def setup_catalog(noiseless_photometry, random_state=42):
-    
+def setup_catalog(noiseless_photometry):
+
+    random_state = np.random.randint(0, 1000000000)
     catalog = pd.DataFrame(noiseless_photometry, columns=['u', 'g', 'r', 'i', 'z'])
 
     errModel = LsstErrorModel(sigLim=0, absFlux=True)
@@ -103,9 +104,9 @@ def unpack_mags_all(dropout_data):
     
     return dropout_mags
 
-def get_noisy_magnitudes(sps_params, noiseless_photometry, random_state=42, udepth=25, gdepth=25.2, rdepth=25.7):
+def get_noisy_magnitudes(sps_params, noiseless_photometry, udepth=25, gdepth=25.2, rdepth=25.7):
 
-    observed_catalog = setup_catalog(noiseless_photometry, random_state)
+    observed_catalog = setup_catalog(noiseless_photometry)
 
     u_dropouts = select_u_dropouts(observed_catalog, udepth)
     g_dropouts = select_g_dropouts(observed_catalog, gdepth)

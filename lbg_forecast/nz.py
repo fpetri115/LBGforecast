@@ -44,7 +44,7 @@ def build_redshift_distribution_samples_object(u_data, g_data, r_data):
 def calculate_nzs_from_photometry(sps_params, source_photometry):
 
     #apply noise, the perform SNR, brightness and faintness cuts
-    all_dropouts_mags = noise.get_noisy_magnitudes(sps_params, source_photometry, random_state=np.random.randint(0, 100000))
+    all_dropouts_mags = noise.get_noisy_magnitudes(sps_params, source_photometry)
 
     #convert magnitudes to colours
     all_dropouts_colours = cuts.colours(all_dropouts_mags)
