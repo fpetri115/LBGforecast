@@ -40,7 +40,7 @@ class fsps_emulator:
         return np.hstack((np.asarray(photometry_all)))
 
     #forward pass for all filters
-    def mimic_photometry_gpu(self, sps_params):
+    def mimic_photometry(self, sps_params):
 
         photometry_all = []
 
@@ -63,7 +63,7 @@ class fsps_emulator:
     
 
         #forward pass for all filters
-    def mimic_photometry(self, sps_params):
+    def mimic_photometry_cpu(self, sps_params):
 
         photometry_all = []
 
