@@ -52,8 +52,8 @@ class fsps_emulator:
 
         photometry_bands = []
         for f in range(len(self._filters)):
-            emulated_magnitudes = self._models[f].magnitudes(sps_params_tensor).numpy()
-            photometry_bands.append(emulated_magnitudes)
+            emulated_magnitudes = self._models[f].magnitudes(sps_params_tensor)
+            photometry_bands.append(emulated_magnitudes.numpy())
 
         photometry_bands_array = np.asarray(photometry_bands)[:, :, 0].T
         photometry_all.append(photometry_bands_array + np.reshape(photo_corrections, (data_size, 1)))
@@ -69,7 +69,7 @@ class fsps_emulator:
         data_size = sps_params.shape[0]
         redshifts = sps_params[:, 0]
         photo_corrections = cosmo.wmap1_to_9(redshifts, path=self.path)
-        
+
         photometry_bands = []
         for f in range(len(self._filters)):
             emulated_magnitudes = self._models[f].magnitudes_(sps_params)
