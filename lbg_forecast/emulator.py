@@ -9,7 +9,7 @@ class fsps_emulator:
 
         #Define attrributes
         self._models = []
-        self._filters = ['u','g','r','i','z']
+        self._filters = ['u']#,'g','r','i','z']
         self.path = path
         print("Physical Devices:", tf.config.list_physical_devices())
 
