@@ -5,13 +5,17 @@ import lbg_forecast.cosmology as cosmo
 
 class fsps_emulator:
     
-    def __init__(self, path):
+    def __init__(self, path, rand=True):
 
         #Define attrributes
         self._models = []
         self._filters = ['u','g','r','i','z']
         self.path = path
         print("Physical Devices:", tf.config.list_physical_devices())
+
+        if(rand==True):
+            tf.random.set_seed(42)
+            np.random.seed(42)
 
         #load photulator
         for f in self._filters:
