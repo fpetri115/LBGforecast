@@ -22,7 +22,6 @@ class fsps_emulator:
             self._models.append(Photulator(restore=True, restore_filename = self.path+"/trained_models/model_0x0lsst_"+f))
 
         self.model_params = [self._models[0].W, self._models[0].b, self._models[0].alphas, self._models[0].betas]
-        print(self._models[0].W, self._models[0].b, self._models[0].alphas, self._models[0].betas)
 
     #forward pass for all filters
     def mimic_photometry_wmap1(self, sps_params, batch_size):
@@ -60,7 +59,7 @@ class fsps_emulator:
 
         photometry_bands = []
         for f in range(len(self._filters)):
-            emulated_magnitudes = self._models[f].magnitudes(sps_params_tensor)
+            emulated_magnitudes = self._models[f].diag(sps_params_tensor)
             photometry_bands.append(emulated_magnitudes.numpy())
 
         photometry_bands_array = np.asarray(photometry_bands)[:, :, 0].T
@@ -92,9 +91,6 @@ class fsps_emulator:
 
         outputs = []
         layers = [tf.divide(tf.subtract(parameters, model.parameters_shift), model.parameters_scale)]
-        print("Layers :", layers)
-        print("Param shift: ", model.parameters_shift)
-        print("Param scale: ", model.parameters_scale)
         for i in range(model.n_layers - 1):
             
             # linear network operation
@@ -105,6 +101,8 @@ class fsps_emulator:
 
         # linear output layer
         layers.append(tf.add(tf.matmul(layers[-1], model.W[-1]), model.b[-1]))
+
+        print("Layers :", layers)
             
         # rescale the output and return
         return tf.add(tf.multiply(layers[-1], model.magnitudes_scale), model.magnitudes_shift)
