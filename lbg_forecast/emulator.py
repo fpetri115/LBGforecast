@@ -96,10 +96,10 @@ class fsps_emulator:
             
             # linear network operation
             outputs.append(tf.add(tf.matmul(layers[-1], model.W[i]), model.b[i]))
-            print("outputs :", outputs[i])
+            print("outputs :", tf.matmul(layers[-1], model.W[i]))
             # non-linear activation function
             layers.append(model.activation(outputs[-1], model.alphas[i], model.betas[i]))
-            print("layers :", layers[i])
+            #print("layers :", layers[i])
 
         # linear output layer
         layers.append(tf.add(tf.matmul(layers[-1], model.W[-1]), model.b[-1]))
