@@ -88,7 +88,7 @@ class fsps_emulator:
 
         return np.hstack((np.asarray(photometry_all)))
     
-    def diag(parameters, model):
+    def diag(self, parameters, model):
 
         outputs = []
         layers = [tf.divide(tf.subtract(parameters, model.parameters_shift), model.parameters_scale)]
