@@ -59,7 +59,7 @@ class fsps_emulator:
 
         photometry_bands = []
         for f in range(len(self._filters)):
-            emulated_magnitudes = self._models[f].diag(sps_params_tensor)
+            emulated_magnitudes = self._models[f].call(sps_params_tensor)
             photometry_bands.append(emulated_magnitudes.numpy())
 
         photometry_bands_array = np.asarray(photometry_bands)[:, :, 0].T
