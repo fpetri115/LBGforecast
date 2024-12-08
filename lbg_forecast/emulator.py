@@ -13,6 +13,8 @@ class fsps_emulator:
         self.path = path
         print("Physical Devices:", tf.config.list_physical_devices())
 
+        tf.config.experimental.enable_tensor_float_32_execution(False)
+
         if(rand==True):
             tf.random.set_seed(42)
             np.random.seed(42)
