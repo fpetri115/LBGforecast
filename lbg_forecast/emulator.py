@@ -9,7 +9,7 @@ class fsps_emulator:
 
         #Define attrributes
         self._models = []
-        self._filters = ['u']#,'g','r','i','z']
+        self._filters = ['u','g','r','i','z']
         self.path = path
         print("Physical Devices:", tf.config.list_physical_devices())
 
@@ -22,8 +22,6 @@ class fsps_emulator:
         #load photulator
         for f in self._filters:
             self._models.append(Photulator(restore=True, restore_filename = self.path+"/trained_models/model_0x0lsst_"+f))
-
-        self.model_params = [self._models[0].W, self._models[0].b, self._models[0].alphas, self._models[0].betas]
 
     #forward pass for all filters
     def mimic_photometry_wmap1(self, sps_params, batch_size):
@@ -57,7 +55,6 @@ class fsps_emulator:
         photo_corrections = cosmo.wmap1_to_9(redshifts, path=self.path)
 
         sps_params_tensor = tf.cast(tf.convert_to_tensor(sps_params), tf.float32)
-        self.diag(sps_params_tensor, self._models[0])
 
         photometry_bands = []
         for f in range(len(self._filters)):
@@ -88,32 +85,3 @@ class fsps_emulator:
         photometry_all.append(photometry_bands_array + np.reshape(photo_corrections, (data_size, 1)))
 
         return np.hstack((np.asarray(photometry_all)))
-    
-    def diag(self, parameters, model):
-
-        outputs = []
-        layers = [tf.divide(tf.subtract(parameters, model.parameters_shift), model.parameters_scale)]
-        #no diff
-        for i in range(model.n_layers - 1):
-            
-            # linear network operation
-            outputs.append(tf.add(tf.matmul(layers[-1], model.W[i]), model.b[i]))
-        
-            if(i == 0):
-                print("outputs i=0 :", tf.matmul(layers[-1], model.W[i]))
-            
-            if(i == model.n_layers - 2):
-                print("outputs i=-1 :", tf.matmul(layers[-1], model.W[i]))
-            
-            # non-linear activation function
-            layers.append(model.activation(outputs[-1], model.alphas[i], model.betas[i]))
-            #print("layers :", layers[i])
-
-        # linear output layer
-        layers.append(tf.add(tf.matmul(layers[-1], model.W[-1]), model.b[-1]))
-
-        #print("Layers :", layers)
-        #diff here
-            
-        # rescale the output and return
-        return tf.add(tf.multiply(layers[-1], model.magnitudes_scale), model.magnitudes_shift)
