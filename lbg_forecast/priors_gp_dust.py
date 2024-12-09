@@ -100,7 +100,7 @@ class DustPrior():
         delta_dust2 = mean_dust2_sample - mean_dust2
         delta = np.interp(self.recent_sfrs, self.dust2_grid, delta_dust2)
 
-        f = 0#np.random.uniform(0, 1)
+        f = 1#np.random.uniform(0, 1)
         sys_shift = self.interpolate_models(f) - mean_dust2
         sys_shift = np.interp(self.recent_sfrs, self.dust2_grid, sys_shift)
 
