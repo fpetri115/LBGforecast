@@ -168,7 +168,7 @@ class DustPrior():
         return recent_sfrs, dust2, dust_index, dust1
     
     def draw_popcosmos_samples(self, nsamples):
-
+        #names = ['log10M', 'log10Z'] + ['logsfr_ratio' + str(i+1) for i in range(6)] + ['dust2', 'dust_index', 'dust1_fraction', 'fagn', 'agntau', 'gaslog10Z', 'gas_logu', 'z']
         recent_sfrs, dust2, dust_index, dust1 = self.get_pop_cosmos_samples(nsamples)
 
         indexes = np.random.uniform(0, nsamples, nsamples)
