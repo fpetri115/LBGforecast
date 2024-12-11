@@ -72,4 +72,4 @@ def expe_logsfr_ratios_modified(csfrd_spline, this_z, this_m, logsfr_ratio_mini,
     if(alpha):
         return logsfr_ratios_shifted*0.0
     else:
-        return logsfr_ratios_shifted*0.0
+        return logsfr_ratios_shifted
