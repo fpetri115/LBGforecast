@@ -49,7 +49,7 @@ if(rank == 0):
     print("Begin Sampling ... ", flush=True)
 
 for n in range(nrealisations):
-    sps_params = pop.generate_sps_parameters(ngals, mass_function_prior, dust_prior, csfrd_prior)
+    sps_params = pop.generate_sps_parameters(ngals, mass_function_prior, dust_prior, csfrd_prior, uniform_redshift_mass=False)
     sps_buf[n, :, :] = sps_params
     if(rank == 0):
         print("Realisation: ", n+1, flush=True)
