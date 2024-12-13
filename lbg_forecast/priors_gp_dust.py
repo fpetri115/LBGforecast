@@ -132,7 +132,7 @@ class DustPrior():
         dust2 = np.interp(sfrs, sorted_sfrs, sorted_dust2)
         delta = np.interp(sfrs, sorted_sfrs, sorted_delta)
 
-        return np.clip(abs(dust2 + delta), 0.0, 4.0)
+        return np.clip(abs(dust2 + delta*0), 0.0, 4.0)
 
     def sample_dust_index(self, dust2s):
 
@@ -168,7 +168,7 @@ class DustPrior():
         dust_index = np.interp(dust2s, sorted_dust2, sorted_dust_index)
         delta = np.interp(dust2s, sorted_dust2, sorted_delta)
 
-        return np.clip(dust_index + delta, -2.2, 0.4)
+        return np.clip(dust_index + delta*0, -2.2, 0.4)
     
     def sample_dust1(self, dust2s):
 
@@ -204,7 +204,7 @@ class DustPrior():
         dust1 = np.interp(dust2s, sorted_dust2, sorted_dust1)
         delta = np.interp(dust2s, sorted_dust2, sorted_delta)
 
-        return np.clip(dust1 + delta, 0.0, 4.0)
+        return np.clip(dust1 + delta*0, 0.0, 4.0)
     
     def process_training_data_dust2(self):
 

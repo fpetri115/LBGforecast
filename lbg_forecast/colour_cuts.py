@@ -142,3 +142,10 @@ def get_zs(data):
     redshifts = np.squeeze(params[:, :, 0])
 
     return redshifts
+
+def get_colours(data):
+    """Get redshift samples from [sps_params, colours, inds] object
+    """
+    params, colours, inds = data
+    return colours
+

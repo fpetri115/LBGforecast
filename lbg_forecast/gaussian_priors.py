@@ -11,7 +11,7 @@ def sample_gaussian_prior_parameters():
                             [5, 150]])    #agn_tau  
 
     sig_bounds = np.array([[0.01, 3.0],   #logzsol
-                            [0.1, 0.5],   #igm_factor 
+                            [0.01, 0.5],   #igm_factor 
                             [0.001, 3.0],  #gas_logu
                             [0.01, 2.5],  #gas_logz
                             [0.01, 6.0],  #log10(fagn)
