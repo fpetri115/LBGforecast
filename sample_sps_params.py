@@ -5,8 +5,8 @@ import lbg_forecast.priors_gp_massfunc as gpmf
 import lbg_forecast.priors_gp_dust as gpdp
 import lbg_forecast.dust_priors as dpr
 import lbg_forecast.priors_gp_csfrd as gpsf
+import joblib
 from mpi4py import MPI
-
 NSPS_PARAMS = 17
 
 #initialise MPI
@@ -33,6 +33,9 @@ else:
     dust_prior = None
     csfrd_prior = None
 
+#setup sfr emulator 
+sfr_emulator = joblib.load(path+'sfr_emulator/sfr_emulator.pkl')
+
 #broadcast prior information to processes
 mass_function_prior = comm.bcast(mass_function_prior, root=0)
 dust_prior = comm.bcast(dust_prior, root=0)
@@ -49,7 +52,7 @@ if(rank == 0):
     print("Begin Sampling ... ", flush=True)
 
 for n in range(nrealisations):
-    sps_params = pop.generate_sps_parameters(ngals, mass_function_prior, dust_prior, csfrd_prior, uniform_redshift_mass=False)
+    sps_params = pop.generate_sps_parameters(ngals, mass_function_prior, dust_prior, csfrd_prior, sfr_emulator=sfr_emulator, uniform_redshift_mass=False)
     sps_buf[n, :, :] = sps_params
     if(rank == 0):
         print("Realisation: ", n+1, flush=True)
