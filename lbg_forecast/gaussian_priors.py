@@ -1,7 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-def sample_gaussian_prior_parameters():
+def sample_gaussian_prior_parameters(mean):
         
     mu_bounds = np.array([[-2.5, 0.5],    #logzsol
                             [0.5, 1.5],   #igm_factor 
@@ -21,9 +21,16 @@ def sample_gaussian_prior_parameters():
     sigma = []
 
     for bounds in mu_bounds:
-        mu.append(np.random.uniform(bounds[0], bounds[1]))
+        if(mean==1):
+            mu.append((bounds[0] + bounds[1])/2)
+        if(mean==0):
+            mu.append(np.random.uniform(bounds[0], bounds[1]))
+    
     for bounds in sig_bounds:
-        sigma.append(np.random.uniform(bounds[0], bounds[1]))
+        if(mean==1):
+            sigma.append((bounds[0] + bounds[1])/2)
+        if(mean==0):
+            sigma.append(np.random.uniform(bounds[0], bounds[1]))
 
     return [np.array(mu), np.array(sigma)]
 

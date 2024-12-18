@@ -36,10 +36,10 @@ class CSFRDPrior():
         return self.prior.sample().numpy() + mean_obs_behroozi(self.test_redshift.numpy(), log=True, path=self.path) - systematic_shift(self.test_redshift.numpy(), path=self.path)
     
     def get_prior_mean(self):
-        return self.prior.mean.numpy() + mean_obs_behroozi(self.test_redshift.numpy(), log=True, path=self.path)
+        return self.prior.mean.detach().numpy() + mean_obs_behroozi(self.test_redshift.numpy(), log=True, path=self.path)
     
     def get_prior_mean_corrected(self):
-        return self.prior.mean.numpy() + mean_obs_behroozi(self.test_redshift.numpy(), log=True, path=self.path) - systematic_shift(self.test_redshift.numpy(), path=self.path)
+        return self.prior.mean.detach().numpy() + mean_obs_behroozi(self.test_redshift.numpy(), log=True, path=self.path) - systematic_shift(self.test_redshift.numpy(), path=self.path)
     
     def get_prior_confidence_region(self):
         lower, upper = self.prior.confidence_region()

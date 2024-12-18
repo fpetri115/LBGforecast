@@ -11,12 +11,12 @@ from scipy.stats import t
 import lbg_forecast.modified_prospector_beta as mpb
 
 
-def generate_sps_parameters(nsamples, mass_function_prior, dust_prior, csfrd_prior, sfr_emulator, uniform_redshift_mass=False, uniform_logf=False):
+def generate_sps_parameters(nsamples, mass_function_prior, dust_prior, csfrd_prior, sfr_emulator, mean, uniform_redshift_mass=False, uniform_logf=False):
     """Sample sps parameters given some prior parameters.
     """
 
     #samples gaussian priors
-    mu, sigma = gpr.sample_gaussian_prior_parameters()
+    mu, sigma = gpr.sample_gaussian_prior_parameters(mean)
     logzsol_mu, igm_factor_mu, gas_logu_mu, gas_logz_mu, fagn_mu, agn_tau_mu = mu
     logzsol_sigma, igm_factor_sigma, gas_logu_sigma, gas_logz_sigma, fagn_sigma, agn_tau_sigma = sigma
 
@@ -68,7 +68,7 @@ def generate_sps_parameters(nsamples, mass_function_prior, dust_prior, csfrd_pri
     if(uniform_logf):
         log_sfr_ratios = np.random.uniform(-5.0, 5.0, (nsamples, 6))
     else:
-        log_sfr_ratios = modified_prospector_beta_sfh_prior(csfrd_prior, redshift, mass, 0.3, alpha=False)
+        log_sfr_ratios = modified_prospector_beta_sfh_prior(csfrd_prior, redshift, mass, 0.3, mean, alpha=False)
     
     #dust params
     #recent_sfrs = sfr_emulator.predict(np.hstack((np.reshape(redshift, (nsamples, 1)), np.reshape(mass, (nsamples, 1)), log_sfr_ratios)))
@@ -100,7 +100,7 @@ def truncated_normal(mu, sigma, min, max, samples):
     a, b = (min - mu) / sigma, (max - mu) / sigma
     return truncnorm.rvs(a, b, loc=mu, scale=sigma, size=samples)
 
-def modified_prospector_beta_sfh_prior(csfrd_prior, redshift, logmass, sigma, alpha):
+def modified_prospector_beta_sfh_prior(csfrd_prior, redshift, logmass, sigma, mean, alpha):
     """Each call of this function will sample a different expected csfrd. Based
     off prospector-beta prior (Wang et al. 2023)
 
@@ -109,7 +109,11 @@ def modified_prospector_beta_sfh_prior(csfrd_prior, redshift, logmass, sigma, al
     
     #initialise
     logsfrratios_samples = np.empty((redshift.shape[0], 6))
-    csfrd_sample = 10**(csfrd_prior.sample_prior_corrected())
+    if(mean==0):
+        csfrd_sample = 10**(csfrd_prior.sample_prior_corrected())
+    if(mean==1):
+        csfrd_sample = 10**(csfrd_prior.get_prior_mean_corrected())
+    
     csfrd_spline = mpb.get_csfrd_spline(csfrd_prior.lookback_times, csfrd_sample)[1]
 
     indx = 0

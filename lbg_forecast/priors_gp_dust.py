@@ -22,9 +22,10 @@ class GPModel(gpytorch.models.ExactGP):
             return gpytorch.distributions.MultivariateNormal(mean_x, covar_x)
 
 class DustPrior():
-    def __init__(self, path):
+    def __init__(self, path, mean):
         
         self.path = path
+        self.mean = mean
         print("Loading Models")
         self.preloaded_popcosmos_samples = np.load(self.path+"/dust_data/popcosmos_parameters_rmag_lt_25.npy")
         self.preloaded_recent_sfrs = np.load(self.path+"/dust_data/popcosmos_recentsfrs.npy")
@@ -114,7 +115,7 @@ class DustPrior():
         dust2 = np.interp(sfrs, sorted_sfrs, sorted_dust2)
         delta = np.interp(sfrs, sorted_sfrs, sorted_delta)
 
-        return np.clip(abs(dust2 + delta ), 0.0, 4.0)
+        return np.clip(abs(dust2 + delta*(~self.mean)), 0.0, 4.0)
     
     def sample_dust2_nag(self, sfrs):
         
@@ -150,7 +151,7 @@ class DustPrior():
         dust_index = np.interp(dust2s, sorted_dust2, sorted_dust_index)
         delta = np.interp(dust2s, sorted_dust2, sorted_delta)
 
-        return np.clip(dust_index + delta, -2.2, 0.4)
+        return np.clip(dust_index + delta*(~self.mean), -2.2, 0.4)
     
     def sample_dust_index_nag(self, dust2s):
 
@@ -186,7 +187,7 @@ class DustPrior():
         dust1 = np.interp(dust2s, sorted_dust2, sorted_dust1)
         delta = np.interp(dust2s, sorted_dust2, sorted_delta)
 
-        return np.clip(dust1 + delta, 0.0, 4.0)
+        return np.clip(dust1 + delta*(~self.mean), 0.0, 4.0)
     
     def sample_dust1_nag(self, dust2s):
 

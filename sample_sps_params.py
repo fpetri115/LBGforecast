@@ -21,13 +21,22 @@ ngals = int(sys.argv[1])
 nrealisations = int(sys.argv[2])
 run = sys.argv[3]
 path = sys.argv[4]
+mean = int(sys.argv[5])
 
 #load prior information
 if(rank == 0):
     print("Loading Priors ... ", flush=True)
-    mass_function_prior = gpmf.MassFunctionPrior(path=path[:-1])
-    dust_prior = gpdp.DustPrior(path=path[:-1])
-    csfrd_prior = gpsf.CSFRDPrior(path=path[:-1])
+    if(mean==1):
+        mass_function_prior = gpmf.MassFunctionPrior(path=path[:-1], mean=True)
+        dust_prior = gpdp.DustPrior(path=path[:-1], mean=mean)
+        csfrd_prior = gpsf.CSFRDPrior(path=path[:-1])
+    elif(mean==0):
+        mass_function_prior = gpmf.MassFunctionPrior(path=path[:-1], mean=False)
+        dust_prior = gpdp.DustPrior(path=path[:-1], mean=mean)
+        csfrd_prior = gpsf.CSFRDPrior(path=path[:-1])
+    else:
+        print(mean, type(mean))
+        raise Exception("mean argument invalid")
 else:
     mass_function_prior = None
     dust_prior = None
@@ -52,7 +61,7 @@ if(rank == 0):
     print("Begin Sampling ... ", flush=True)
 
 for n in range(nrealisations):
-    sps_params = pop.generate_sps_parameters(ngals, mass_function_prior, dust_prior, csfrd_prior, sfr_emulator=sfr_emulator, uniform_redshift_mass=False)
+    sps_params = pop.generate_sps_parameters(ngals, mass_function_prior, dust_prior, csfrd_prior, sfr_emulator=sfr_emulator, mean=mean, uniform_redshift_mass=False)
     sps_buf[n, :, :] = sps_params
     if(rank == 0):
         print("Realisation: ", n+1, flush=True)

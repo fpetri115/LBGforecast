@@ -24,9 +24,10 @@ class GPModel(gpytorch.models.ExactGP):
 
 class MassFunctionPrior():
 
-    def __init__(self, path):
+    def __init__(self, path, mean):
 
         self.path = path
+        self.mean = mean
         self.param_names = ["$\mathrm{log}_{10}\phi_{1}^{*}$", "$\mathrm{log}_{10}\phi_{2}^{*}$", "$\\alpha_{1}$", "$\\alpha_{2}$", "$\mathrm{log}_{10}\mathcal{M}_{*}$"]
         self.redshift_grid = np.linspace(0, 7, 100)
         self.volume_grid = self.volume_elements(self.redshift_grid)
@@ -94,7 +95,11 @@ class MassFunctionPrior():
         plogm = np.random.uniform(9.9, 10.1, (nwalkers, 1))
         p0 = np.hstack((pz, plogm))
         prior_bounds=[0.0,7.0,7,13]
-        sparams = self.sample_prior()
+
+        if(self.mean):
+            sparams = self.sample_prior_mean()
+        else:
+            sparams = self.sample_prior()
 
         sampler = emcee.EnsembleSampler(nwalkers, ndim, self.log_n, args=[sparams, prior_bounds])
 
@@ -183,16 +188,33 @@ class MassFunctionPrior():
     
     def sample_prior(self):
         return[self.sample_phi1(), self.sample_phi2(), self.sample_alpha1(), self.sample_alpha2(), self.sample_logm()]
+    def sample_prior_mean(self):
+        return[self.sample_phi1_mean(), self.sample_phi2_mean(), self.sample_alpha1_mean(), self.sample_alpha2_mean(), self.sample_logm_mean()]
+    
     def sample_phi1(self):
         return self.prior_phi1.sample().numpy()
+    def sample_phi1_mean(self):
+        return self.prior_phi1.mean.detach().numpy()
+    
     def sample_phi2(self):
         return self.prior_phi2.sample().numpy()
+    def sample_phi2_mean(self):
+        return self.prior_phi2.mean.detach().numpy()
+    
     def sample_alpha1(self):
         return self.prior_alpha1.sample().numpy()
+    def sample_alpha1_mean(self):
+        return self.prior_alpha1.mean.detach().numpy()
+    
     def sample_alpha2(self):
         return self.prior_alpha2.sample().numpy()
+    def sample_alpha2_mean(self):
+        return self.prior_alpha2.mean.detach().numpy()
+    
     def sample_logm(self):
         return self.prior_logm.sample().numpy()
+    def sample_logm_mean(self):
+        return self.prior_logm.mean.detach().numpy()
     
     def plot_prior_sample(self, prior_sample):
 
