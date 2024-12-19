@@ -35,3 +35,4 @@ Gives redshift samples for u-, g- and r-dropouts
 
 ### 4. PCA Approximation
 ### 5. Forecast Cosmological Constraints
+Marginalise over redshift distribution uncertainties
