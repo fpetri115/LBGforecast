@@ -6,9 +6,10 @@ Forecasts constraints on cosmological parameters for LSST Lyman-Break Galaxies (
 
 # Installation
 
--Install FSPS
--Install -
--Install branch of speculator
+1. Install FSPS
+2. Install prerequisites 
+3. Install Speculator
+4. git clone repo
 
 # Performing the Forecast
 ### 1. Sample SPS Parameters from Priors
