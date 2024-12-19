@@ -24,7 +24,7 @@ class fsps_emulator:
             self._models.append(Photulator(restore=True, restore_filename = self.path+"/trained_models/model_0x0lsst_"+f))
 
     #forward pass for all filters
-    def mimic_photometry_wmap1(self, sps_params, batch_size):
+    def mimic_photometry_wmap1_old(self, sps_params, batch_size):
 
         photometry_all = []
 
@@ -53,6 +53,27 @@ class fsps_emulator:
         data_size = sps_params.shape[0]
         redshifts = sps_params[:, 0]
         photo_corrections = cosmo.wmap1_to_9(redshifts, path=self.path)
+
+        sps_params_tensor = tf.cast(tf.convert_to_tensor(sps_params), tf.float32)
+
+        photometry_bands = []
+        for f in range(len(self._filters)):
+            emulated_magnitudes = self._models[f].call(sps_params_tensor)
+            photometry_bands.append(emulated_magnitudes.numpy())
+
+        photometry_bands_array = np.asarray(photometry_bands)[:, :, 0].T
+        photometry_all.append(photometry_bands_array + np.reshape(photo_corrections, (data_size, 1)))
+
+        return np.hstack((np.asarray(photometry_all)))
+    
+        #forward pass for all filters
+    def mimic_photometry_wmap1(self, sps_params):
+
+        photometry_all = []
+
+        data_size = sps_params.shape[0]
+        redshifts = sps_params[:, 0]
+        photo_corrections = cosmo.wmap1_to_9(redshifts, path=self.path)*0
 
         sps_params_tensor = tf.cast(tf.convert_to_tensor(sps_params), tf.float32)
 
