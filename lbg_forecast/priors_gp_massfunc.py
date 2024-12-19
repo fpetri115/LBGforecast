@@ -488,13 +488,13 @@ def get_phi2_data(plotting=False):
 
 def get_alpha1_data(plotting=False):
 
-    weaver_alpha_low_mass_norm_val = np.array([-1.42, -1.39, -1.32, -1.33, -1.48, -1.46, -1.46])#, -1.46, -1.46, -1.46, -1.46, -1.46, -1.46])
-    weaver_alpha_low_mass_norm_errl = np.array([0.06, 0.07, 0.06, 0.05, 0.09, 0.06, 0.1])#, 1e-6, 1e-6, 1e-6, 1e-6, 1e-6, 1e-6])
-    weaver_alpha_low_mass_norm_errh = np.array([0.05, 0.05, 0.04, 0.05, 0.07, 0.05, 0.1])#, 1e-6, 1e-6, 1e-6, 1e-6, 1e-6, 1e-6])
+    weaver_alpha_low_mass_norm_val = np.array([-1.42, -1.39, -1.32, -1.33, -1.48, -1.46])#, -1.46, -1.46, -1.46, -1.46, -1.46, -1.46])
+    weaver_alpha_low_mass_norm_errl = np.array([0.06, 0.07, 0.06, 0.05, 0.09, 0.06])#, 1e-6, 1e-6, 1e-6, 1e-6, 1e-6, 1e-6])
+    weaver_alpha_low_mass_norm_errh = np.array([0.05, 0.05, 0.04, 0.05, 0.07, 0.05])#, 1e-6, 1e-6, 1e-6, 1e-6, 1e-6, 1e-6])
     weaver_alpha_low_mass_norm_errs = np.maximum(weaver_alpha_low_mass_norm_errl, weaver_alpha_low_mass_norm_errh)
 
-    weaver_redshift_lower_bin_edge = np.array([0.2, 0.5, 0.8, 1.1, 1.5, 2.0, 6.0])#, 2.5, 3.0, 3.5, 4.5, 5.5, 6.5])
-    weaver_redshift_upper_bin_edge = np.array([0.5, 0.8, 1.1, 1.5, 2.0, 2.5, 7.0])#, 3.0, 3.5, 4.5, 5.5, 6.5, 7.5])
+    weaver_redshift_lower_bin_edge = np.array([0.2, 0.5, 0.8, 1.1, 1.5, 2.0])#, 2.5, 3.0, 3.5, 4.5, 5.5, 6.5])
+    weaver_redshift_upper_bin_edge = np.array([0.5, 0.8, 1.1, 1.5, 2.0, 2.5])#, 3.0, 3.5, 4.5, 5.5, 6.5, 7.5])
     weaver_redshift_midpoint = (weaver_redshift_lower_bin_edge + weaver_redshift_upper_bin_edge)/2
 
     cont_alpha_low_mass_norm_val = np.array([-1.48, -1.48, -1.48])
