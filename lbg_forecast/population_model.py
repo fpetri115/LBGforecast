@@ -11,7 +11,7 @@ from scipy.stats import t
 import lbg_forecast.modified_prospector_beta as mpb
 
 
-def generate_sps_parameters(nsamples, mass_function_prior, dust_prior, csfrd_prior, sfr_emulator, mean, uniform_redshift_mass=False, uniform_logf=False):
+def generate_sps_parameters(nsamples, mass_function_prior, dust_prior, csfrd_prior, mean, uniform_redshift_mass=False, uniform_logf=False):
     """Sample sps parameters given some prior parameters.
     """
 
