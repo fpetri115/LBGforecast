@@ -56,6 +56,8 @@ recv_buf = None
 if(rank == 0):
     recv_buf = np.zeros((nrealisations * size, ngals, NSPS_PARAMS))
 
+comm.barrier()
+
 #sample SPS parameters
 if(rank == 0):
     print("Begin Sampling ... ", flush=True)
@@ -68,9 +70,14 @@ for n in range(nrealisations):
 
 if(rank == 0):
     print("Waiting For Other Processes ... ", flush=True)
+comm.barrier()
 
 #gather arrays
 comm.Gather(sps_buf, recv_buf, root=0)
+
+if(rank == 0):
+    print("Gather Finished ... ", flush=True)
+comm.barrier()
 
 #save
 if(rank == 0):
