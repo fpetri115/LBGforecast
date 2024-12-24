@@ -1,13 +1,11 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import torch
-import torchvision
 import gpytorch
 import lbg_forecast.cosmology as cosmo
 import emcee
-from getdist import plots, MCSamples
-from uncertainties import ufloat
-from uncertainties.umath import log
+import lbg_forecast.utils as utils
+
 from uncertainties import unumpy
 
 class GPModel(gpytorch.models.ExactGP):
@@ -28,9 +26,27 @@ class MassFunctionPrior():
 
         self.path = path
         self.mean = mean
+
+        #cell sizes
+        self.dz = 0.1
+        self.dlogm = 0.1
+        #grid inside cell, must fit neatly into above
+        self.dz_cell = self.dz/80
+        self.dlogm_cell = self.dlogm/80
+        print("cell step: ", self.dz_cell, self.dlogm_cell)
+
+        #grids
+        self.start_z = 0
+        self.end_z = 7
+        self.z_grid = np.linspace(self.start_z, self.end_z, int((self.end_z-self.start_z)/self.dz))
+
+        self.start_logm = 7
+        self.end_logm = 13
+        self.logm_grid = np.linspace(self.start_logm, self.end_logm, int((self.end_logm-self.start_logm)/self.dlogm))
+
         self.param_names = ["$\mathrm{log}_{10}\phi_{1}^{*}$", "$\mathrm{log}_{10}\phi_{2}^{*}$", "$\\alpha_{1}$", "$\\alpha_{2}$", "$\mathrm{log}_{10}\mathcal{M}_{*}$"]
-        self.redshift_grid = np.linspace(0, 7, 100)
-        self.volume_grid = self.volume_elements(self.redshift_grid)
+        self.redshift_grid = np.load(path+"/redshift_grid.npy")#np.arange(0, 7, 0.000001)
+        self.volume_grid = np.load(path+"/volume_element_grid.npy")#self.volume_elements(self.redshift_grid)
 
         state_dict_phi1 = torch.load(self.path+'/gp_models/phi1.pth', weights_only=True)
         state_dict_phi2 = torch.load(self.path+'/gp_models/phi2.pth', weights_only=True)
@@ -81,7 +97,84 @@ class MassFunctionPrior():
         self.train_yerr = [sorted_train_logphi1_errs, sorted_train_logphi2_errs, sorted_train_alpha1_errs, sorted_train_alpha2_errs, sorted_train_logm_errs]
         self.test_x = [self.phi1_test_z, self.phi2_test_z, self.alpha1_test_z, self.alpha2_test_z, self.logm_test_z]
 
-    def sample_log_n(self, nsamples = 1000):
+    def number_of_galaxies_in_cell(self, z, logm, sparams, logm_cell_length, z_cell_length):
+        """
+        Finds number of galaxies in small grid cell.
+        """
+
+        start_logm=logm
+        end_logm=logm+logm_cell_length
+        step_logm=int((end_logm-start_logm)/self.dlogm_cell)
+
+        start_z=z
+        end_z=z+z_cell_length
+        step_z=int((end_z-start_z)/self.dz_cell)
+
+        logm_grid=np.linspace(start_logm, end_logm, step_logm)
+        z_grid=np.linspace(start_z, end_z, step_z)
+        
+        N_gal=0
+        for z in z_grid:
+            phi_z_m = self.mass_function(z, logm_grid, sparams)
+            n_gal_z = np.trapz(phi_z_m, logm_grid)
+            N_gal += n_gal_z*self.volume_element(z, self.dz_cell)
+
+        return N_gal
+
+    def number_distribution_of_galaxies(self, sparams):
+        """
+        Collects galaxies found in cells by number_of_galaxies_in_cell() across
+        entire prior range. This gives the distrubtion of galaxies in logm and z.
+        """
+
+        N_gal = np.empty((len(self.z_grid), len(self.logm_grid)))
+
+        for i in range(0, len(self.z_grid)):
+            for j in range(0, len(self.logm_grid)):
+                N_gal[i, j] = self.number_of_galaxies_in_cell(self.z_grid[i], self.logm_grid[j], sparams, logm_cell_length=self.dlogm/2, z_cell_length=self.dz/2)
+        
+        return N_gal
+    
+    def calculate_number_density_lsst(self):
+        return np.sum(self.number_distribution_of_galaxies(self.sample_prior()))*utils.LSST_AREA_FRACTION/(utils.LSST_AREA_DEG2*utils.DEG2_TO_ARCMIN2)
+    def calculate_number_density_lsst_mean(self):
+        return np.sum(self.number_distribution_of_galaxies(self.sample_prior_mean()))*utils.LSST_AREA_FRACTION/(utils.LSST_AREA_DEG2*utils.DEG2_TO_ARCMIN2)
+
+    def calculate_galaxy_pdf(self, sparams):
+        """Calculate P(z, logm)"""
+        N_z_logm = self.number_distribution_of_galaxies(sparams)
+        p_z_logm = N_z_logm/np.sum(N_z_logm)
+        return p_z_logm
+    
+    def logpdf(self, x, p_z_logm, prior_bounds=[0.0,7.0,7.0,13]):
+        """log10(P(z, logm))"""
+
+        zs, logms = x
+
+        if((np.atleast_1d(zs) < prior_bounds[0]).any() or (np.atleast_1d(zs) > prior_bounds[1]).any()):
+            return -np.inf
+        
+        if((np.atleast_1d(logms) < prior_bounds[2]).any() or (np.atleast_1d(logms) > prior_bounds[3]).any()):
+            return -np.inf
+
+        zs = np.reshape(zs, (np.atleast_1d(zs).shape[0], 1))
+        logms = np.reshape(logms, (np.atleast_1d(logms).shape[0], 1))
+
+        z_grid = np.tile(self.z_grid, (zs.shape[0], 1))
+        logm_grid = np.tile(self.logm_grid, (logms.shape[0], 1))
+
+        z_index = np.abs(z_grid-zs).argmin(axis=1)
+        logm_index = np.abs(logm_grid-logms).argmin(axis=1)
+
+        p = p_z_logm[z_index, logm_index]
+
+        if(p<1e-100):
+            return -np.inf
+        else:
+            log_p_z_logm = np.log10(p)
+            return log_p_z_logm
+
+    def sample_logpdf(self, nsamples):
 
         burnin=1000
         nwalkers=100
@@ -101,20 +194,22 @@ class MassFunctionPrior():
         else:
             sparams = self.sample_prior()
 
-        sampler = emcee.EnsembleSampler(nwalkers, ndim, self.log_n, args=[sparams, prior_bounds])
+        print("Calculating Galaxy PDF ... ")
+        pdf = self.calculate_galaxy_pdf(sparams)
 
+        print("MCMC Sampling ... ")
+        sampler = emcee.EnsembleSampler(nwalkers, ndim, self.logpdf, args=[pdf, prior_bounds])
         state = sampler.run_mcmc(p0, 100)
         sampler.reset()
 
         sampler.run_mcmc(state, steps)
 
-
+        print("MCMC Sampling Complete.")
         samples = sampler.get_chain(flat=True)
         redshift_samples = samples[:, 0]
         mass_samples = samples[:, 1]
 
         return redshift_samples[burnin:nsamples+burnin], mass_samples[burnin:nsamples+burnin]
-
 
     def mass_function(self, z, logm, sparams):
         """sparams=self.sample_prior()
@@ -130,53 +225,6 @@ class MassFunctionPrior():
         mfunc = np.where(np.atleast_1d(z)>3, self.schechter_function(logm, logphi1, logm_star, alpha1), self.double_schechter_function(logm, logphi1, logphi2, alpha1, alpha2, logm_star))
 
         return mfunc
-    
-    def number_density(self, logm_grid, phi):
-        """gives number density at z phi is calculated at, over logm"""
-        n_phi = np.trapz(phi, logm_grid)
-        return n_phi
-    def number(self, z, n_phi):
-        """gives number of galaxies in small volume at z. z must be
-        the same as one calculated for n_phi"""
-        volume = np.interp(z, self.redshift_grid, self.volume_grid)
-        return n_phi*volume
-    def total_number(self, sparams):
-
-        logm_grid = np.linspace(7, 13, 100)
-        zgrid = np.linspace(0, 7, 100)
-        n_tot = 0
-        for z in zgrid:
-            phi = self.mass_function(z, logm_grid, sparams)
-            n_phi = self.number_density(logm_grid, phi)
-            ngalaxies = self.number(z, n_phi)
-            n_tot += ngalaxies
-        
-        return n_tot
-    def log_n(self, x, sparams, prior_bounds=[0.0,7.0,7.0,13]):
-
-        z, logm = x
-
-        if(z < prior_bounds[0] or z > prior_bounds[1]):
-            return -np.inf
-        
-        if(logm < prior_bounds[2] or logm > prior_bounds[3]):
-            return -np.inf
-        
-        dlogm = 0.1
-        logm_grid = np.linspace(logm, logm+dlogm, 10)
-        phi = self.mass_function(z, logm_grid, sparams)#per volume, per logmass
-        n_phi = self.number_density(logm_grid, phi)
-        ngalaxies = self.number(z, n_phi)
-
-        return np.log(ngalaxies)
-
-    def volume_elements(self, z_grid):
-        dz = z_grid[-1]-z_grid[-2]
-        volumes = []
-        for z in z_grid:
-            volumes.append(self.volume_element(z, dz))
-
-        return np.array(volumes)
 
     def volume_element(self, z, dz):
         return cosmo.get_cosmology().comoving_volume(z+dz).value - cosmo.get_cosmology().comoving_volume(z).value

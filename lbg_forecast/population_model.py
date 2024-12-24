@@ -24,7 +24,7 @@ def generate_sps_parameters(nsamples, mass_function_prior, dust_prior, csfrd_pri
         z_samples = np.random.uniform(0.0, 7.0, nsamples)
         m_samples = np.random.uniform(7, 13, nsamples)
     else:
-        z_samples, m_samples = mass_function_prior.sample_log_n(nsamples)
+        z_samples, m_samples = mass_function_prior.sample_logpdf(nsamples)
 
     sps_parameters = []
 
