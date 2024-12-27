@@ -64,6 +64,8 @@ def generate_sps_parameters(nsamples, mass_function_prior, dust_prior, csfrd_pri
     #Total stellar mass formed in solar masses - mass
     mass = m_samples
 
+    print("Sampling SFHs ...")
+
     #Log SFR ratios
     if(uniform_logf):
         log_sfr_ratios = np.random.uniform(-5.0, 5.0, (nsamples, 6))
@@ -72,8 +74,11 @@ def generate_sps_parameters(nsamples, mass_function_prior, dust_prior, csfrd_pri
     
     #dust params
     #recent_sfrs = sfr_emulator.predict(np.hstack((np.reshape(redshift, (nsamples, 1)), np.reshape(mass, (nsamples, 1)), log_sfr_ratios)))
-    recent_sfrs = np.log10(sfh.calculate_recent_sfr(redshift, 10**mass, log_sfr_ratios))
-    dust2, dust_index, dust1 = dust_prior.sample_dust_model(recent_sfrs)
+    #recent_sfrs = np.log10(sfh.calculate_recent_sfr(redshift, 10**mass, log_sfr_ratios))
+
+    print("Sampling Dust ...")
+
+    dust2, dust_index, dust1 = dust_prior.sample_prior(nsamples)
 
     sps_parameters.append(redshift)
     sps_parameters.append(logzsol)

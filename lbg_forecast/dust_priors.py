@@ -4,6 +4,108 @@ import lbg_forecast.priors_gp as gp
 from scipy.stats import truncnorm
 
 
+
+class DustPriorPop():
+    def __init__(self, path):
+
+        self.path=path
+        self.preloaded_popcosmos_samples = np.load(self.path+"/dust_data/popcosmos_parameters_rmag_lt_25.npy")
+        self.preloaded_recent_sfrs = np.load(self.path+"/dust_data/popcosmos_recentsfrs.npy")
+    
+    def sample_prior(self, nsamples):
+
+        dust2=self.get_dust2()
+        dust_index=self.get_dust_index()
+        dust1=self.get_dust1()
+
+        indexes=np.random.randint(0, self.preloaded_recent_sfrs.shape[0], nsamples)
+
+        dust2_samples=dust2[indexes]
+        dust_index_samples=dust_index[indexes]
+        dust1_samples=dust1[indexes]
+
+        return [dust2_samples, dust_index_samples, dust1_samples]
+    
+    def sample_prior_and_sfrs(self, nsamples):
+
+        dust2=self.get_dust2()
+        dust_index=self.get_dust_index()
+        dust1=self.get_dust1()
+
+        indexes=np.random.randint(0, self.preloaded_recent_sfrs.shape[0], nsamples)
+
+        dust2_samples=dust2[indexes]
+        dust_index_samples=dust_index[indexes]
+        dust1_samples=dust1[indexes]
+        sfr=self.preloaded_recent_sfrs[indexes]
+
+        return [dust2_samples, dust_index_samples, dust1_samples, sfr]
+
+    def get_recent_sfrs_samples(self, nsamples):
+        return self.preloaded_recent_sfrs[np.random.randint(0, self.preloaded_recent_sfrs.shape[0], nsamples)]
+
+    def get_lsrs(self):
+        return self.preloaded_popcosmos_samples[:, 2:8]
+    def get_dust_parameters(self):
+        """dust2, dust_index, dust1/dust2"""
+        return self.preloaded_popcosmos_samples[:, 8:11]
+    def get_dust2(self):
+        dust_samples=self.get_dust_parameters()
+        return dust_samples[:, 0]
+    def get_dust_index(self):
+        dust_samples=self.get_dust_parameters()
+        return dust_samples[:, 1]
+    def get_dust1(self):
+        dust_samples=self.get_dust_parameters()
+        dust1frac = dust_samples[:, 2]
+        dust2 = self.get_dust2()
+        return dust1frac*dust2
+    
+class DustPriorNag():
+    def __init__(self, path):
+
+        self.path=path
+        self.n, self.tau, self.tau1, self.ne, self.taue, self.tau1e, self.sfr = np.load(self.path+"/dust_data/saved_nagaraj22samples.npy")
+    
+    def sample_prior(self, nsamples):
+
+        dust2=self.get_dust2()
+        dust_index=self.get_dust_index()
+        dust1=self.get_dust1()
+
+        indexes=np.random.randint(0, self.sfr.shape[0], nsamples)
+
+        dust2_samples=dust2[indexes]
+        dust_index_samples=dust_index[indexes]
+        dust1_samples=dust1[indexes]
+
+        return [dust2_samples, dust_index_samples, dust1_samples]
+    
+    def sample_prior_and_sfrs(self, nsamples):
+
+        dust2=self.get_dust2()
+        dust_index=self.get_dust_index()
+        dust1=self.get_dust1()
+
+        indexes=np.random.randint(0, self.sfr.shape[0], nsamples)
+
+        dust2_samples=dust2[indexes]
+        dust_index_samples=dust_index[indexes]
+        dust1_samples=dust1[indexes]
+        sfr=self.sfr[indexes]
+
+        return [dust2_samples, dust_index_samples, dust1_samples, sfr]
+
+    def get_recent_sfrs_samples(self, nsamples):
+        return self.sfr[np.random.randint(0, self.sfr.shape[0], nsamples)]
+
+    def get_dust2(self):
+        return self.tau
+    def get_dust_index(self):
+        return self.n
+    def get_dust1(self):
+        return self.tau1
+
 class DustPrior():
     def __init__(self, path, samples=9999999999):
 
