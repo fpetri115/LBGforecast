@@ -40,9 +40,29 @@ class DustPriorPop():
         sfr=self.preloaded_recent_sfrs[indexes]
 
         return [dust2_samples, dust_index_samples, dust1_samples, sfr]
+    
+    def sample_prior_and_lsrs(self, nsamples):
+
+        dust2=self.get_dust2()
+        dust_index=self.get_dust_index()
+        dust1=self.get_dust1()
+        lsrs = self.get_lsrs()
+
+        indexes=np.random.randint(0, self.preloaded_recent_sfrs.shape[0], nsamples)
+
+        dust2_samples=dust2[indexes]
+        dust_index_samples=dust_index[indexes]
+        dust1_samples=dust1[indexes]
+        lsrs_samples=lsrs[indexes, :]
+        sfr=self.preloaded_recent_sfrs[indexes]
+
+        return [dust2_samples, dust_index_samples, dust1_samples, sfr, lsrs_samples]
 
     def get_recent_sfrs_samples(self, nsamples):
         return self.preloaded_recent_sfrs[np.random.randint(0, self.preloaded_recent_sfrs.shape[0], nsamples)]
+    
+    def get_lsrs_samples(self, nsamples):
+        return self.get_lsrs()[np.random.randint(0, self.preloaded_recent_sfrs.shape[0], nsamples), :]
 
     def get_lsrs(self):
         return self.preloaded_popcosmos_samples[:, 2:8]

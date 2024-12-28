@@ -28,12 +28,8 @@ class MassFunctionPrior():
         self.mean = mean
 
         #cell sizes
-        self.dz = 0.1
-        self.dlogm = 0.1
-        #grid inside cell, must fit neatly into above
-        self.dz_cell = self.dz/80
-        self.dlogm_cell = self.dlogm/80
-        print("cell step: ", self.dz_cell, self.dlogm_cell)
+        self.dz = 0.001
+        self.dlogm = 0.001
 
         #grids
         self.start_z = 0
@@ -43,6 +39,8 @@ class MassFunctionPrior():
         self.start_logm = 7
         self.end_logm = 13
         self.logm_grid = np.linspace(self.start_logm, self.end_logm, int((self.end_logm-self.start_logm)/self.dlogm))
+
+        self.dvdzgrid = self.dvdz_grid(self.z_grid, self.dz)
 
         self.param_names = ["$\mathrm{log}_{10}\phi_{1}^{*}$", "$\mathrm{log}_{10}\phi_{2}^{*}$", "$\\alpha_{1}$", "$\\alpha_{2}$", "$\mathrm{log}_{10}\mathcal{M}_{*}$"]
         self.redshift_grid = np.load(path+"/redshift_grid.npy")#np.arange(0, 7, 0.000001)
@@ -97,83 +95,86 @@ class MassFunctionPrior():
         self.train_yerr = [sorted_train_logphi1_errs, sorted_train_logphi2_errs, sorted_train_alpha1_errs, sorted_train_alpha2_errs, sorted_train_logm_errs]
         self.test_x = [self.phi1_test_z, self.phi2_test_z, self.alpha1_test_z, self.alpha2_test_z, self.logm_test_z]
 
-    def number_of_galaxies_in_cell(self, z, logm, sparams, logm_cell_length, z_cell_length):
-        """
-        Finds number of galaxies in small grid cell.
-        """
-
-        start_logm=logm
-        end_logm=logm+logm_cell_length
-        step_logm=int((end_logm-start_logm)/self.dlogm_cell)
-
-        start_z=z
-        end_z=z+z_cell_length
-        step_z=int((end_z-start_z)/self.dz_cell)
-
-        logm_grid=np.linspace(start_logm, end_logm, step_logm)
-        z_grid=np.linspace(start_z, end_z, step_z)
-        
-        N_gal=0
-        for z in z_grid:
-            phi_z_m = self.mass_function(z, logm_grid, sparams)
-            n_gal_z = np.trapz(phi_z_m, logm_grid)
-            N_gal += n_gal_z*self.volume_element(z, self.dz_cell)
-
-        return N_gal
-
-    def number_distribution_of_galaxies(self, sparams):
-        """
-        Collects galaxies found in cells by number_of_galaxies_in_cell() across
-        entire prior range. This gives the distrubtion of galaxies in logm and z.
+    def mass_function(self, z, logm, sparams):
+        """sparams=self.sample_prior(). logm can be array
         """
 
-        N_gal = np.empty((len(self.z_grid), len(self.logm_grid)))
+        logphi1, logphi2, alpha1, alpha2, logm_star = sparams
+        logphi1 = np.interp(z, self.phi1_test_z, logphi1)
+        logphi2 = np.interp(z, self.phi2_test_z, logphi2)
+        alpha1 = np.interp(z, self.alpha1_test_z, alpha1)
+        alpha2 = np.interp(z, self.alpha2_test_z, alpha2)
+        logm_star = np.interp(z, self.logm_test_z, logm_star)
 
-        for i in range(0, len(self.z_grid)):
-            for j in range(0, len(self.logm_grid)):
-                N_gal[i, j] = self.number_of_galaxies_in_cell(self.z_grid[i], self.logm_grid[j], sparams, logm_cell_length=self.dlogm/2, z_cell_length=self.dz/2)
-        
-        return N_gal
+        mfunc = np.where(np.atleast_1d(z)>3, self.schechter_function(logm, logphi1, logm_star, alpha1), self.double_schechter_function(logm, logphi1, logphi2, alpha1, alpha2, logm_star))
+
+        return mfunc
     
-    def calculate_number_density_lsst(self):
-        return np.sum(self.number_distribution_of_galaxies(self.sample_prior()))*utils.LSST_AREA_FRACTION/(utils.LSST_AREA_DEG2*utils.DEG2_TO_ARCMIN2)
-    def calculate_number_density_lsst_mean(self):
-        return np.sum(self.number_distribution_of_galaxies(self.sample_prior_mean()))*utils.LSST_AREA_FRACTION/(utils.LSST_AREA_DEG2*utils.DEG2_TO_ARCMIN2)
+    def lsst_number_density(self, sparams):
+        i=0
+        n_z=[]
+        for z in self.z_grid:
+            n_logm = self.mass_function(z, self.logm_grid, sparams)
+            n_logm = np.trapz(n_logm, self.logm_grid)
+            n_z.append(n_logm)
+            i+=1
 
-    def calculate_galaxy_pdf(self, sparams):
-        """Calculate P(z, logm)"""
-        N_z_logm = self.number_distribution_of_galaxies(sparams)
-        p_z_logm = N_z_logm/np.sum(N_z_logm)
-        return p_z_logm
+        return np.trapz(n_z*self.dvdzgrid, self.z_grid)*utils.LSST_AREA_FRACTION/(utils.LSST_AREA_DEG2*utils.DEG2_TO_ARCMIN2)
+
+    def n_tot(self, sparams):
+        """mass function normalisation"""
+
+        nz = self.n_z(sparams)
+        return np.trapz(nz*self.dvdz_grid(self.z_grid, self.dz), self.z_grid)
     
-    def logpdf(self, x, p_z_logm, prior_bounds=[0.0,7.0,7.0,13]):
+    def n_z(self, sparams):
+        n=[]
+        for z in self.z_grid:
+            phi_z_logm = self.mass_function(z, self.logm_grid, sparams)
+            n.append(np.trapz(phi_z_logm, self.logm_grid))
+
+        return np.array(n)
+    
+    def normalised_mass_function(self, z, logm, sparams, norm, dvdz):
+        """norm=self.n_tot(sparams)"""
+        return (self.mass_function(z, logm, sparams)/norm)*dvdz
+
+    def volume_element(self, z, dz):
+        return cosmo.get_cosmology().comoving_volume(z+dz).value - cosmo.get_cosmology().comoving_volume(z).value
+    
+    def volume_element_grid(self, grid, dz):
+        vs = []
+        for z in grid:
+            vs.append(self.volume_element(z, dz))
+        return np.array(vs)
+    
+    def dvdz_grid(self, grid, dz):
+        dv = self.volume_element_grid(grid, dz)
+        return dv/dz
+    
+    def dvdz(self, z, dz):
+        dv = self.volume_element(z, dz)
+        return dv/dz
+    
+    def logpdf(self, x, sparams, norm, prior_bounds=[0.0,7.0,7.0,13]):
         """log10(P(z, logm))"""
 
-        zs, logms = x
+        z, logm = x
 
-        if((np.atleast_1d(zs) < prior_bounds[0]).any() or (np.atleast_1d(zs) > prior_bounds[1]).any()):
+        if(z < prior_bounds[0] or z > prior_bounds[1]):
             return -np.inf
         
-        if((np.atleast_1d(logms) < prior_bounds[2]).any() or (np.atleast_1d(logms) > prior_bounds[3]).any()):
+        if(logm < prior_bounds[2] or logm > prior_bounds[3]):
             return -np.inf
 
-        zs = np.reshape(zs, (np.atleast_1d(zs).shape[0], 1))
-        logms = np.reshape(logms, (np.atleast_1d(logms).shape[0], 1))
+        p_z_logm = self.normalised_mass_function(z, logm, sparams, norm, np.interp(z, self.z_grid, self.dvdzgrid))
 
-        z_grid = np.tile(self.z_grid, (zs.shape[0], 1))
-        logm_grid = np.tile(self.logm_grid, (logms.shape[0], 1))
-
-        z_index = np.abs(z_grid-zs).argmin(axis=1)
-        logm_index = np.abs(logm_grid-logms).argmin(axis=1)
-
-        p = p_z_logm[z_index, logm_index]
-
-        if(p<1e-100):
+        if(p_z_logm<1e-100):
             return -np.inf
         else:
-            log_p_z_logm = np.log10(p)
+            log_p_z_logm = np.log10(p_z_logm)
             return log_p_z_logm
-
+    
     def sample_logpdf(self, nsamples):
 
         burnin=1000
@@ -194,11 +195,11 @@ class MassFunctionPrior():
         else:
             sparams = self.sample_prior()
 
-        print("Calculating Galaxy PDF ... ")
-        pdf = self.calculate_galaxy_pdf(sparams)
+        print("Calculating Normalisation ... ")
+        norm = self.n_tot(sparams)
 
         print("MCMC Sampling ... ")
-        sampler = emcee.EnsembleSampler(nwalkers, ndim, self.logpdf, args=[pdf, prior_bounds])
+        sampler = emcee.EnsembleSampler(nwalkers, ndim, self.logpdf, args=[sparams, norm, prior_bounds])
         state = sampler.run_mcmc(p0, 100)
         sampler.reset()
 
@@ -211,24 +212,6 @@ class MassFunctionPrior():
 
         return redshift_samples[burnin:nsamples+burnin], mass_samples[burnin:nsamples+burnin]
 
-    def mass_function(self, z, logm, sparams):
-        """sparams=self.sample_prior()
-        """
-
-        logphi1, logphi2, alpha1, alpha2, logm_star = sparams
-        logphi1 = np.interp(z, self.phi1_test_z, logphi1)
-        logphi2 = np.interp(z, self.phi2_test_z, logphi2)
-        alpha1 = np.interp(z, self.alpha1_test_z, alpha1)
-        alpha2 = np.interp(z, self.alpha2_test_z, alpha2)
-        logm_star = np.interp(z, self.logm_test_z, logm_star)
-
-        mfunc = np.where(np.atleast_1d(z)>3, self.schechter_function(logm, logphi1, logm_star, alpha1), self.double_schechter_function(logm, logphi1, logphi2, alpha1, alpha2, logm_star))
-
-        return mfunc
-
-    def volume_element(self, z, dz):
-        return cosmo.get_cosmology().comoving_volume(z+dz).value - cosmo.get_cosmology().comoving_volume(z).value
-    
     def schechter_function(self, logm, logphi, logm_star, alpha):
         return np.log(10)*(10**logphi)*10**((logm-logm_star)*(alpha+1))*np.exp(-10**(logm-logm_star))
     def double_schechter_function(self, logm, logphi1, logphi2, alpha1, alpha2, logm_star):
