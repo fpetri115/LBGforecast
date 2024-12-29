@@ -281,24 +281,36 @@ class MassFunctionPrior():
                 for a in anchor_points:
                     anchor_indexes.append(np.where(train_x.numpy() == a)[0][0])
 
+                mcleod_redshift_lower_bin_edge = np.array([0.0, 0.25, 0.75, 1.25, 1.75, 2.25, 2.75])
+                mcleod_redshift_upper_bin_edge = np.array([0.06, 0.75, 1.25, 1.75, 2.25, 2.75, 3.75001])
+                mcleod_points = (mcleod_redshift_lower_bin_edge + mcleod_redshift_upper_bin_edge)/2
+
+                mcleod_indexes = []
+                for p in mcleod_points:
+                    mcleod_indexes.append(np.where(train_x.numpy() == p)[0][0])
+
+
+
                 # Get upper and lower confidence bounds
                 lower, upper = prior.confidence_region()
                 # Plot training data
 
                 if(indx==0):
-                    plot.errorbar(np.delete(train_x.numpy(), anchor_indexes), np.delete(train_y.numpy(), anchor_indexes), yerr=np.delete(train_y_err, anchor_indexes), fmt='kd', capsize=3, ms=10, label='Weaver et al. (2023); McLeod et al. (2021)')
-                    plot.errorbar(anchor_points, train_y.numpy()[anchor_indexes], yerr=train_y_err[anchor_indexes], fmt='ro', capsize=3, ms=10, label='Leja et al. (2020)')
+                    plot.errorbar(np.delete(train_x.numpy(), np.concatenate((anchor_indexes, mcleod_indexes))), np.delete(train_y.numpy(), np.concatenate((anchor_indexes, mcleod_indexes))), yerr=np.delete(train_y_err, np.concatenate((anchor_indexes, mcleod_indexes))), fmt='d', color='grey', capsize=5, ms=12, label='Weaver et al. (2023)', elinewidth=3, ecolor='k')
+                    plot.errorbar(anchor_points, train_y.numpy()[anchor_indexes], yerr=train_y_err[anchor_indexes], fmt='o', color='brown', capsize=5, ms=12, label='Leja et al. (2020)', ecolor='k', elinewidth=3)
+                    plot.errorbar(mcleod_points, train_y.numpy()[mcleod_indexes], yerr=train_y_err[mcleod_indexes], fmt='v', color='purple', capsize=5, ms=12, label='Mcleod et al. (2021)', ecolor='k', elinewidth=3)
 
                     # Plot predictive means as blue line
                     plot.plot(test_x.numpy(), prior.mean, 'b', lw=5, label='Gaussian Process Mean')
                     # Shade between the lower and upper confidence bounds
                     plot.fill_between(test_x.numpy(), lower, upper, alpha=0.25, label='Gaussian Process 2$\sigma$ Confidence')
 
-                    plot.legend(fontsize=16)
+                    plot.legend(fontsize=14)
 
                 else:
-                    plot.errorbar(np.delete(train_x.numpy(), anchor_indexes), np.delete(train_y.numpy(), anchor_indexes), yerr=np.delete(train_y_err, anchor_indexes), fmt='kd', capsize=3, ms=10)
-                    plot.errorbar(anchor_points, train_y.numpy()[anchor_indexes], yerr=train_y_err[anchor_indexes], fmt='ro', capsize=3, ms=10)
+                    plot.errorbar(np.delete(train_x.numpy(), np.concatenate((anchor_indexes, mcleod_indexes))), np.delete(train_y.numpy(), np.concatenate((anchor_indexes, mcleod_indexes))), yerr=np.delete(train_y_err, np.concatenate((anchor_indexes, mcleod_indexes))), fmt='d', color='grey', capsize=5, ms=12, elinewidth=3, ecolor='k')
+                    plot.errorbar(anchor_points, train_y.numpy()[anchor_indexes], yerr=train_y_err[anchor_indexes], fmt='o', color='brown', capsize=5, ms=12, ecolor='k', elinewidth=3)
+                    plot.errorbar(mcleod_points, train_y.numpy()[mcleod_indexes], yerr=train_y_err[mcleod_indexes], fmt='v', color='purple', capsize=5, ms=12, label='Mcleod et al. (2021)', ecolor='k', elinewidth=3)
 
                     # Plot predictive means as blue line
                     plot.plot(test_x.numpy(), prior.mean, 'b', lw=5)
@@ -306,7 +318,7 @@ class MassFunctionPrior():
                     plot.fill_between(test_x.numpy(), lower, upper, alpha=0.25)
 
                 #ax.legend(['Observed Data', 'Mean', 'Confidence'])
-                plot.set_ylabel(self.param_names[indx], fontsize=24)
+                plot.set_ylabel(self.param_names[indx], fontsize=32)
 
 
                 if(indx==1 or indx==3):
@@ -323,7 +335,7 @@ class MassFunctionPrior():
                 plot.tick_params(axis='y', which='minor', direction='in', size=5, right=True)
                 indx+=1
 
-            plot.set_xlabel("Redshift", fontsize=24)
+            plot.set_xlabel("Redshift", fontsize=32)
             plt.tight_layout()
 
 def create_gp_model(lengthscale, errors, train_x, train_y):
@@ -460,7 +472,7 @@ def get_phi1_data(plotting=False):
     mcleod_low_mass_norm_log_errs = np.minimum(mcleod_low_mass_norm_log_errl, mcleod_low_mass_norm_log_errh)
 
     mcleod_redshift_lower_bin_edge = np.array([0.0, 0.25, 0.75, 1.25, 1.75, 2.25, 2.75])
-    mcleod_redshift_upper_bin_edge = np.array([0.06, 0.75, 1.25, 1.75, 2.25, 2.75, 3.75])
+    mcleod_redshift_upper_bin_edge = np.array([0.06, 0.75, 1.25, 1.75, 2.25, 2.75, 3.75001])
     mcleod_redshift_midpoint = (mcleod_redshift_lower_bin_edge + mcleod_redshift_upper_bin_edge)/2
 
     weaver_arr = unumpy.uarray(weaver_low_mass_norm_val, weaver_low_mass_norm_errs)
@@ -514,7 +526,7 @@ def get_phi2_data(plotting=False):
     mcleod_high_mass_norm_log_errs = np.maximum(mcleod_high_mass_norm_log_errl, mcleod_high_mass_norm_log_errh)
 
     mcleod_redshift_lower_bin_edge = np.array([0.0, 0.25, 0.75, 1.25, 1.75, 2.25, 2.75])
-    mcleod_redshift_upper_bin_edge = np.array([0.06, 0.75, 1.25, 1.75, 2.25, 2.75, 3.75])
+    mcleod_redshift_upper_bin_edge = np.array([0.06, 0.75, 1.25, 1.75, 2.25, 2.75, 3.75001])
     mcleod_redshift_midpoint = (mcleod_redshift_lower_bin_edge + mcleod_redshift_upper_bin_edge)/2
 
     weaver_arr = unumpy.uarray(weaver_high_mass_norm_val, weaver_high_mass_norm_errs)
@@ -568,7 +580,7 @@ def get_alpha1_data(plotting=False):
     mcleod_alpha_low_mass_errs = np.maximum(mcleod_alpha_low_mass_errl, mcleod_alpha_low_mass_errh)
 
     mcleod_redshift_lower_bin_edge = np.array([0.0, 0.25, 0.75, 1.25, 1.75, 2.25, 2.75])
-    mcleod_redshift_upper_bin_edge = np.array([0.06, 0.75, 1.25, 1.75, 2.25, 2.75, 3.75])
+    mcleod_redshift_upper_bin_edge = np.array([0.06, 0.75, 1.25, 1.75, 2.25, 2.75, 3.75001])
     mcleod_redshift_midpoint = (mcleod_redshift_lower_bin_edge + mcleod_redshift_upper_bin_edge)/2
 
     train_alpha1 = torch.from_numpy(np.concatenate((weaver_alpha_low_mass_norm_val, cont_alpha_low_mass_norm_val, mcleod_alpha_low_mass_val)))
@@ -615,7 +627,7 @@ def get_alpha2_data(plotting=False):
     mcleod_alpha_high_mass_errs = np.maximum(mcleod_alpha_high_mass_errl, mcleod_alpha_high_mass_errh)
 
     mcleod_redshift_lower_bin_edge = np.array([0.0, 0.25, 0.75, 1.25, 1.75, 2.25, 2.75])
-    mcleod_redshift_upper_bin_edge = np.array([0.06, 0.75, 1.25, 1.75, 2.25, 2.75, 3.75])
+    mcleod_redshift_upper_bin_edge = np.array([0.06, 0.75, 1.25, 1.75, 2.25, 2.75, 3.75001])
     mcleod_redshift_midpoint = (mcleod_redshift_lower_bin_edge + mcleod_redshift_upper_bin_edge)/2
 
     train_alpha2 = torch.from_numpy(np.concatenate((weaver_alpha_high_mass_norm_val, cont_alpha_high_mass_norm_val, mcleod_alpha_high_mass_val)))
@@ -663,7 +675,7 @@ def get_logm_data(plotting=False):
     mcleod_logm_errs = np.maximum(mcleod_logm_errl, mcleod_logm_errh)
 
     mcleod_redshift_lower_bin_edge = np.array([0.0, 0.25, 0.75, 1.25, 1.75, 2.25, 2.75])
-    mcleod_redshift_upper_bin_edge = np.array([0.06, 0.75, 1.25, 1.75, 2.25, 2.75, 3.75])
+    mcleod_redshift_upper_bin_edge = np.array([0.06, 0.75, 1.25, 1.75, 2.25, 2.75, 3.75001])
     mcleod_redshift_midpoint = (mcleod_redshift_lower_bin_edge + mcleod_redshift_upper_bin_edge)/2
 
     train_logm = torch.from_numpy(np.concatenate((weaver_logm_val, cont_logm_val, mcleod_logm_val)))
