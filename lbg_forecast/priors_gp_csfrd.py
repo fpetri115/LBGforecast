@@ -6,6 +6,7 @@ from astropy.io import ascii
 import matplotlib.pyplot as plt
 import lbg_forecast.population_model as pop
 from uncertainties import unumpy as upy
+import matplotlib.ticker as ticker
 
 class CSFRDModel(gpytorch.models.ExactGP):
 
@@ -56,32 +57,54 @@ class CSFRDPrior():
     def plot_combined(self):
 
         train_redshift, train_log_csfrd, train_log_shifted_csfrd, train_log_csfrd_errors = self.train_data
+
+        #train_csfrd, train_csfrd_errors = log_to_lin(train_log_csfrd, train_log_csfrd_errors)
+
         behroozi19 = get_behroozi19_curves(path=self.path)
         with torch.no_grad():
 
-            f, ax = plt.subplots(1, 1, figsize=(22, 16))
+            f, ax = plt.subplots(1, 1, figsize=(17, 15))
 
-            ax.errorbar(train_redshift, train_log_csfrd, yerr=train_log_csfrd_errors, fmt='o', mfc='k', ecolor='k', mec='k', alpha=1.0, elinewidth=2.5, capsize=5, ms=12, lw=3, label="Observed CSFRD (Behroozi et al. 2019)")
+            ax.errorbar(train_redshift, train_log_csfrd, yerr=train_log_csfrd_errors, fmt='o', mfc='k', ecolor='k', mec='k', alpha=1.0, elinewidth=3, capsize=5, ms=15, lw=3, label="Observed CSFRD (Behroozi et al. 2019)", zorder=-1)
             
-            ax.plot(self.test_redshift.numpy(), self.get_prior_mean(), lw=7, zorder=1200, c="k", label="Gaussian Process Mean")
+            ax.plot(self.test_redshift.numpy(), self.get_prior_mean(), lw=8, zorder=1200, c="grey", label="Gaussian Process Mean")
             lower, upper = self.get_prior_confidence_region()
-            ax.fill_between(self.test_redshift.numpy(), lower, upper, alpha=0.4, lw=0, color="k", label="$2\sigma $ Confidence")
-            ax.plot(behroozi19[0], behroozi19[1], zorder=1100, ls="--", c="k", lw=7, label="Behroozi et al. (2019) Fit")
+            ax.fill_between(self.test_redshift.numpy(), lower, upper, alpha=0.4, lw=0, color="grey", label="$2\sigma $ Confidence", zorder=1200)
+            ax.plot(behroozi19[0], behroozi19[1], ls="--", c="grey", lw=8, label="Behroozi et al. (2019) Fit", zorder=1200)
 
 
-            ax.plot(self.test_redshift.numpy(), self.get_prior_mean_corrected(), lw=7, zorder=1200, c='red', ls="-", label="Gaussian Process Mean (Corrected)")
+            ax.plot(self.test_redshift.numpy(), self.get_prior_mean_corrected(), lw=8, zorder=1200, c='purple', ls="-", label="Gaussian Process Mean (Corrected)")
             lower_corrected, upper_corrected = self.get_prior_confidence_region_corrected()
-            ax.fill_between(self.test_redshift.numpy(), lower_corrected, upper_corrected, alpha=0.4, lw=0, color="red", label="$2\sigma $ Confidence (Corrected)")
-            ax.plot(behroozi19[0], behroozi19[2], zorder=1100, c="red", ls="--", lw=7, label="Behroozi et al. (2019) Fit (Corrected)")
+            ax.fill_between(self.test_redshift.numpy(), lower_corrected, upper_corrected, alpha=0.4, lw=0, color="purple", label="$2\sigma $ Confidence (Corrected)", zorder=1200)
+            ax.plot(behroozi19[0], behroozi19[2], c="purple", ls="--", lw=8, label="Behroozi et al. (2019) Fit (Corrected)", zorder=1200)
+
 
             ax.set_xlabel("Redshift", fontsize=32)
             ax.set_ylabel("Cosmic Star Formation Rate Density [$\mathrm{M}_{\odot} \mathrm{yr}^{-1} \mathrm{Mpc}^{-3}$]", fontsize=32)
             ax.set_xlim(0, 10)
             ax.tick_params(axis='y', labelsize=32)
             ax.tick_params(axis='x', labelsize=32)
-            ax.set_ylim(-2.7, -0.5)
-            ax.set_xscale('function', functions=(forward, inverse))
-            ax.legend(frameon=False, fontsize=22)
+            ax.grid(visible=True, zorder=-1, alpha=0.2)
+            #ax.set_xscale('function', functions=(forward, inverse))
+            #ax.set_yscale('log')
+            ax.legend(frameon=False, fontsize=24)
+            ax.tick_params(which='minor', width=2, size=5)
+
+
+            # Change the y-axis label format to scientific notation
+            ax.yaxis.set_major_formatter(ticker.ScalarFormatter())
+            ax.yaxis.get_major_formatter().set_scientific(False)
+
+            #formatter = ticker.FormatStrFormatter('%.2g')
+            #ax.yaxis.set_major_formatter(formatter)
+
+            ax.set_ylim(-3, -0.5)
+
+            lw=3
+            ax.spines['bottom'].set_linewidth(lw)
+            ax.spines['top'].set_linewidth(lw)
+            ax.spines['right'].set_linewidth(lw)
+            ax.spines['left'].set_linewidth(lw)
 
 def create_gp_model(train_redshift, train_log_csfrd_shifted, train_log_csfrd_errors, lengthscale, scale):
         
@@ -167,6 +190,15 @@ def log_to_lin(train_log_csfrd, train_log_csfrd_errors):
     train_csfrd_errors = upy.std_devs(csfrd_arr)
 
     return train_csfrd, train_csfrd_errors
+
+def lin_to_log(train_csfrd, train_csfrd_errors):
+
+    csfrd_arr = upy.uarray(train_csfrd, train_csfrd_errors)
+    log_csfrd_arr = np.log10(csfrd_arr)
+    train_log_csfrd = upy.nominal_values(log_csfrd_arr)
+    train_log_csfrd_errors = upy.std_devs(log_csfrd_arr)
+
+    return train_log_csfrd, train_log_csfrd_errors
 
 def mean_obs_behroozi(zgrid, log, path):
 

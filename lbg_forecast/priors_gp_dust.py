@@ -115,7 +115,7 @@ class DustPrior():
         dust2 = np.interp(sfrs, sorted_sfrs, sorted_dust2)
         delta = np.interp(sfrs, sorted_sfrs, sorted_delta)
 
-        return np.clip(abs(dust2 + delta*(~self.mean)), 0.0, 4.0)
+        return np.clip(abs(dust2 + 0*delta*(~self.mean)), 0.0, 4.0)
     
     def sample_dust2_nag(self, sfrs):
         
@@ -151,7 +151,7 @@ class DustPrior():
         dust_index = np.interp(dust2s, sorted_dust2, sorted_dust_index)
         delta = np.interp(dust2s, sorted_dust2, sorted_delta)
 
-        return np.clip(dust_index + delta*(~self.mean), -2.2, 0.4)
+        return np.clip(dust_index + 0*delta*(~self.mean), -2.2, 0.4)
     
     def sample_dust_index_nag(self, dust2s):
 
@@ -187,7 +187,7 @@ class DustPrior():
         dust1 = np.interp(dust2s, sorted_dust2, sorted_dust1)
         delta = np.interp(dust2s, sorted_dust2, sorted_delta)
 
-        return np.clip(dust1 + delta*(~self.mean), 0.0, 4.0)
+        return np.clip(dust1 + 0*delta*(~self.mean), 0.0, 4.0)
     
     def sample_dust1_nag(self, dust2s):
 
