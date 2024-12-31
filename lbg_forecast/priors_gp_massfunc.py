@@ -43,9 +43,6 @@ class MassFunctionPrior():
         self.dvdzgrid = self.dvdz_grid(self.z_grid, self.dz)
 
         self.param_names = ["$\mathrm{log}_{10}\phi_{1}^{*}$", "$\mathrm{log}_{10}\phi_{2}^{*}$", "$\\alpha_{1}$", "$\\alpha_{2}$", "$\mathrm{log}_{10}\mathcal{M}_{*}$"]
-        self.redshift_grid = np.load(path+"/redshift_grid.npy")#np.arange(0, 7, 0.000001)
-        self.volume_grid = np.load(path+"/volume_element_grid.npy")#self.volume_elements(self.redshift_grid)
-
         state_dict_phi1 = torch.load(self.path+'/gp_models/phi1.pth', weights_only=True)
         state_dict_phi2 = torch.load(self.path+'/gp_models/phi2.pth', weights_only=True)
         state_dict_alpha1 = torch.load(self.path+'/gp_models/alpha1.pth', weights_only=True)
