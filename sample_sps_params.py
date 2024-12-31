@@ -27,11 +27,11 @@ if(rank == 0):
     print("Loading Priors ... ", flush=True)
     if(mean==1):
         mass_function_prior = gpmf.MassFunctionPrior(path=path[:-1], mean=True)
-        dust_prior = gpdp.DustPrior(path=path[:-1], mean=mean)
+        dust_prior = gpdp.DustPrior(path=path[:-1], mean=True)
         csfrd_prior = gpsf.CSFRDPrior(path=path[:-1])
     elif(mean==0):
         mass_function_prior = gpmf.MassFunctionPrior(path=path[:-1], mean=False)
-        dust_prior = gpdp.DustPrior(path=path[:-1], mean=mean)
+        dust_prior = gpdp.DustPrior(path=path[:-1], mean=False)
         csfrd_prior = gpsf.CSFRDPrior(path=path[:-1])
     else:
         print(mean, type(mean))
