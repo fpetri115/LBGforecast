@@ -58,8 +58,6 @@ class CSFRDPrior():
 
         train_redshift, train_log_csfrd, train_log_shifted_csfrd, train_log_csfrd_errors = self.train_data
 
-        #train_csfrd, train_csfrd_errors = log_to_lin(train_log_csfrd, train_log_csfrd_errors)
-
         behroozi19 = get_behroozi19_curves(path=self.path)
         with torch.no_grad():
 
@@ -97,6 +95,19 @@ class CSFRDPrior():
 
             #formatter = ticker.FormatStrFormatter('%.2g')
             #ax.yaxis.set_major_formatter(formatter)
+
+
+            #major
+            ytick_locs=np.array([-3.0, -2.0, -1.0, 0.0])
+            ytick_labels=10**ytick_locs
+            ax.set_yticks(ticks=ytick_locs, labels=ytick_labels)
+
+            #minor
+            ytick_locs_minor=np.concatenate((np.log10(np.linspace(0.001, 0.01, 10)),
+                                            np.log10(np.linspace(0.01, 0.1, 10)),
+                                            np.log10(np.linspace(0.1, 1.0, 10))))
+            ax.set_yticks(ticks=ytick_locs_minor, minor=True)
+
 
             ax.set_ylim(-3, -0.5)
 
