@@ -121,6 +121,8 @@ class DustPrior():
         if(self.mean):
             delta=delta*0
 
+        delta=0
+
         if(debug):
             plt.plot(self.dust2_grid, mean_dust2_sample, c='purple')
             plt.plot(self.dust2_grid, mean_dust2, c='k')
@@ -170,13 +172,15 @@ class DustPrior():
         if(self.mean):
             delta=delta*0
 
+        delta=0
+
         if(debug):
             plt.plot(self.dust_index_grid, mean_dust_index_sample, c='purple')
             plt.plot(self.dust_index_grid, mean_dust_index, c='k')
             plt.scatter(dust2s, dust_index+delta, c='purple', alpha=0.5)
             plt.scatter(dust2s, dust_index, c='black', alpha=0.5)
-        
-        return np.clip(dust_index + delta*(~self.mean), -2.2, 0.4)
+
+        return np.clip(dust_index + delta, -2.2, 0.4)
     
     def sample_dust_index_nag(self, dust2s):
 
@@ -217,6 +221,8 @@ class DustPrior():
 
         if(self.mean):
             delta=delta*0
+
+        delta=0
 
         if(debug):
             plt.plot(self.dust1_grid, mean_dust1_sample, c='purple')
