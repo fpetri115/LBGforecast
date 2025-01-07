@@ -13,9 +13,9 @@ sps_parameters = np.load(path[:-1]+"/sps_parameter_samples/sps_"+run+".npy")
 
 photometry = []
 for n in range(sps_parameters.shape[0]):
+    print("Realisation: ", n+1, flush=True)
     source_photometry = model.mimic_photometry(sps_parameters[n, :, :], batch_size=batch_size)    
     photometry.append(source_photometry)
-    print("Realisation: ", n+1, flush=True)
 
 #save
 photometry_data = np.asarray(photometry)

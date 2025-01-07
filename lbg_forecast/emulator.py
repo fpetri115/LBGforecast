@@ -58,12 +58,15 @@ class fsps_emulator:
 
         photometry_bands = []
         for f in range(len(self._filters)):
+            print("Band: ", f)
             data = tf.data.Dataset.from_tensor_slices(sps_params_tensor).batch(batch_size)
             batches = []
+            i = 1
             for batch in data:
+                print("Batch No.: ", i)
                 emulated_magnitudes = self._models[f].call(batch)
                 batches.append(emulated_magnitudes.numpy())
-            
+                i+=1
             photometry_bands.append(np.vstack(batches))
 
         photometry_bands_array = np.asarray(photometry_bands)[:, :, 0].T
