@@ -4,14 +4,14 @@ import matplotlib.pyplot as plt
 def sample_gaussian_prior_parameters(mean):
         
     mu_bounds = np.array([[-2.5, 0.5],    #logzsol
-                            [0.5, 1.5],   #igm_factor 
+                            [1.0, 1.0],   #igm_factor 
                             [-4.0, -1.0], #gas_logu
                             [-2.0, 0.5],  #gas_logz
                             [-5.0, 1.0],  #log10(fagn)
                             [5, 150]])    #agn_tau  
 
     sig_bounds = np.array([[0.01, 3.0],   #logzsol
-                            [0.01, 0.5],   #igm_factor 
+                            [0.6, 0.6],   #igm_factor 
                             [0.01, 3.0],  #gas_logu
                             [0.01, 2.5],  #gas_logz
                             [0.01, 6.0],  #log10(fagn)

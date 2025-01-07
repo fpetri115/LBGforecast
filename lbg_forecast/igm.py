@@ -89,7 +89,7 @@ def plot_lya_transmission(zmin, zmax, tau=False):
     z_space = np.linspace(zmin, zmax, 1000)
     return plt.plot(z_space, lyalpha_transmission(z_space, tau))
 
-def plot_transmission_curves(z):
+def plot_transmission_curves(z, df):
 
     l_min = 750*(1+z)
     l_max = 1216*(1+z)
@@ -98,9 +98,9 @@ def plot_transmission_curves(z):
     tau_eff_series = lyman_series_line_tau(l_obs, z)
 
     plt.figure(figsize=(10,5))
-    plt.plot(l_obs, np.exp(-1*(tau_eff + tau_eff_series)))
-    plt.plot(l_obs, np.exp(-1*(tau_eff + tau_eff_series))*1.5)
-    plt.plot(l_obs, np.exp(-1*(tau_eff + tau_eff_series))*0.5)
+    plt.plot(l_obs, np.exp(-1*(tau_eff + tau_eff_series)), c='k')
+    plt.plot(l_obs, np.exp(-1*(tau_eff + tau_eff_series))*(1+df), ls='--', c='grey')
+    plt.plot(l_obs, np.exp(-1*(tau_eff + tau_eff_series))*(1-df), ls='--', c='grey')
 
 def apply_igm_attenuation(l_rest, z, f_igm):
 
