@@ -116,7 +116,7 @@ class MassFunctionPrior():
             n_z.append(n_logm)
             i+=1
 
-        return np.trapz(n_z*self.dvdzgrid, self.z_grid)*utils.LSST_AREA_FRACTION/(utils.LSST_AREA_DEG2*utils.DEG2_TO_ARCMIN2)
+        return np.trapz(n_z*self.dvdzgrid, self.z_grid)/utils.FULL_SKY_DEG2
 
     def n_tot(self, sparams):
         """mass function normalisation"""

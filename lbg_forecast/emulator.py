@@ -46,7 +46,7 @@ class fsps_emulator:
         return np.hstack((np.asarray(photometry_all)))
 
     #forward pass for all filters
-    def mimic_photometry(self, sps_params):
+    def mimic_photometry(self, sps_params, batch_size):
 
         photometry_all = []
 
@@ -58,8 +58,13 @@ class fsps_emulator:
 
         photometry_bands = []
         for f in range(len(self._filters)):
-            emulated_magnitudes = self._models[f].call(sps_params_tensor)
-            photometry_bands.append(emulated_magnitudes.numpy())
+            data = tf.data.Dataset.from_tensor_slices(sps_params_tensor).batch(batch_size)
+            batches = []
+            for batch in data:
+                emulated_magnitudes = self._models[f].call(batch)
+                batches.append(emulated_magnitudes.numpy())
+            
+            photometry_bands.append(np.vstack(batches))
 
         photometry_bands_array = np.asarray(photometry_bands)[:, :, 0].T
         photometry_all.append(photometry_bands_array + np.reshape(photo_corrections, (data_size, 1)))

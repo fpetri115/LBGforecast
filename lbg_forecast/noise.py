@@ -16,6 +16,8 @@ def select_u_dropouts(observed_catalog, depth):
     udrop = udrop.drop(udrop[udrop.r < 23].index)
     udrop = udrop.drop(udrop[udrop.r > depth].index)
 
+    #udrop = udrop.drop(udrop[np.isnan(udrop.r5) == True].index)
+
     return udrop.filter(['u','g','r','i','z'])
 
 def select_g_dropouts(observed_catalog, depth):
@@ -27,10 +29,10 @@ def select_g_dropouts(observed_catalog, depth):
     #gdrop = gdrop.dropna(axis=0, subset=['g']) 
 
     gdrop = gdrop.drop(gdrop[gdrop.i < 23].index)
-    gdrop = gdrop.drop(gdrop[gdrop.i > depth].index)
+    #gdrop = gdrop.drop(gdrop[gdrop.i > depth].index)
 
-    #gdrop = gdrop.drop(gdrop[np.isnan(gdrop.g5) == False].index)
-    gdrop = gdrop.drop(gdrop[np.isnan(gdrop.u2) == False].index)
+    gdrop = gdrop.drop(gdrop[np.isnan(gdrop.i5) == True].index)
+    #gdrop = gdrop.drop(gdrop[np.isnan(gdrop.u2) == False].index)
 
     return gdrop.filter(['u','g','r','i','z'])
 
@@ -42,10 +44,10 @@ def select_r_dropouts(observed_catalog, depth):
     #rdrop = rdrop.dropna(axis=0, subset=['z5'])
     #rdrop = rdrop.dropna(axis=0, subset=['r']) 
 
-    rdrop = rdrop.drop(rdrop[rdrop.z < 23.5].index)
-    rdrop = rdrop.drop(rdrop[rdrop.z > depth].index)
+    rdrop = rdrop.drop(rdrop[rdrop.z < 23].index)
+    #rdrop = rdrop.drop(rdrop[rdrop.z > depth].index)
     
-    #rdrop = rdrop.drop(rdrop[np.isnan(rdrop.r5) == False].index)
+    rdrop = rdrop.drop(rdrop[np.isnan(rdrop.z5) == True].index)
     rdrop = rdrop.drop(rdrop[np.isnan(rdrop.g2) == False].index)
 
     return rdrop.filter(['u','g','r','i','z'])
@@ -104,7 +106,7 @@ def unpack_mags_all(dropout_data):
     
     return dropout_mags
 
-def get_noisy_magnitudes(sps_params, noiseless_photometry, udepth=25, gdepth=25.2, rdepth=25.7):
+def get_noisy_magnitudes(sps_params, noiseless_photometry, udepth=25.3, gdepth=25, rdepth=25):
 
     observed_catalog = setup_catalog(noiseless_photometry)
 
