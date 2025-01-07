@@ -51,9 +51,12 @@ csfrd_prior = comm.bcast(csfrd_prior, root=0)
 
 #setup memory
 sps_buf = np.zeros((nrealisations, ngals, NSPS_PARAMS))
+nlsst_buf = np.zeros((nrealisations))
 recv_buf = None
+recv_nlsst_buf=  None
 if(rank == 0):
     recv_buf = np.zeros((nrealisations * size, ngals, NSPS_PARAMS))
+    recv_nlsst_buf = np.zeros((size*nrealisations))
 
 #comm.barrier()
 
@@ -62,8 +65,9 @@ if(rank == 0):
     print("Begin Sampling ... ", flush=True)
 
 for n in range(nrealisations):
-    sps_params = pop.generate_sps_parameters(ngals, mass_function_prior, dust_prior, csfrd_prior, mean=mean, uniform_redshift_mass=False)
+    sps_params, nlsst = pop.generate_sps_parameters(ngals, mass_function_prior, dust_prior, csfrd_prior, return_nlsst=True, mean=mean, uniform_redshift_mass=False)
     sps_buf[n, :, :] = sps_params
+    nlsst_buf[n] = nlsst
     if(rank == 0):
         print("Realisation: ", n+1, flush=True)
 
@@ -73,12 +77,10 @@ if(rank == 0):
 
 #gather arrays
 comm.Gather(sps_buf, recv_buf, root=0)
+comm.Gather(nlsst_buf, recv_nlsst_buf, root=0)
 
 if(rank == 0):
     print("Gather Finished ... ", flush=True)
-#comm.barrier()
-
-#save
-if(rank == 0):
     np.save(path+"sps_parameter_samples/sps_"+run+".npy", recv_buf)
+    np.save(path+"sps_parameter_samples/nlsst_"+run+".npy", recv_nlsst_buf)
     print("Complete.", flush=True)

@@ -194,6 +194,7 @@ class MassFunctionPrior():
 
         print("Calculating Normalisation ... ")
         norm = self.n_tot(sparams)
+        lsst_no_den = self.lsst_number_density(sparams)
 
         print("MCMC Sampling ... ")
         sampler = emcee.EnsembleSampler(nwalkers, ndim, self.logpdf, args=[sparams, norm, prior_bounds])
@@ -207,7 +208,7 @@ class MassFunctionPrior():
         redshift_samples = samples[:, 0]
         mass_samples = samples[:, 1]
 
-        return redshift_samples[burnin:nsamples+burnin], mass_samples[burnin:nsamples+burnin]
+        return redshift_samples[burnin:nsamples+burnin], mass_samples[burnin:nsamples+burnin], lsst_no_den
 
     def schechter_function(self, logm, logphi, logm_star, alpha):
         return np.log(10)*(10**logphi)*10**((logm-logm_star)*(alpha+1))*np.exp(-10**(logm-logm_star))
