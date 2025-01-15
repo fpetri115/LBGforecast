@@ -14,7 +14,7 @@ def select_u_dropouts(observed_catalog, depth):
     #udrop['u'].replace(np.nan, 30.0, inplace=True)
 
     udrop = udrop.drop(udrop[udrop.r < 23].index)
-    udrop = udrop.drop(udrop[udrop.r > depth].index)
+    udrop = udrop.drop(udrop[udrop.r > 25.7].index)
 
     #udrop = udrop.drop(udrop[np.isnan(udrop.r5) == True].index)
 
@@ -48,7 +48,7 @@ def select_r_dropouts(observed_catalog, depth):
     #rdrop = rdrop.drop(rdrop[rdrop.z > depth].index)
     
     rdrop = rdrop.drop(rdrop[np.isnan(rdrop.z5) == True].index)
-    rdrop = rdrop.drop(rdrop[np.isnan(rdrop.g2) == False].index)
+    #rdrop = rdrop.drop(rdrop[np.isnan(rdrop.g2) == False].index)
 
     return rdrop.filter(['u','g','r','i','z'])
 
