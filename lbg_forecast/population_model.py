@@ -11,7 +11,7 @@ from scipy.stats import t
 import lbg_forecast.modified_prospector_beta as mpb
 
 
-def generate_sps_parameters(nsamples, mass_function_prior, dust_prior, csfrd_prior, mean, return_nlsst=False, uniform_redshift_mass=False, uniform_logf=False):
+def generate_sps_parameters(nsamples, mass_function_prior, dust_prior, csfrd_prior, mean, return_totn=False, uniform_redshift_mass=False, uniform_logf=False):
     """Sample sps parameters given some prior parameters.
     """
 
@@ -24,7 +24,7 @@ def generate_sps_parameters(nsamples, mass_function_prior, dust_prior, csfrd_pri
         z_samples = np.random.uniform(0.0, 7.0, nsamples)
         m_samples = np.random.uniform(7, 13, nsamples)
     else:
-        z_samples, m_samples, nlsst = mass_function_prior.sample_logpdf(nsamples)
+        z_samples, m_samples, totn_cut, totn = mass_function_prior.sample_logpdf(nsamples)
 
     sps_parameters = []
 
@@ -97,8 +97,8 @@ def generate_sps_parameters(nsamples, mass_function_prior, dust_prior, csfrd_pri
     
     sps_parameters.append(10**mass)
 
-    if(return_nlsst):
-        return np.transpose(np.array(sps_parameters)), nlsst
+    if(return_totn):
+        return np.transpose(np.array(sps_parameters)), totn_cut, totn
 
     else:
         return np.transpose(np.array(sps_parameters))

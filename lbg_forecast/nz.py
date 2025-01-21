@@ -41,6 +41,17 @@ def build_redshift_distribution_samples_object(u_data, g_data, r_data):
 
     return redshift_array
 
+def build_sps_samples_object(u_data, g_data, r_data):
+
+    u_params = cuts.get_params(u_data)
+    g_params = cuts.get_params(g_data)
+    r_params = cuts.get_params(r_data)
+
+    params_array = np.empty(3, object)
+    params_array[:] = [u_params, g_params, r_params]     
+
+    return params_array
+
 def build_colour_samples_object(u_data, g_data, r_data):
 
     u_colours = cuts.get_colours(u_data)
@@ -52,7 +63,7 @@ def build_colour_samples_object(u_data, g_data, r_data):
 
     return colour_array
 
-def calculate_nzs_from_photometry(sps_params, source_photometry, colours=False):
+def calculate_nzs_from_photometry(sps_params, source_photometry, extra=False):
 
     #apply noise, the perform SNR, brightness and faintness cuts
     all_dropouts_mags = noise.get_noisy_magnitudes(sps_params, source_photometry)
@@ -66,10 +77,11 @@ def calculate_nzs_from_photometry(sps_params, source_photometry, colours=False):
     #get selected redshift samples and combine into object array
     nzs = build_redshift_distribution_samples_object(u_data, g_data, r_data)
 
-    if(colours==False):
+    if(extra==False):
         return nzs
     else:
         colours = build_colour_samples_object(u_data, g_data, r_data)
-        return nzs, colours
+        params = build_sps_samples_object(u_data, g_data, r_data)
+        return nzs, colours, params
 
 

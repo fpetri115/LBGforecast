@@ -149,3 +149,9 @@ def get_colours(data):
     params, colours, inds = data
     return colours
 
+def get_params(data):
+    """Get redshift samples from [sps_params, colours, inds] object
+    """
+    params, colours, inds = data
+    return params
+

@@ -51,36 +51,41 @@ csfrd_prior = comm.bcast(csfrd_prior, root=0)
 
 #setup memory
 sps_buf = np.zeros((nrealisations, ngals, NSPS_PARAMS))
-nlsst_buf = np.zeros((nrealisations))
-recv_buf = None
-recv_nlsst_buf=  None
+totn_cut_buf = np.zeros((nrealisations))
+totn_buf = np.zeros((nrealisations))
+
 if(rank == 0):
     recv_buf = np.zeros((nrealisations * size, ngals, NSPS_PARAMS))
-    recv_nlsst_buf = np.zeros((size*nrealisations))
-
-#comm.barrier()
+    recv_totn_cut_buf = np.zeros((size*nrealisations))
+    recv_totn_buf = np.zeros((size*nrealisations))
+else:
+    recv_buf = None
+    recv_totn_cut_buf = None
+    recv_totn_buf=  None
 
 #sample SPS parameters
 if(rank == 0):
     print("Begin Sampling ... ", flush=True)
 
 for n in range(nrealisations):
-    sps_params, nlsst = pop.generate_sps_parameters(ngals, mass_function_prior, dust_prior, csfrd_prior, return_nlsst=True, mean=mean, uniform_redshift_mass=False)
+    sps_params, totn_cut, totn = pop.generate_sps_parameters(ngals, mass_function_prior, dust_prior, csfrd_prior, return_totn=True, mean=mean, uniform_redshift_mass=False)
     sps_buf[n, :, :] = sps_params
-    nlsst_buf[n] = nlsst
+    totn_cut_buf[n] = totn_cut
+    totn_buf[n] = totn
     if(rank == 0):
         print("Realisation: ", n+1, flush=True)
 
 if(rank == 0):
     print("Waiting For Other Processes ... ", flush=True)
-#comm.barrier()
 
 #gather arrays
 comm.Gather(sps_buf, recv_buf, root=0)
-comm.Gather(nlsst_buf, recv_nlsst_buf, root=0)
+comm.Gather(totn_cut_buf, recv_totn_cut_buf, root=0)
+comm.Gather(totn_buf, recv_totn_buf, root=0)
 
 if(rank == 0):
     print("Gather Finished ... ", flush=True)
     np.save(path+"sps_parameter_samples/sps_"+run+".npy", recv_buf)
-    np.save(path+"sps_parameter_samples/nlsst_"+run+".npy", recv_nlsst_buf)
+    np.save(path+"sps_parameter_samples/totn_cut_"+run+".npy", recv_totn_cut_buf)
+    np.save(path+"sps_parameter_samples/totn_"+run+".npy", recv_totn_buf)
     print("Complete.", flush=True)

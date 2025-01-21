@@ -85,8 +85,6 @@ class MassFunctionPrior():
         alpha1 = np.interp(z, self.alpha1_test_z, alpha1)
         logm_star = np.interp(z, self.logm_test_z, logm_star)
 
-        #mfunc = np.where(np.atleast_1d(z)>3, self.schechter_function(logm, logphi1, logm_star, alpha1), self.double_schechter_function(logm, logphi1, logphi2, alpha1, alpha2, logm_star))
-
         mfunc = self.schechter_function(logm, logphi1, logm_star, alpha1)
         return mfunc
     
@@ -101,19 +99,23 @@ class MassFunctionPrior():
 
         return np.trapz(n_z*self.dvdzgrid, self.z_grid)/utils.FULL_SKY_DEG2
     
-    def number_of_galaxies_in_volume(self, sparams, z1, z2):
+    def number_of_galaxies_in_volume(self, sparams, z1, z2, mmin):
         i=0
         n_z=[]
         indx=[]
+        logms = self.logm_grid[np.where(self.logm_grid > mmin)[0]]
         for z in self.z_grid:
             if(z >= z1 and z <= z2):
                 indx.append(i)
-                n_logm = self.mass_function(z, self.logm_grid, sparams)
-                n_logm = np.trapz(n_logm, self.logm_grid)
+                n_logm = self.mass_function(z, logms, sparams)
+                n_logm = np.trapz(n_logm, logms)
                 n_z.append(n_logm)
                 i+=1
 
         return np.trapz(n_z*self.dvdzgrid[indx], self.z_grid[indx])
+    
+    def surface_number_density_in_volume(self, sparams, z1, z2, mmin):
+        return self.number_of_galaxies_in_volume(sparams, z1, z2, mmin)/utils.FULL_SKY_DEG2
 
     def n_tot(self, sparams):
         """mass function normalisation"""
@@ -191,8 +193,8 @@ class MassFunctionPrior():
 
         print("Calculating Normalisation ... ")
         norm = self.n_tot(sparams)
-        lsst_no_den = self.lsst_number_density(sparams)
-        lsst_no_den = self.number_of_galaxies_in_volume(sparams, 3.5, 4.5)
+        totn_cut = self.surface_number_density_in_volume(sparams, 0.0, 7.0, 8.0)
+        totn = self.surface_number_density_in_volume(sparams, 0.0, 7.0, 0.0)
 
         print("MCMC Sampling ... ")
         sampler = emcee.EnsembleSampler(nwalkers, ndim, self.logpdf, args=[sparams, norm, prior_bounds])
@@ -206,7 +208,7 @@ class MassFunctionPrior():
         redshift_samples = samples[:, 0]
         mass_samples = samples[:, 1]
 
-        return redshift_samples[burnin:nsamples+burnin], mass_samples[burnin:nsamples+burnin], lsst_no_den
+        return redshift_samples[burnin:nsamples+burnin], mass_samples[burnin:nsamples+burnin], totn_cut, totn
 
     def schechter_function(self, logm, logphi, logm_star, alpha):
         return np.log(10)*(10**logphi)*10**((logm-logm_star)*(alpha+1))*np.exp(-10**(logm-logm_star))
