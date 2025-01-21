@@ -42,7 +42,7 @@ class MassFunctionPrior():
 
         self.dvdzgrid = self.dvdz_grid(self.z_grid, self.dz)
 
-        self.param_names = ["$\mathrm{log}_{10}\phi_{1}^{*}$", "$\mathrm{log}_{10}\phi_{2}^{*}$", "$\\alpha_{1}$", "$\\alpha_{2}$", "$\mathrm{log}_{10}\mathcal{M}_{*}$"]
+        self.param_names = ["$\mathrm{log}_{10}\phi^{*}$", "$\\alpha$", "$\mathrm{log}_{10}\mathcal{M}_{*}$"]
         state_dict_phi1 = torch.load(self.path+'/gp_models/phi1.pth', weights_only=True)
         state_dict_alpha1 = torch.load(self.path+'/gp_models/alpha1.pth', weights_only=True)
         state_dict_logm = torch.load(self.path+'/gp_models/logm.pth', weights_only=True)
@@ -54,17 +54,17 @@ class MassFunctionPrior():
         self.model_phi1 = create_gp_model([2.0, 999.0], [-999.0, 999.0], sorted_train_logphi1_errs, sorted_train_redshift_logphi1, sorted_train_logphi1)[0]
         self.model_phi1.load_state_dict(state_dict_phi1)
         self.model_phi1.eval()
-        self.phi1_test_z = torch.linspace(0, 7, 100)
+        self.phi1_test_z = torch.linspace(0.0, 8.0, 100)
 
         self.model_alpha1 = create_gp_model([2.0, 999.0], [-999.0, 999.0], sorted_train_alpha1_errs, sorted_train_redshift_alpha1, sorted_train_alpha1)[0]
         self.model_alpha1.load_state_dict(state_dict_alpha1)
         self.model_alpha1.eval()
-        self.alpha1_test_z = torch.linspace(0, 7.0, 100)
+        self.alpha1_test_z = torch.linspace(0.0, 8.0, 100)
 
         self.model_logm = create_gp_model([2.0, 999.0], [-999.0, 999.0], sorted_train_logm_errs, sorted_train_redshift_logm, sorted_train_logm)[0]
         self.model_logm.load_state_dict(state_dict_logm)
         self.model_logm.eval()
-        self.logm_test_z = torch.linspace(0, 7, 100)
+        self.logm_test_z = torch.linspace(0.0, 8.0, 100)
 
         self.prior_phi1 = self.model_phi1(self.phi1_test_z)
         self.prior_alpha1 = self.model_alpha1(self.alpha1_test_z)
@@ -250,75 +250,83 @@ class MassFunctionPrior():
 
         with torch.no_grad():
             # Initialize plot
-            f, ax = plt.subplots(5, 1, figsize=(10, 20), sharex=True)
+            f, ax = plt.subplots(3, 1, figsize=(10, 20), sharex=True)
 
             indx = 0
             for plot in ax:
                 
                 prior = self.priors[indx]
-                train_x = self.train_x[indx]
-                train_y = self.train_y[indx]
-                train_y_err = self.train_yerr[indx]
+                train_x = self.train_x[indx].numpy()
+                train_y = self.train_y[indx].numpy()
+                train_y_err = self.train_yerr[indx].numpy()
                 test_x = self.test_x[indx]
-                
-                anchor_points = np.array([0.2, 1.6, 3.0])
-                #find leja 2020 data
-                anchor_indexes = []
-                for a in anchor_points:
-                    anchor_indexes.append(np.where(train_x.numpy() == a)[0][0])
 
-                mcleod_redshift_lower_bin_edge = np.array([0.0, 0.25, 0.75, 1.25, 1.75, 2.25, 2.75])
-                mcleod_redshift_upper_bin_edge = np.array([0.06, 0.75, 1.25, 1.75, 2.25, 2.75, 3.75001])
-                mcleod_points = (mcleod_redshift_lower_bin_edge + mcleod_redshift_upper_bin_edge)/2
-
-                mcleod_indexes = []
-                for p in mcleod_points:
-                    mcleod_indexes.append(np.where(train_x.numpy() == p)[0][0])
-
-
+                ms=10
+                c='grey'
+                capsize=7
+                elinewidth=2
+                capwidth=1
+                est_error_colour = 'red'
 
                 # Get upper and lower confidence bounds
                 lower, upper = prior.confidence_region()
                 # Plot training data
 
                 if(indx==0):
-                    plot.errorbar(np.delete(train_x.numpy(), np.concatenate((anchor_indexes, mcleod_indexes))), np.delete(train_y.numpy(), np.concatenate((anchor_indexes, mcleod_indexes))), yerr=np.delete(train_y_err, np.concatenate((anchor_indexes, mcleod_indexes))), fmt='d', color='grey', capsize=5, ms=12, label='Weaver et al. (2023)', elinewidth=3, ecolor='k')
-                    plot.errorbar(anchor_points, train_y.numpy()[anchor_indexes], yerr=train_y_err[anchor_indexes], fmt='o', color='brown', capsize=5, ms=12, label='Leja et al. (2020)', ecolor='k', elinewidth=3)
-                    plot.errorbar(mcleod_points, train_y.numpy()[mcleod_indexes], yerr=train_y_err[mcleod_indexes], fmt='v', color='purple', capsize=5, ms=12, label='Mcleod et al. (2021)', ecolor='k', elinewidth=3)
+                    san = np.where(train_x < 2.6)[0]
+                    w = np.where((train_x < 3.5)&(train_x > 2.6))[0]
+                    nc = np.where(train_x > 3.5)[0]
+                    nc8 = np.where(train_x > 7.0)[0]
+
+                    plot.errorbar(train_x[san], train_y[san], train_y_err[san], fmt='d', color=c, capsize=capsize, ms=ms, label='Santini et al. (2021)', elinewidth=elinewidth, capthick=capwidth, ecolor='k')
+                    plot.errorbar(train_x[w], train_y[w], train_y_err[w], fmt='o', color=c, capsize=capsize, ms=ms, label='Weaver et al. (2023)', elinewidth=elinewidth, capthick=capwidth, ecolor='k')
+                    plot.errorbar(train_x[nc], train_y[nc], train_y_err[nc], fmt='v', color=c, capsize=capsize, ms=ms, label='Navarro-Carrera et al. (2024)', elinewidth=elinewidth, capthick=capwidth, ecolor='k')
+                    plot.errorbar(train_x[nc8], train_y[nc8], train_y_err[nc8], fmt='v', color=c, capsize=capsize, ms=ms, elinewidth=elinewidth, capthick=capwidth, ecolor='k')
+
 
                     # Plot predictive means as blue line
-                    plot.plot(test_x.numpy(), prior.mean, 'b', lw=5, label='Gaussian Process Mean')
+                    plot.plot(test_x.numpy(), prior.mean, color='purple', lw=5, label='Gaussian Process Mean')
                     # Shade between the lower and upper confidence bounds
-                    plot.fill_between(test_x.numpy(), lower, upper, alpha=0.25, label='Gaussian Process 2$\sigma$ Confidence')
+                    plot.fill_between(test_x.numpy(), lower, upper, alpha=0.25, color='purple', label='Gaussian Process 2$\sigma$ Confidence', lw=0)
 
                     plot.legend(fontsize=14)
 
                 else:
-                    plot.errorbar(np.delete(train_x.numpy(), np.concatenate((anchor_indexes, mcleod_indexes))), np.delete(train_y.numpy(), np.concatenate((anchor_indexes, mcleod_indexes))), yerr=np.delete(train_y_err, np.concatenate((anchor_indexes, mcleod_indexes))), fmt='d', color='grey', capsize=5, ms=12, elinewidth=3, ecolor='k')
-                    plot.errorbar(anchor_points, train_y.numpy()[anchor_indexes], yerr=train_y_err[anchor_indexes], fmt='o', color='brown', capsize=5, ms=12, ecolor='k', elinewidth=3)
-                    plot.errorbar(mcleod_points, train_y.numpy()[mcleod_indexes], yerr=train_y_err[mcleod_indexes], fmt='v', color='purple', capsize=5, ms=12, label='Mcleod et al. (2021)', ecolor='k', elinewidth=3)
+                    plot.errorbar(train_x[san], train_y[san], train_y_err[san], fmt='d', color=c, capsize=capsize, ms=ms, label='Santini et al. (2023)', elinewidth=elinewidth, capthick=capwidth, ecolor='k')
+                    if(indx == 1):
+                        plot.errorbar(train_x[w], train_y[w], train_y_err[w], fmt='o', color=est_error_colour, capsize=capsize, ms=ms, label='Weaver et al. (2023)', elinewidth=elinewidth, capthick=capwidth, ecolor=est_error_colour)
+                    else:
+                        plot.errorbar(train_x[w], train_y[w], train_y_err[w], fmt='o', color=c, capsize=capsize, ms=ms, label='Weaver et al. (2023)', elinewidth=elinewidth, capthick=capwidth, ecolor='k') 
+                    plot.errorbar(train_x[nc], train_y[nc], train_y_err[nc], fmt='v', color=c, capsize=capsize, ms=ms, label='Navarro-Carrera et al. (2023)', elinewidth=elinewidth, capthick=capwidth, ecolor='k')
+                    if(indx == 2):
+                        plot.errorbar(train_x[nc8], train_y[nc8], train_y_err[nc8], fmt='v', color=est_error_colour, capsize=capsize, ms=ms, elinewidth=elinewidth, capthick=capwidth, ecolor=est_error_colour)
+                    else:
+                        plot.errorbar(train_x[nc8], train_y[nc8], train_y_err[nc8], fmt='v', color=c, capsize=capsize, ms=ms, elinewidth=elinewidth, capthick=capwidth, ecolor='k')
 
                     # Plot predictive means as blue line
-                    plot.plot(test_x.numpy(), prior.mean, 'b', lw=5)
+                    plot.plot(test_x.numpy(), prior.mean, color='purple', lw=5)
                     # Shade between the lower and upper confidence bounds
-                    plot.fill_between(test_x.numpy(), lower, upper, alpha=0.25)
+                    plot.fill_between(test_x.numpy(), lower, upper, alpha=0.25, color='purple', lw=0)
 
                 #ax.legend(['Observed Data', 'Mean', 'Confidence'])
                 plot.set_ylabel(self.param_names[indx], fontsize=32)
 
 
                 if(indx==1 or indx==3):
-                    plot.set_xlim(-0.2, 7.2)
-                    plot.set_xticks([0, 1, 2, 3, 4, 5, 6, 7])
+                    plot.set_xlim(-0.2, 8.2)
+                    plot.set_xticks([0, 1, 2, 3, 4, 5, 6, 7, 8])
                 else:
-                    plot.set_xlim(-0.2, 7.2)
-                    plot.set_xticks([0, 1, 2, 3, 4, 5, 6, 7])
+                    plot.set_xlim(-0.2, 8.2)
+                    plot.set_xticks([0, 1, 2, 3, 4, 5, 6, 7, 8])
 
                 plot.tick_params('x', labelsize=20, direction='in', width=2, size=7, top=True)
                 plot.tick_params('y', labelsize=20, direction='in', width=2, size=7, right=True)
                 plot.minorticks_on()
                 plot.tick_params(axis='x', which='minor', direction='in', size=5, top=True)
                 plot.tick_params(axis='y', which='minor', direction='in', size=5, right=True)
+
+                plot.grid(visible=True, alpha=0.2)
+
                 indx+=1
 
             plot.set_xlabel("Redshift", fontsize=32)
@@ -434,11 +442,11 @@ def gp(train_x, train_y, train_y_errs, test_x, lengthscale, scalefactor, lr, tra
 def get_phi1_data(plotting=False):
 
     #nc 2024
-    nc_low_mass_norm_val = np.array([1.65e-4, 9.6e-5, 6.3e-5, 1.3e-5])
-    nc_low_mass_norm_errl = np.array([0.04e-4, 0.9e-5, 1.0e-5, 1.0e-5])
-    nc_low_mass_norm_errh = np.array([0.04e-4, 0.9e-5, 1.0e-5, 1.0e-5])
+    nc_low_mass_norm_val = np.array([1.65e-4, 9.6e-5, 6.3e-5, 1.3e-5, 2.8e-6])
+    nc_low_mass_norm_errl = np.array([0.04e-4, 0.9e-5, 1.0e-5, 1.0e-5, 2.1e-6])
+    nc_low_mass_norm_errh = np.array([0.04e-4, 0.9e-5, 1.0e-5, 1.0e-5, 2.1e-6])
     nc_low_mass_norm_errs = (nc_low_mass_norm_errl + nc_low_mass_norm_errh)/2
-    nc_redshift = np.array([4.0, 5.0, 6.0, 7.0])
+    nc_redshift = np.array([4.0, 5.0, 6.0, 7.0, 8.0])
 
     #weaver 2023
     w_low_mass_norm_val = np.array([0.24e-3, 0.21e-3])
@@ -517,6 +525,14 @@ def get_phi1_data(plotting=False):
     gra_redshift_upper_bin_edge = np.array([4.5, 5.5, 6.7, 7.5])
     gra_redshift_midpoint = (gra_redshift_lower_bin_edge + gra_redshift_upper_bin_edge)/2
 
+    #kiku 2020
+    kiku_low_mass_norm_val = np.array([45.7e-5, 60.3e-5])
+    kiku_low_mass_norm_log_errl = np.array([25.7e-5, 46.8e-5])
+    kiku_low_mass_norm_log_errh = np.array([33.7e-5, 37.5e-5])
+    kiku_low_mass_norm_log_errs = (kiku_low_mass_norm_log_errl + kiku_low_mass_norm_log_errh)/2
+
+    kiku_redshift = np.array([8, 9])
+
     #nc error prop
     log_nc_val, log_nc_err = log_error_prop(nc_low_mass_norm_val, nc_low_mass_norm_errs)
 
@@ -528,6 +544,9 @@ def get_phi1_data(plotting=False):
 
     #w error prop
     log_w_val, log_w_err = log_error_prop(w_low_mass_norm_val, w_low_mass_norm_errs)
+
+    #kiku error prop
+    log_kiku_val, log_kiku_err = log_error_prop(kiku_low_mass_norm_val, kiku_low_mass_norm_log_errs)
 
     #train_logphi1 = torch.from_numpy(np.concatenate((log_nc_val, log_san_low_mass_norm_val, stef_low_mass_norm_val, log_song_val, mo_low_mass_norm_val, log_caputi_val, log_weibel_low_mass_norm_val, log_mcleod_low_mass_norm_val, log_gra_low_mass_norm_val)))
     #train_logphi1_errs = torch.from_numpy(np.concatenate((log_nc_err, san_low_mass_norm_log_errs, stef_low_mass_norm_errs, log_song_err, mo_low_mass_norm_errs, log_caputi_err, weibel_low_mass_norm_log_errs, mcleod_low_mass_norm_log_errs, gra_low_mass_norm_log_errs)))
@@ -559,11 +578,11 @@ def get_phi1_data(plotting=False):
 def get_alpha1_data(plotting=False):
 
     #nc 2024
-    nc_alpha_val = np.array([-1.61, -1.69, -1.88, -1.98])
-    nc_alpha_errl = np.array([0.06, 0.07, 0.09, 0.14])
-    nc_alpha_errh = np.array([0.06, 0.07, 0.09, 0.14])
+    nc_alpha_val = np.array([-1.61, -1.69, -1.88, -1.98, -1.93])
+    nc_alpha_errl = np.array([0.06, 0.07, 0.09, 0.14, 0.22])
+    nc_alpha_errh = np.array([0.06, 0.07, 0.09, 0.14, 0.22])
     nc_alpha_errs = (nc_alpha_errl + nc_alpha_errh)/2
-    nc_redshift = np.array([4.0, 5.0, 6.0, 7.0])
+    nc_redshift = np.array([4.0, 5.0, 6.0, 7.0, 8.0])
 
     #weaver 2023
     w_alpha_val = np.array([-1.46, -1.46])
@@ -640,6 +659,12 @@ def get_alpha1_data(plotting=False):
     gra_redshift_upper_bin_edge = np.array([4.5, 5.5, 6.7, 7.5])
     gra_redshift_midpoint = (gra_redshift_lower_bin_edge + gra_redshift_upper_bin_edge)/2
 
+    kiku_alpha_val = np.array([-1.52, -1.55])
+    kiku_alpha_errl = np.array([0.26, 0.30])
+    kiku_alpha_errh = np.array([0.27, 0.29])
+    kiku_alpha_errs = (kiku_alpha_errl + kiku_alpha_errh)/2
+    kiku_redshift = np.array([8, 9])
+
     #train_alpha1 = torch.from_numpy(np.concatenate((nc_alpha_val, san_alpha_val, stef_alpha_val, song_alpha_val, mo_alpha_val, caputi_alpha_val, weibel_alpha_val, mcleod_alpha_val, gra_alpha_val)))
     #train_alpha1_errs = torch.from_numpy(np.concatenate((nc_alpha_errs, san_alpha_errs, stef_alpha_errs, song_alpha_errs, mo_alpha_errs, caputi_alpha_errs, weibel_alpha_errs, mcleod_alpha_errs, gra_alpha_errs)))
     #train_redshift = torch.from_numpy(np.concatenate((nc_redshift, san_redshift_midpoint, stef_redshift, song_redshift, mo_redshift_midpoint, caputi_redshift, weibel_redshift, mcleod_redshift_midpoint, gra_redshift_midpoint)))
@@ -668,11 +693,11 @@ def get_alpha1_data(plotting=False):
 def get_logm_data(plotting=False):
 
     #nc 2024 (c-imf)
-    nc_logm_val = np.array([10.48, 10.45, 10.33, 10.68])
-    nc_logm_errl = np.array([0.15, 0.27, 0.36, 0.79])
-    nc_logm_errh = np.array([0.15, 0.27, 0.36, 0.79])
+    nc_logm_val = np.array([10.48, 10.45, 10.33, 10.68, 10.70])
+    nc_logm_errl = np.array([0.15, 0.27, 0.36, 0.79, 0.79])
+    nc_logm_errh = np.array([0.15, 0.27, 0.36, 0.79, 0.79])
     nc_logm_errs = (nc_logm_errl + nc_logm_errh)/2
-    nc_redshift = np.array([4.0, 5.0, 6.0, 7.0])
+    nc_redshift = np.array([4.0, 5.0, 6.0, 7.0, 8.0])
 
     #weaver 2023 (c-imf)
     w_logm_val = np.array([10.97, 10.83])
@@ -748,6 +773,12 @@ def get_logm_data(plotting=False):
     gra_redshift_lower_bin_edge = np.array([3.5, 4.5, 5.5, 6.5])
     gra_redshift_upper_bin_edge = np.array([4.5, 5.5, 6.7, 7.5])
     gra_redshift_midpoint = (gra_redshift_lower_bin_edge + gra_redshift_upper_bin_edge)/2
+
+    kiku_logm_val = np.array([8.93, 9.04])
+    kiku_logm_errl = np.array([0.15, 0.18])
+    kiku_logm_errh = np.array([0.23, 0.47])
+    kiku_logm_errs = (kiku_logm_errl + kiku_logm_errh)/2
+    kiku_redshift = np.array([8, 9])
 
     #caputi error prop
     caputi_val, caputi_err = log_error_prop(caputi_logm_val, caputi_logm_errs)
