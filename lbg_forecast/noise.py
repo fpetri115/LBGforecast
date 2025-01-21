@@ -13,7 +13,7 @@ def select_u_dropouts(observed_catalog, depth):
     #udrop = udrop.drop(udrop[np.isnan(udrop.u2) == False].index)
     #udrop['u'].replace(np.nan, 30.0, inplace=True)
 
-    udrop = udrop.drop(udrop[udrop.r < 23].index)
+    udrop = udrop.drop(udrop[udrop.r < 20].index)
     udrop = udrop.drop(udrop[udrop.r > 25.7].index)
 
     #udrop = udrop.drop(udrop[np.isnan(udrop.r5) == True].index)
@@ -28,7 +28,7 @@ def select_g_dropouts(observed_catalog, depth):
     #gdrop = gdrop.dropna(axis=0, subset=['i5'])
     #gdrop = gdrop.dropna(axis=0, subset=['g']) 
 
-    gdrop = gdrop.drop(gdrop[gdrop.i < 23].index)
+    gdrop = gdrop.drop(gdrop[gdrop.i < 20].index)
     #gdrop = gdrop.drop(gdrop[gdrop.i > depth].index)
 
     gdrop = gdrop.drop(gdrop[np.isnan(gdrop.i5) == True].index)
@@ -44,7 +44,7 @@ def select_r_dropouts(observed_catalog, depth):
     #rdrop = rdrop.dropna(axis=0, subset=['z5'])
     #rdrop = rdrop.dropna(axis=0, subset=['r']) 
 
-    rdrop = rdrop.drop(rdrop[rdrop.z < 23].index)
+    rdrop = rdrop.drop(rdrop[rdrop.z < 20].index)
     #rdrop = rdrop.drop(rdrop[rdrop.z > depth].index)
     
     rdrop = rdrop.drop(rdrop[np.isnan(rdrop.z5) == True].index)
