@@ -27,7 +27,7 @@ class CSFRDPrior():
         self.path = path
         self.train_data = get_training_data(path=self.path, plot=False)
         state_dict = torch.load(path+'/gp_models/csfrd.pth', weights_only=True)
-        self.model = create_gp_model(self.train_data[0], self.train_data[2], self.train_data[3], [1.0, 7.0], [0.5, 100])[0]
+        self.model = create_gp_model(self.train_data[0], self.train_data[2], self.train_data[3], [1.0, 7.0], [np.log10(1.5), 999])[0]
         self.model.load_state_dict(state_dict)
         self.test_redshift = torch.linspace(0, 30, 500).to(torch.double)
         self.prior = gp_evaluate_model(self.model, self.test_redshift)
@@ -83,7 +83,7 @@ class CSFRDPrior():
             ax.tick_params(axis='y', labelsize=32)
             ax.tick_params(axis='x', labelsize=32)
             ax.grid(visible=True, zorder=-1, alpha=0.2)
-            #ax.set_xscale('function', functions=(forward, inverse))
+            ax.set_xscale('function', functions=(forward, inverse))
             #ax.set_yscale('log')
             ax.legend(frameon=False, fontsize=24)
             ax.tick_params(which='minor', width=2, size=5)
@@ -131,6 +131,10 @@ def gp_training_loop(model, likelihood, train_x, train_y, training_iter=5000, lr
     model.train()
     likelihood.train()
 
+    #print parameter values
+    for param_name, param in model.named_parameters():
+        print(f'Parameter name: {param_name:42} value = {param.item()}')
+
     # Use the adam optimizer
     optimizer = torch.optim.Adam(model.parameters(), lr=lr)  # Includes GaussianLikelihood parameters
 
@@ -151,6 +155,10 @@ def gp_training_loop(model, likelihood, train_x, train_y, training_iter=5000, lr
             #model.likelihood.noise.item()
         #))
         optimizer.step()
+
+    #print parameter values
+    for param_name, param in model.named_parameters():
+        print(f'Parameter name: {param_name:42} value = {param.item()}')
 
     return model, likelihood
 
@@ -175,7 +183,7 @@ def get_training_data(path, plot=False):
     log_val = np.array(data["Val"])[rows]
     log_err_h = np.array(data["Err_h"])[rows]
     log_err_l = np.array(data["Err_l"])[rows]
-    log_err = np.maximum(log_err_l, log_err_h)
+    log_err = (log_err_l + log_err_h)/2#np.maximum(log_err_l, log_err_h)
 
     train_redshift = redshift
     train_csfrd = log_val
