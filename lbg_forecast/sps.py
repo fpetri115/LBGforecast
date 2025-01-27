@@ -169,11 +169,12 @@ def get_magnitudes(sps_model, filters, cosmology, modify_igm=False, lya_uncertai
 
     redshifted_spectrum_cgs = redshifted_spectrum*(lsun/(4.0*np.pi*(luminosity_distance**2))) #erg s-1 cm-2 aa-1
     redshifted_spectrum_sedpy = redshifted_spectrum_cgs #erg s-1 cm-2 aa-1
-
     if(filters == 'lsst'):
         bands = get_lsst_filters(path)
-    if(filters == 'suprimecam'):
+    elif(filters == 'suprimecam'):
         bands = get_suprimecam_filters()
+    else:
+        raise Exception("invalid filters")
 
     magnitudes = observate.getSED(lambdas, redshifted_spectrum_sedpy, filterlist=bands, linear_flux=False)
     
@@ -209,7 +210,7 @@ def get_lsst_filters(path):
     yfltr = fsps.filters.Filter(149, 'lsst_y', 'lsst')
 
     filters = []
-    for band in ['u', 'g', 'r', 'i', 'z', 'y']:
+    for band in ['u', 'g', 'r', 'i', 'z']:
         filter_data = np.genfromtxt(path+'lbg_forecast/lsst_filters/total_'+band+'.dat', skip_header=7, delimiter=' ')
         filter_data[:, 0] = filter_data[:, 0]*10 #covert to angstroms
         filters.append(observate.Filter("lsst_"+band, data=(filter_data[:, 0], filter_data[:, 1])))
@@ -218,16 +219,9 @@ def get_lsst_filters(path):
 
 #for homebrew get_mags
 def get_lsst_filters_fsps():
-            
-    ufltr = fsps.filters.Filter(144, 'lsst_u', 'lsst')
-    gfltr = fsps.filters.Filter(145, 'lsst_g', 'lsst')
-    rfltr = fsps.filters.Filter(146, 'lsst_r', 'lsst')
-    ifltr = fsps.filters.Filter(147, 'lsst_i', 'lsst')
-    zfltr = fsps.filters.Filter(148, 'lsst_z', 'lsst')
-    yfltr = fsps.filters.Filter(149, 'lsst_y', 'lsst')
 
     filters = []
-    for band in ['u', 'g', 'r', 'i', 'z', 'y']:
+    for band in ['u', 'g', 'r', 'i', 'z']:
         filter_data = np.genfromtxt('lbg_forecast/lsst_filters_fsps/total_'+band+'.dat', skip_header=1, delimiter=' ')
         filters.append([filter_data[:, 0], filter_data[:, 1]])
     

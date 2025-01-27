@@ -19,6 +19,7 @@ if(rank == 0):
 #collect inputs
 run = sys.argv[1]
 path = sys.argv[2]
+filters = sys.argv[3]
 
 if(rank==0):
     loaded_sps_params_train = np.vstack((np.load(path+"sps_parameter_samples/sps_"+run+".npy")))
@@ -50,21 +51,28 @@ recv_buf = None
 if(rank == 0):
     recv_buf = np.zeros((data_len*NBANDS*size))#np.zeros((int(data_len*size), NBANDS))
 
-sps_model=sps.initialise_sps_model(neb_em=True, imf_type=1)
-
+if(rank == 0):
+    print("Initialising SPS Model ...", flush=True)
+sps_model=sps.initialise_sps_model(neb_em=True, imf_type=1, sfh_type=3, zcont=1)
+if(rank == 0):
+    print("Initialisation Complete.", flush=True)
+    print("Calculating...", flush=True)
 phot_true = []
 for i in range(sps_params_train.shape[0]):
 
     sps.update_model(sps_model, sps_params_train[i, :], False, sfh.default_agebins())
-    phot_sps = sps.get_magnitudes(sps_model, filters="lsst", cosmology=cosmo.get_wmap9(), lya_uncertainity=False, path=path)
+    phot_sps = sps.get_magnitudes(sps_model, filters=filters, cosmology=cosmo.get_wmap9(), lya_uncertainity=False, path=path, return_spec=False, modify_igm=False)
     phot_true.append(phot_sps)
+    print(phot_sps)
     if(i%1000 == 0):
         print(i)
 
-phot_buf = np.ravel(np.vstack(phot_true)[:, :-1])
+phot_buf = np.ravel(np.vstack(phot_true))
 comm.Gather(phot_buf, recv_buf, root=0)
 
 if(rank==0):
 
-    recv_buf = np.vstack(np.array_split(recv_buf, size*data_len))
-    np.save(path+"sim_photo_samples/sim_photo_"+run+".npy", recv_buf)
+    photometry_data = np.vstack(np.array_split(recv_buf, size*data_len))
+    print(phot_buf, recv_buf, photometry_data)
+    np.save(path+"photo_samples/sim_photo_"+run+filters+".npy", photometry_data)
+    print("Complete.", flush=True)
