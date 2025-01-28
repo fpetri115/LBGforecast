@@ -1,8 +1,9 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-def sample_gaussian_prior_parameters(mean):
-        
+
+def default_bounds():
+    
     mu_bounds = np.array([[-2.5, 0.5],    #logzsol
                             [1.0, 1.0],   #igm_factor 
                             [-4.0, -1.0], #gas_logu
@@ -16,6 +17,28 @@ def sample_gaussian_prior_parameters(mean):
                             [0.01, 2.5],  #gas_logz
                             [0.01, 6.0],  #log10(fagn)
                             [0.01, 145]])  #agn_tau
+    
+    return mu_bounds, sig_bounds
+
+def hsc_test():
+    
+    mu_bounds = np.array([[np.log10(0.2), np.log10(0.2)],    #logzsol
+                            [1.0, 1.0],   #igm_factor 
+                            [-4.0, -1.0], #gas_logu
+                            [np.log10(0.2), np.log10(0.2)],  #gas_logz
+                            [-5.0, -5.0],  #log10(fagn)
+                            [5, 5]])    #agn_tau  
+
+    sig_bounds = np.array([[0.001, 0.01],   #logzsol
+                            [0.001, 0.01],   #igm_factor 
+                            [0.01, 3.0],  #gas_logu
+                            [0.001, 0.01],  #gas_logz
+                            [0.001, 0.01],  #log10(fagn)
+                            [0.001, 0.01]])  #agn_tau
+    
+    return mu_bounds, sig_bounds
+
+def sample_gaussian_prior_parameters(mean, mu_bounds, sig_bounds):
     
     mu = []
     sigma = []

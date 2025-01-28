@@ -120,7 +120,7 @@ class CSFRDPrior():
 def create_gp_model(train_redshift, train_log_csfrd_shifted, train_log_csfrd_errors, lengthscale, scale):
         
     # initialize likelihood and model
-    likelihood = gpytorch.likelihoods.FixedNoiseGaussianLikelihood(noise=train_log_csfrd_errors)
+    likelihood = gpytorch.likelihoods.FixedNoiseGaussianLikelihood(noise=train_log_csfrd_errors**2)
     model = CSFRDModel(train_redshift, train_log_csfrd_shifted, lengthscale, scale, likelihood).to(torch.double)
 
     return model, likelihood
@@ -199,7 +199,17 @@ def get_training_data(path, plot=False):
     train_log_shifted_csfrd = train_log_csfrd - torch.from_numpy(mean_obs_behroozi(train_redshift.numpy(), log=True, path=path))
     train_log_csfrd_errors = torch.from_numpy(train_csfrd_errors)
 
-    return [train_redshift, train_log_csfrd, train_log_shifted_csfrd, train_log_csfrd_errors]
+    train_csfrd_unumpy = 10**upy.uarray(train_log_csfrd, train_log_csfrd_errors)
+
+    train_csfrd = torch.from_numpy(upy.nominal_values(train_csfrd_unumpy))
+    train_csfrd_shifted = train_csfrd - torch.from_numpy(mean_obs_behroozi(train_redshift.numpy(), log=False, path=path))
+    train_csfrd_errors = torch.from_numpy(upy.std_devs(train_csfrd_unumpy))
+
+    jitter=torch.from_numpy(np.random.uniform(-1e-2, 1e-2, train_redshift.shape[0]))
+    train_redshift = train_redshift+jitter
+    cut = 1000
+
+    return [train_redshift[:cut], train_log_csfrd[:cut], train_log_shifted_csfrd[:cut], train_log_csfrd_errors[:cut], train_csfrd[:cut], train_csfrd_shifted[:cut], train_csfrd_errors[:cut]]
 
 def log_to_lin(train_log_csfrd, train_log_csfrd_errors):
 

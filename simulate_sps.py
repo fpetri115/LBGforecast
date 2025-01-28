@@ -63,7 +63,6 @@ for i in range(sps_params_train.shape[0]):
     sps.update_model(sps_model, sps_params_train[i, :], False, sfh.default_agebins())
     phot_sps = sps.get_magnitudes(sps_model, filters=filters, cosmology=cosmo.get_wmap9(), lya_uncertainity=False, path=path, return_spec=False, modify_igm=False)
     phot_true.append(phot_sps)
-    print(phot_sps)
     if(i%1000 == 0):
         print(i)
 
@@ -73,6 +72,5 @@ comm.Gather(phot_buf, recv_buf, root=0)
 if(rank==0):
 
     photometry_data = np.vstack(np.array_split(recv_buf, size*data_len))
-    print(phot_buf, recv_buf, photometry_data)
     np.save(path+"photo_samples/sim_photo_"+run+filters+".npy", photometry_data)
     print("Complete.", flush=True)
