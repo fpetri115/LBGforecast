@@ -29,55 +29,79 @@ class CSFRDPrior():
 
         self.path = path
         self.train_data = get_training_data(path=self.path, plot=False)
+        self.csfrd_mean = self.train_data[3]
+        self.csfrd_std = self.train_data[4]
         state_dict = torch.load(path+'/gp_models/csfrd.pth', weights_only=True)
-        self.model = create_gp_model(self.train_data[0], self.train_data[2], self.train_data[3], [1.0, 7.0], [np.log10(1.5), 999])[0]
+        self.model = create_gp_model(self.train_data[0], self.train_data[1], self.train_data[2], [2.0, 999], [-999, 999])[0]
         self.model.load_state_dict(state_dict)
         self.test_redshift = torch.linspace(0, 30, 500).to(torch.double)
         self.prior = gp_evaluate_model(self.model, self.test_redshift)
         self.lookback_times = cosmo.get_cosmology().lookback_time(self.test_redshift.numpy()).value*1e9
 
     def sample_prior_corrected(self):
-        return self.prior.sample().numpy() + mean_obs_behroozi(self.test_redshift.numpy(), log=True, path=self.path) - systematic_shift(self.test_redshift.numpy(), path=self.path)
+        shift = mean_obs_behroozi(self.test_redshift.numpy(), log=True, path='./')
+        return self.prior.sample().numpy()*self.csfrd_std + self.csfrd_mean + shift - systematic_shift(self.test_redshift.numpy(), path=self.path)
     
     def get_prior_mean(self):
-        return self.prior.mean.detach().numpy() + mean_obs_behroozi(self.test_redshift.numpy(), log=True, path=self.path)
+        shift = mean_obs_behroozi(self.test_redshift.numpy(), log=True, path='./')
+        return self.prior.mean.detach().numpy()*self.csfrd_std + self.csfrd_mean + shift
     
     def get_prior_mean_corrected(self):
-        return self.prior.mean.detach().numpy() + mean_obs_behroozi(self.test_redshift.numpy(), log=True, path=self.path) - systematic_shift(self.test_redshift.numpy(), path=self.path)
+        shift = mean_obs_behroozi(self.test_redshift.numpy(), log=True, path='./')
+        return self.prior.mean.detach().numpy()*self.csfrd_std + self.csfrd_mean + shift - systematic_shift(self.test_redshift.numpy(), path=self.path)
     
     def get_prior_confidence_region(self):
-        lower, upper = self.prior.confidence_region()
-        lower = lower + mean_obs_behroozi(self.test_redshift.numpy(), log=True, path=self.path)
-        upper = upper + mean_obs_behroozi(self.test_redshift.numpy(), log=True, path=self.path)
+
+        shift = mean_obs_behroozi(self.test_redshift.numpy(), log=True, path=self.path)
+        pred_std = 2*self.prior.stddev.numpy()
+        pred_mean = self.prior.mean.numpy()
+        preds_upy = upy.uarray(pred_mean, pred_std)
+        preds_transform = preds_upy*self.csfrd_std + self.csfrd_mean + shift
+
+        fpreds_mean = upy.nominal_values(preds_transform)
+        fpreds_std = upy.std_devs(preds_transform)
+
+        lower = fpreds_mean - fpreds_std
+        upper = fpreds_mean + fpreds_std
         return [lower, upper]
     
     def get_prior_confidence_region_corrected(self):
-        lower, upper = self.prior.confidence_region()
-        lower = lower + mean_obs_behroozi(self.test_redshift.numpy(), log=True, path=self.path) - systematic_shift(self.test_redshift.numpy(), path=self.path)
-        upper = upper + mean_obs_behroozi(self.test_redshift.numpy(), log=True, path=self.path) - systematic_shift(self.test_redshift.numpy(), path=self.path)
+        sys_shift = systematic_shift(self.test_redshift.numpy(), path=self.path)
+        shift = mean_obs_behroozi(self.test_redshift.numpy(), log=True, path=self.path)
+        pred_std = 2*self.prior.stddev.numpy()
+        pred_mean = self.prior.mean.numpy()
+        preds_upy = upy.uarray(pred_mean, pred_std)
+        preds_transform = preds_upy*self.csfrd_std + self.csfrd_mean + shift - sys_shift
+
+        fpreds_mean = upy.nominal_values(preds_transform)
+        fpreds_std = upy.std_devs(preds_transform)
+
+        lower = fpreds_mean - fpreds_std
+        upper = fpreds_mean + fpreds_std
+
         return [lower, upper]
     
     def plot_combined(self):
 
-        train_redshift, train_log_csfrd, train_log_shifted_csfrd, train_log_csfrd_errors, train_csfrd, train_csfrd_shifted, train_csfrd_error = self.train_data
+        train_x, train_y, train_yerrs, csfrd_mean, csfrd_std, train_log_csfrd, train_log_csfrd_errors = self.train_data
 
         behroozi19 = get_behroozi19_curves(path=self.path)
         with torch.no_grad():
 
             f, ax = plt.subplots(1, 1, figsize=(17, 15))
 
-            ax.errorbar(train_redshift, train_log_csfrd, yerr=train_log_csfrd_errors, fmt='o', mfc='k', ecolor='k', mec='k', alpha=1.0, elinewidth=3, capsize=5, ms=15, lw=3, label="Observed CSFRD (Behroozi et al. 2019)", zorder=-1)
+            ax.errorbar(train_x, train_log_csfrd, yerr=train_log_csfrd_errors, fmt='o', mfc='k', ecolor='k', mec='k', alpha=1.0, elinewidth=3, capsize=5, ms=15, lw=3, label="Observed CSFRD (Behroozi et al. 2019)", zorder=-1)
             
-            ax.plot(self.test_redshift.numpy(), self.get_prior_mean(), lw=8, zorder=1200, c="grey", label="Gaussian Process Mean")
+            ax.plot(self.test_redshift.numpy(), self.get_prior_mean(), lw=4, zorder=1200, c="grey", label="Gaussian Process Mean")
             lower, upper = self.get_prior_confidence_region()
-            ax.fill_between(self.test_redshift.numpy(), lower, upper, alpha=0.4, lw=0, color="grey", label="$2\sigma $ Confidence", zorder=1200)
-            ax.plot(behroozi19[0], behroozi19[1], ls="--", c="grey", lw=8, label="Behroozi et al. (2019) Fit", zorder=1200)
+            ax.fill_between(self.test_redshift.numpy(), lower, upper, alpha=0.5, lw=0, color="grey", label="$2\sigma $ Confidence", zorder=1200)
+            ax.plot(behroozi19[0], behroozi19[1], ls="--", c="grey", lw=4, label="Behroozi et al. (2019) Fit", zorder=1200)
 
 
-            ax.plot(self.test_redshift.numpy(), self.get_prior_mean_corrected(), lw=8, zorder=1200, c='purple', ls="-", label="Gaussian Process Mean (Corrected)")
+            ax.plot(self.test_redshift.numpy(), self.get_prior_mean_corrected(), lw=4, zorder=1200, c='purple', ls="-", label="Gaussian Process Mean (Corrected)")
             lower_corrected, upper_corrected = self.get_prior_confidence_region_corrected()
-            ax.fill_between(self.test_redshift.numpy(), lower_corrected, upper_corrected, alpha=0.4, lw=0, color="purple", label="$2\sigma $ Confidence (Corrected)", zorder=1200)
-            ax.plot(behroozi19[0], behroozi19[2], c="purple", ls="--", lw=8, label="Behroozi et al. (2019) Fit (Corrected)", zorder=1200)
+            ax.fill_between(self.test_redshift.numpy(), lower_corrected, upper_corrected, alpha=0.5, lw=0, color="purple", label="$2\sigma $ Confidence (Corrected)", zorder=1200)
+            ax.plot(behroozi19[0], behroozi19[2], c="purple", ls="--", lw=4, label="Behroozi et al. (2019) Fit (Corrected)", zorder=1200)
 
 
             ax.set_xlabel("Redshift", fontsize=32)
@@ -192,27 +216,36 @@ def get_training_data(path, plot=False):
     train_csfrd = log_val
     train_csfrd_errors = log_err
 
-    if(plot):
-        plt.errorbar(train_redshift, train_csfrd, yerr=train_csfrd_errors, fmt='ko', capsize=2, alpha=1.0)
-        plt.xlabel("redshift")
-        plt.ylabel("csfrd")
-
     train_redshift = torch.from_numpy(train_redshift)
     train_log_csfrd = torch.from_numpy(train_csfrd)
     train_log_shifted_csfrd = train_log_csfrd - torch.from_numpy(mean_obs_behroozi(train_redshift.numpy(), log=True, path=path))
     train_log_csfrd_errors = torch.from_numpy(train_csfrd_errors)
 
-    train_csfrd_unumpy = (10**upy.uarray(train_log_csfrd, train_log_csfrd_errors))
+    #train_csfrd_unumpy = (10**upy.uarray(train_log_csfrd, train_log_csfrd_errors))
 
-    train_csfrd = torch.from_numpy(upy.nominal_values(train_csfrd_unumpy))
-    train_csfrd_shifted = train_csfrd - torch.from_numpy(mean_obs_behroozi(train_redshift.numpy(), log=False, path=path))
-    train_csfrd_errors = torch.from_numpy(upy.std_devs(train_csfrd_unumpy))
+    #train_csfrd = torch.from_numpy(upy.nominal_values(train_csfrd_unumpy))
+    #train_csfrd_shifted = train_csfrd - torch.from_numpy(mean_obs_behroozi(train_redshift.numpy(), log=False, path=path))
+    #train_csfrd_errors = torch.from_numpy(upy.std_devs(train_csfrd_unumpy))
 
-    jitter=torch.from_numpy(np.random.uniform(-1e-3, 1e-3, train_redshift.shape[0]))
+    jitter=torch.from_numpy(np.random.uniform(-1e-5, 1e-5, train_redshift.shape[0]))
     train_redshift = train_redshift+jitter
-    cut = 100
 
-    return [train_redshift[:cut], train_log_csfrd[:cut], train_log_shifted_csfrd[:cut], train_log_csfrd_errors[:cut], train_csfrd[:cut], train_csfrd_shifted[:cut], train_csfrd_errors[:cut]]
+
+    train_log_csfrd_upy = upy.uarray(train_log_shifted_csfrd.numpy(), train_log_csfrd_errors.numpy())
+    csfrd_mean = np.mean(train_log_shifted_csfrd.numpy())
+    csfrd_std = np.std(train_log_shifted_csfrd.numpy())
+    train_log_csfrd_upy = (train_log_csfrd_upy - csfrd_mean)/csfrd_std
+
+    train_y = torch.from_numpy(upy.nominal_values(train_log_csfrd_upy))
+    train_yerrs = torch.from_numpy(upy.std_devs(train_log_csfrd_upy))
+    train_x = train_redshift
+
+
+    if(plot):
+        plt.errorbar(train_x, train_y, train_yerrs, fmt='ko', capsize=2, alpha=1.0)
+        plt.xlabel("redshift")
+
+    return [train_x, train_y, train_yerrs, csfrd_mean, csfrd_std, train_log_csfrd, train_log_csfrd_errors]
 
 def log_to_lin(train_log_csfrd, train_log_csfrd_errors):
 
