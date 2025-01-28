@@ -12,8 +12,11 @@ class CSFRDModel(gpytorch.models.ExactGP):
 
     def __init__(self, train_x, train_y, lengthscale, scale, likelihood):
         super(CSFRDModel, self).__init__(train_x, train_y, likelihood)
+
+        lengthscale_prior = gpytorch.priors.SmoothedBoxPrior(lengthscale[0], lengthscale[1])
+        outscale_prior = gpytorch.priors.SmoothedBoxPrior(scale[0], scale[1])
         self.mean_module = gpytorch.means.ZeroMean()
-        self.covar_module = gpytorch.kernels.ScaleKernel(gpytorch.kernels.RBFKernel(lengthscale_prior=gpytorch.priors.SmoothedBoxPrior(lengthscale[0], lengthscale[1])), outputscale_prior=gpytorch.priors.SmoothedBoxPrior(scale[0], scale[1]))
+        self.covar_module = gpytorch.kernels.ScaleKernel(gpytorch.kernels.RBFKernel(lengthscale_prior=lengthscale_prior))#gpytorch.kernels.ScaleKernel(gpytorch.kernels.RBFKernel())
 
     def forward(self, x):
         mean_x = self.mean_module(x)
@@ -56,7 +59,7 @@ class CSFRDPrior():
     
     def plot_combined(self):
 
-        train_redshift, train_log_csfrd, train_log_shifted_csfrd, train_log_csfrd_errors = self.train_data
+        train_redshift, train_log_csfrd, train_log_shifted_csfrd, train_log_csfrd_errors, train_csfrd, train_csfrd_shifted, train_csfrd_error = self.train_data
 
         behroozi19 = get_behroozi19_curves(path=self.path)
         with torch.no_grad():
@@ -117,11 +120,11 @@ class CSFRDPrior():
             ax.spines['right'].set_linewidth(lw)
             ax.spines['left'].set_linewidth(lw)
 
-def create_gp_model(train_redshift, train_log_csfrd_shifted, train_log_csfrd_errors, lengthscale, scale):
+def create_gp_model(train_x, train_y, train_yerrs, lengthscale, scale):
         
     # initialize likelihood and model
-    likelihood = gpytorch.likelihoods.FixedNoiseGaussianLikelihood(noise=train_log_csfrd_errors**2)
-    model = CSFRDModel(train_redshift, train_log_csfrd_shifted, lengthscale, scale, likelihood).to(torch.double)
+    likelihood = gpytorch.likelihoods.FixedNoiseGaussianLikelihood(noise=train_yerrs**2, learn_additional_noise=False)
+    model = CSFRDModel(train_x, train_y, lengthscale, scale, likelihood).to(torch.double)
 
     return model, likelihood
 
@@ -199,15 +202,15 @@ def get_training_data(path, plot=False):
     train_log_shifted_csfrd = train_log_csfrd - torch.from_numpy(mean_obs_behroozi(train_redshift.numpy(), log=True, path=path))
     train_log_csfrd_errors = torch.from_numpy(train_csfrd_errors)
 
-    train_csfrd_unumpy = 10**upy.uarray(train_log_csfrd, train_log_csfrd_errors)
+    train_csfrd_unumpy = (10**upy.uarray(train_log_csfrd, train_log_csfrd_errors))
 
     train_csfrd = torch.from_numpy(upy.nominal_values(train_csfrd_unumpy))
     train_csfrd_shifted = train_csfrd - torch.from_numpy(mean_obs_behroozi(train_redshift.numpy(), log=False, path=path))
     train_csfrd_errors = torch.from_numpy(upy.std_devs(train_csfrd_unumpy))
 
-    jitter=torch.from_numpy(np.random.uniform(-1e-2, 1e-2, train_redshift.shape[0]))
+    jitter=torch.from_numpy(np.random.uniform(-1e-3, 1e-3, train_redshift.shape[0]))
     train_redshift = train_redshift+jitter
-    cut = 1000
+    cut = 100
 
     return [train_redshift[:cut], train_log_csfrd[:cut], train_log_shifted_csfrd[:cut], train_log_csfrd_errors[:cut], train_csfrd[:cut], train_csfrd_shifted[:cut], train_csfrd_errors[:cut]]
 
