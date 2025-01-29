@@ -8,7 +8,7 @@ Forecasts constraints on cosmological parameters for LSST Lyman-Break Galaxies (
 
 1. Install FSPS
 2. Install prerequisites 
-3. Install Speculator fork: pip install git+https://github.com/fpetri115/speculator.git
+3. Install Speculator fork: `pip install git+https://github.com/fpetri115/speculator.git`
 4. git clone repo
 
 # Performing the Forecast
