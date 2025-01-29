@@ -17,7 +17,7 @@ Forecasts constraints on cosmological parameters for LSST Lyman-Break Galaxies (
 ```
 mpiexec -n nproc python sample_sps_params.py 100000 real id path mean
 ```
-Uses MPI to sample SPS parameters for 100000 galaxies, for a total of (nproc x real) realisations. SPS parameters will be saved as sps_id.npy in path/LBGForecast/sps_parameter_samples. To sample the mean prior, set mean=1, otherwise set mean=0 to sample different (nproc x real) prior realisations.
+Uses MPI to sample SPS parameters for 100000 galaxies, for a total of (nproc x real) realisations each. SPS parameters will be saved as sps_id.npy in path/LBGForecast/sps_parameter_samples. To sample the mean prior, set mean=1, otherwise set mean=0 to sample different (nproc x real) prior realisations.
 
 ### 2. Simulate photometry 
 
