@@ -19,13 +19,19 @@ mpiexec -n nproc python sample_sps_params.py 100000 real id path 0
 ```
 Uses MPI to sample SPS parameters for 100000 galaxies, for a total of nproc*real realisations. SPS parameters will be saved as sps_id.npy in path/LBGForecast/sps_parameter_samples. 
 
-### 2. Simulate photometry using emulator
+### 2. Simulate photometry 
 
+## Option 1: Use Emulator with GPU (faster)
 ```
 python sample_photometry.py path id batch_size
 ```
 Generates noiseless photometry for LSST ugriz bands saved as photo_id.npy in path/LBGForecast/photo_samples
 
+##Option 2: Use Python FSPS
+```
+mpiexec -n nproc python simulate_sps.py id path bands
+```
+Generates noiseless photometry using either LSST ugrizy or HSC grizy bands. Photometry saved as sim_photo_id_bands.npy in path/LBGForecast/photo_samples
 ### 3. Apply noise to photometry
 
 ```
