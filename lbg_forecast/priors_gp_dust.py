@@ -27,8 +27,8 @@ class DustPrior():
         self.path = path
         self.mean = mean
         print("Loading Models")
-        self.preloaded_popcosmos_samples = np.load(self.path+"/dust_data/popcosmos_parameters_rmag_lt_25.npy")
-        self.preloaded_recent_sfrs = np.load(self.path+"/dust_data/popcosmos_recentsfrs.npy")
+        self.preloaded_popcosmos_samples = np.load(self.path+"/dust_data/popcosmos_parameters_rmag_lt_25_2.npy")
+        self.preloaded_recent_sfrs = np.load(self.path+"/dust_data/popcosmos_recent_sfrs.npy")
         self.n, self.tau, self.tau1, self.ne, self.taue, self.tau1e, self.sfr = self.get_nagaraj22_samples()
         self.recent_sfrs, self.dust2, self.dust_index, self.dust1 = self.get_pop_cosmos_samples(nsamples=500000)
         print("Loading Complete")
