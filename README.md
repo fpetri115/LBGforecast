@@ -31,7 +31,7 @@ Generates noiseless photometry for LSST ugriz bands saved as photo_id.npy in pat
 ```
 mpiexec -n nproc python simulate_sps.py id path bands
 ```
-Generates noiseless photometry using either LSST ugrizy or HSC grizy bands. Photometry saved as sim_photo_id_bands.npy in path/LBGForecast/photo_samples
+Generates noiseless photometry using either LSST ugrizy (bands = "lsst") or HSC grizy (bands = "suprimecam") filters. Photometry saved as sim_photo_id_bands.npy in path/LBGForecast/photo_samples
 ### 3. Apply noise to photometry
 
 ```
