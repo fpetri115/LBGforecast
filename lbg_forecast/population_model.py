@@ -16,7 +16,7 @@ def generate_sps_parameters(nsamples, mass_function_prior, dust_prior, csfrd_pri
     """
 
     #samples gaussian priors
-    mu_bounds, sig_bounds = gpr.hsc_test()#gpr.default_bounds()
+    mu_bounds, sig_bounds = gpr.default_bounds()
     mu, sigma = gpr.sample_gaussian_prior_parameters(mean, mu_bounds, sig_bounds)
     logzsol_mu, igm_factor_mu, gas_logu_mu, gas_logz_mu, fagn_mu, agn_tau_mu = mu
     logzsol_sigma, igm_factor_sigma, gas_logu_sigma, gas_logz_sigma, fagn_sigma, agn_tau_sigma = sigma
