@@ -210,7 +210,7 @@ def get_lsst_filters(path):
     yfltr = fsps.filters.Filter(149, 'lsst_y', 'lsst')
 
     filters = []
-    for band in ['u', 'g', 'r', 'i', 'z']:
+    for band in ['u', 'g', 'r', 'i', 'z', 'y']:
         filter_data = np.genfromtxt(path+'lbg_forecast/lsst_filters/total_'+band+'.dat', skip_header=7, delimiter=' ')
         filter_data[:, 0] = filter_data[:, 0]*10 #covert to angstroms
         filters.append(observate.Filter("lsst_"+band, data=(filter_data[:, 0], filter_data[:, 1])))

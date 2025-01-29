@@ -6,7 +6,6 @@ import numpy as np
 
 from mpi4py import MPI
 
-NBANDS=5
 NSPS_PARAMS = 17
 
 #initialise MPI
@@ -20,6 +19,13 @@ if(rank == 0):
 run = sys.argv[1]
 path = sys.argv[2]
 filters = sys.argv[3]
+
+if(filters=="lsst"):
+    NBANDS=6
+elif(filters=="suprimecam"):
+    NBANDS=5
+else:
+    raise Exception("invalid filters")
 
 if(rank==0):
     loaded_sps_params_train = np.vstack((np.load(path+"sps_parameter_samples/sps_"+run+".npy")))
