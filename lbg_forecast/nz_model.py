@@ -15,8 +15,9 @@ def load_redshift_distributions(path):
     nzus = np.load(path+"/redshifts/nzus.npy")
     nzgs = np.load(path+"/redshifts/nzgs.npy")
     nzrs = np.load(path+"/redshifts/nzrs.npy")
+    z_grid = np.load(path+"redshifts/z_grid.npy")
 
-    return [nzus, nzgs, nzrs]
+    return z_grid, [nzus, nzgs, nzrs]
 
 
 def perform_2pca(bin_vals):
@@ -194,8 +195,8 @@ class NzModel:
 
     """
 
-    def __init__(self, z_space, path):
-        nzs = load_redshift_distributions(path)
+    def __init__(self, path):
+        z_grid, nzs = load_redshift_distributions(path)
 
         if (
             nzs[0].shape != nzs[1].shape
@@ -211,7 +212,7 @@ class NzModel:
         self._n_simulations = self._nzus.shape[0]
         self._z_length = self._nzus.shape[1]
 
-        self._z_space = z_space
+        self._z_space = z_grid
 
         # used for splitting nzs into interloper and lbg component
         self._z_cut = 1.5
@@ -315,7 +316,7 @@ class NzModel:
             else:
                 label = None
 
-            plt.plot(self._z_space, self.g_data()[i], c="orangered", alpha=alpha, lw=2, label=label, ls='-')
+            plt.plot(self._z_space, self.g_data()[i], c="seagreen", alpha=alpha, lw=2, label=label, ls='-')
             i += 1
 
         i = 0
@@ -326,7 +327,7 @@ class NzModel:
             else:
                 label = None
 
-            plt.plot(self._z_space, self.r_data()[i], c="seagreen", alpha=alpha, lw=2, label=label, ls="-")
+            plt.plot(self._z_space, self.r_data()[i], c="orangered", alpha=alpha, lw=2, label=label, ls="-")
             i += 1
 
         plt.xlabel("$z$", fontsize=22)
@@ -352,9 +353,6 @@ class NzModel:
         ax3.tick_params(axis="x", direction="in", length=8, labeltop=False)
         plt.setp(ax3.spines.values(), linewidth=3)
         ax3.xaxis.set_tick_params(width=3)   
-
-
-
 
     def plot_all_pca(self, n, n_s, alpha=0.01):
         """
@@ -414,34 +412,7 @@ class NzModel:
         ax3 = ax.secondary_xaxis("top")
         ax3.tick_params(axis="x", direction="in", length=8, labeltop=False)
         plt.setp(ax3.spines.values(), linewidth=3)
-        ax3.xaxis.set_tick_params(width=3)   
-
-    def export_nzs(self, n, n_s):
-        """
-        Exports all gaussian-pca models of u, g, r redhsift distributions into .npy files
-        ---------------------------------------------------------------------------------
-        Parameters:
-        n - Number of nz gaussian-pca samples
-
-        Returns:
-        None
-
-        """
-        unzs = self.u_pca(n, n_s)
-        gnzs = self.g_pca(n, n_s)
-        rnzs = self.r_pca(n, n_s)
-
-        np.save("nzus_pca.npy", unzs)
-        np.save("nzgs_pca.npy", gnzs)
-        np.save("nzrs_pca.npy", rnzs)
-
-        np.save("nzus_pca_lbg.npy", self.lbg_component(unzs))
-        np.save("nzgs_pca_lbg.npy", self.lbg_component(gnzs))
-        np.save("nzrs_pca_lbg.npy", self.lbg_component(rnzs))
-
-        np.save("nzus_pca_int.npy", self.interloper_component(unzs))
-        np.save("nzgs_pca_int.npy", self.interloper_component(gnzs))
-        np.save("nzrs_pca_int.npy", self.interloper_component(rnzs))
+        ax3.xaxis.set_tick_params(width=3)
 
     def normalisation(self, nz):
         """
@@ -482,94 +453,6 @@ class NzModel:
             normalised_nzs.append(self.normalise(nz))
 
         return np.array(normalised_nzs)
-
-    def lbg_component(self, nzs):
-        """
-        Find the lbg dropout component of redshift distribution
-        -------------------------------------------------------
-        Parameters:
-        nzs - Array of redshift distributions
-        Returns:
-        Array of redshift distributions with only lbg component
-
-        """
-
-        lbg_nzs = []
-        z_cut = []
-
-        # sets up z_cut to, which will be multiplied with nz
-        for z in self._z_space:
-            if z >= self._z_cut:
-                z_cut.append(1)
-            else:
-                z_cut.append(0)
-        z_cut = np.array(z_cut)
-
-        for nz in nzs:
-            # multiply nz by array, where z<1.5 are multiplied by zero
-            lbg_nzs.append(nz * z_cut)
-
-        return self.normalise_nzs(lbg_nzs)
-
-    def interloper_component(self, nzs):
-        """
-        Find the interloper component of redshift distribution
-        ------------------------------------------------------
-        Parameters:
-        nzs - Array of redshift distributions
-        Returns:
-        Array of redshift distributions with only interloper component
-
-        """
-
-        int_nzs = []
-        z_cut = []
-
-        # sets up z_cut to, which will be multiplied with nz
-        for z in self._z_space:
-            if z >= self._z_cut:
-                z_cut.append(0)
-            else:
-                z_cut.append(1)
-        z_cut = np.array(z_cut)
-
-        for nz in nzs:
-            # multiply nz by array, where z>=1.5 are multiplied by zero
-            int_nzs.append(nz * z_cut)
-
-        return self.normalise_nzs(int_nzs)
-
-    def interloper_fraction(self, nz):
-        """
-        Given a LBG redshift distribution, cuts nz and z=1.5, and integrates over both peaks
-        to get interloper fraction f = number of galaxies @ < z=1.5/number of galaxies @ > z=1.5
-        -------------------------------------------------------------------------------------------
-        Parameters:
-        nz - Array containing redshift distribution
-
-        Returns:
-        f - Interloper Fraction
-        """
-
-        nz = self.normalise(nz)
-
-        # find index in z_space where z>=1.5
-        index = 0
-        for i in self._z_space:
-            if i >= self._z_cut:
-                break
-            index += 1
-
-        # divide z_space into two regions, one for lbg, one for interlopers
-        z_space_low = self._z_space[:index]
-        z_space_high = self._z_space[index:]
-
-        no_int = np.trapz(nz[:index], z_space_low)
-        no_lbg = np.trapz(nz[index:], z_space_high)
-
-        f = no_int / (no_lbg + no_int)
-
-        return f
 
     def save_4pca_data(self, path):
         """saves 4-Component PCA related data"""
