@@ -39,15 +39,15 @@ class CSFRDPrior():
         self.lookback_times = cosmo.get_cosmology().lookback_time(self.test_redshift.numpy()).value*1e9
 
     def sample_prior_corrected(self):
-        shift = mean_obs_behroozi(self.test_redshift.numpy(), log=True, path='./')
+        shift = mean_obs_behroozi(self.test_redshift.numpy(), log=True, path=self.path)
         return self.prior.sample().numpy()*self.csfrd_std + self.csfrd_mean + shift - systematic_shift(self.test_redshift.numpy(), path=self.path)
     
     def get_prior_mean(self):
-        shift = mean_obs_behroozi(self.test_redshift.numpy(), log=True, path='./')
+        shift = mean_obs_behroozi(self.test_redshift.numpy(), log=True, path=self.path)
         return self.prior.mean.detach().numpy()*self.csfrd_std + self.csfrd_mean + shift
     
     def get_prior_mean_corrected(self):
-        shift = mean_obs_behroozi(self.test_redshift.numpy(), log=True, path='./')
+        shift = mean_obs_behroozi(self.test_redshift.numpy(), log=True, path=self.path)
         return self.prior.mean.detach().numpy()*self.csfrd_std + self.csfrd_mean + shift - systematic_shift(self.test_redshift.numpy(), path=self.path)
     
     def get_prior_confidence_region(self):
