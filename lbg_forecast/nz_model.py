@@ -293,42 +293,37 @@ class NzModel:
         
         fig = plt.subplots(1, 1, figsize=(20, 10))
 
-        no_u = len(self.u_data())
-        no_g = len(self.g_data())
-        no_r = len(self.r_data())
+        u_nzs = self.u_data()
+        g_nzs = self.g_data()
+        r_nzs = self.r_data()
 
-        i = 0
-        while i < no_u:
-            
-            if(i == 0):
-                label = "u-dropouts"
-            else:
-                label = None
+        p1=99.7
+        p2=97.5
+        p3=84
 
-            plt.plot(self._z_space, self.u_data()[i], c="steelblue", alpha=alpha, lw=2, label=label, ls='-')
-            i += 1
+        u_mean = np.mean(u_nzs, axis=0)
+        u_percentile = np.percentile(u_nzs, [100-p1, 100-p2, 100-p3, 50, p3, p2, p1], axis=0)
 
-        i = 0
-        while i < no_g:
+        plt.plot(self._z_space, u_mean, color='blue', ls='--')
+        plt.fill_between(self._z_space, u_percentile[0, :], u_percentile[-1, :], alpha=0.1, color='blue')
+        plt.fill_between(self._z_space, u_percentile[1, :], u_percentile[-2, :], alpha=0.2, color='blue')
+        plt.fill_between(self._z_space, u_percentile[2, :], u_percentile[-3, :], alpha=0.3, color='blue')
 
-            if(i == 0):
-                label = "g-dropouts"
-            else:
-                label = None
+        g_mean = np.mean(g_nzs, axis=0)
+        g_percentile = np.percentile(g_nzs, [100-p1, 100-p2, 100-p3, 50, p3, p2, p1], axis=0)
 
-            plt.plot(self._z_space, self.g_data()[i], c="seagreen", alpha=alpha, lw=2, label=label, ls='-')
-            i += 1
+        plt.plot(self._z_space, g_mean, color='green', ls='-.')
+        plt.fill_between(self._z_space, g_percentile[0, :], g_percentile[-1, :], alpha=0.1, color='green')
+        plt.fill_between(self._z_space, g_percentile[1, :], g_percentile[-2, :], alpha=0.2, color='green')
+        plt.fill_between(self._z_space, g_percentile[2, :], g_percentile[-3, :], alpha=0.3, color='green')
 
-        i = 0
-        while i < no_r:
+        r_mean = np.mean(r_nzs, axis=0)
+        r_percentile = np.percentile(r_nzs, [100-p1, 100-p2, 100-p3, 50, p3, p2, p1], axis=0)
 
-            if(i == 0):
-                label = "r-dropouts"
-            else:
-                label = None
-
-            plt.plot(self._z_space, self.r_data()[i], c="orangered", alpha=alpha, lw=2, label=label, ls="-")
-            i += 1
+        plt.plot(self._z_space, r_mean, color='red', ls='-')
+        plt.fill_between(self._z_space, r_percentile[0, :], r_percentile[-1, :], alpha=0.1, color='red')
+        plt.fill_between(self._z_space, r_percentile[1, :], r_percentile[-2, :], alpha=0.2, color='red')
+        plt.fill_between(self._z_space, r_percentile[2, :], r_percentile[-3, :], alpha=0.3, color='red')
 
         plt.xlabel("$z$", fontsize=22)
         plt.xticks(fontsize=22)
@@ -368,28 +363,37 @@ class NzModel:
 
         fig = plt.subplots(1, 1, figsize=(20, 10))
 
-        unzs = self.u_pca(n, n_s)
-        gnzs = self.g_pca(n, n_s)
-        rnzs = self.r_pca(n, n_s)
+        u_nzs = self.u_pca(n, n_s)
+        g_nzs = self.g_pca(n, n_s)
+        r_nzs = self.r_pca(n, n_s)
 
-        # u
-        i = 0
-        while i < n_s:
-            plt.plot(self._z_space, unzs[i], c="b", alpha=alpha)
-            i += 1
+        p1=99.7
+        p2=97.5
+        p3=84
 
-        # g
-        i = 0
-        while i < n_s:
-            plt.plot(self._z_space, gnzs[i], c="g", alpha=alpha)
-            i += 1
+        u_mean = np.mean(u_nzs, axis=0)
+        u_percentile = np.percentile(u_nzs, [100-p1, 100-p2, 100-p3, 50, p3, p2, p1], axis=0)
 
-        # r
-        i = 0
-        while i < n_s:
-            plt.plot(self._z_space, rnzs[i], c="r", alpha=alpha)
-            i += 1
+        plt.plot(self._z_space, u_mean, color='blue', ls='--')
+        plt.fill_between(self._z_space, u_percentile[0, :], u_percentile[-1, :], alpha=0.1, color='blue')
+        plt.fill_between(self._z_space, u_percentile[1, :], u_percentile[-2, :], alpha=0.2, color='blue')
+        plt.fill_between(self._z_space, u_percentile[2, :], u_percentile[-3, :], alpha=0.3, color='blue')
 
+        g_mean = np.mean(g_nzs, axis=0)
+        g_percentile = np.percentile(g_nzs, [100-p1, 100-p2, 100-p3, 50, p3, p2, p1], axis=0)
+
+        plt.plot(self._z_space, g_mean, color='green', ls='-.')
+        plt.fill_between(self._z_space, g_percentile[0, :], g_percentile[-1, :], alpha=0.1, color='green')
+        plt.fill_between(self._z_space, g_percentile[1, :], g_percentile[-2, :], alpha=0.2, color='green')
+        plt.fill_between(self._z_space, g_percentile[2, :], g_percentile[-3, :], alpha=0.3, color='green')
+
+        r_mean = np.mean(r_nzs, axis=0)
+        r_percentile = np.percentile(r_nzs, [100-p1, 100-p2, 100-p3, 50, p3, p2, p1], axis=0)
+
+        plt.plot(self._z_space, r_mean, color='red', ls='-')
+        plt.fill_between(self._z_space, r_percentile[0, :], r_percentile[-1, :], alpha=0.1, color='red')
+        plt.fill_between(self._z_space, r_percentile[1, :], r_percentile[-2, :], alpha=0.2, color='red')
+        plt.fill_between(self._z_space, r_percentile[2, :], r_percentile[-3, :], alpha=0.3, color='red')
 
         plt.xlabel("$z$", fontsize=22)
         plt.xticks(fontsize=22)
@@ -480,3 +484,31 @@ class NzModel:
         np.save(path+"/4pca_data/4pca_cov_u.npy", u_pca_cov)
         np.save(path+"/4pca_data/4pca_cov_g.npy", g_pca_cov)
         np.save(path+"/4pca_data/4pca_cov_r.npy", r_pca_cov)
+
+
+    def save_12pca_data(self, path):
+        """saves 12-Component PCA related data"""
+
+        u_pca_data = perform_npca(self.u_data(), 12)
+        g_pca_data = perform_npca(self.g_data(), 12)
+        r_pca_data = perform_npca(self.r_data(), 12)
+
+        u_pca_means, u_pca_cov = pca_mean_cov(u_pca_data)
+        g_pca_means, g_pca_cov = pca_mean_cov(g_pca_data)
+        r_pca_means, r_pca_cov = pca_mean_cov(r_pca_data)
+
+        np.save(path+"/4pca_data/12pca_components_u.npy", u_pca_data[1])
+        np.save(path+"/4pca_data/12pca_components_g.npy", g_pca_data[1])
+        np.save(path+"/4pca_data/12pca_components_r.npy", r_pca_data[1])
+
+        np.save(path+"/4pca_data/12pca_mean_u.npy", u_pca_data[2])
+        np.save(path+"/4pca_data/12pca_mean_g.npy", g_pca_data[2])
+        np.save(path+"/4pca_data/12pca_mean_r.npy", r_pca_data[2])
+
+        np.save(path+"/4pca_data/12pca_means_u.npy", u_pca_means)
+        np.save(path+"/4pca_data/12pca_means_g.npy", g_pca_means)
+        np.save(path+"/4pca_data/12pca_means_r.npy", r_pca_means)
+
+        np.save(path+"/4pca_data/12pca_cov_u.npy", u_pca_cov)
+        np.save(path+"/4pca_data/12pca_cov_g.npy", g_pca_cov)
+        np.save(path+"/4pca_data/12pca_cov_r.npy", r_pca_cov)
