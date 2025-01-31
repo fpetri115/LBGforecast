@@ -485,6 +485,8 @@ class NzModel:
         np.save(path+"/4pca_data/4pca_cov_g.npy", g_pca_cov)
         np.save(path+"/4pca_data/4pca_cov_r.npy", r_pca_cov)
 
+        np.save(path+"/4pca_data/z_grid.npy", self._z_space)
+
 
     def save_12pca_data(self, path):
         """saves 12-Component PCA related data"""
@@ -512,3 +514,5 @@ class NzModel:
         np.save(path+"/4pca_data/12pca_cov_u.npy", u_pca_cov)
         np.save(path+"/4pca_data/12pca_cov_g.npy", g_pca_cov)
         np.save(path+"/4pca_data/12pca_cov_r.npy", r_pca_cov)
+
+        np.save(path+"/4pca_data/z_grid.npy", self._z_space)

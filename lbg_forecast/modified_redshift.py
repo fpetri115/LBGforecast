@@ -29,6 +29,18 @@ class redshift_distribution(container):
         self.g_4pca_mean = np.load(path+"/4pca_data/4pca_mean_g.npy")
         self.r_4pca_mean = np.load(path+"/4pca_data/4pca_mean_r.npy")
 
+
+        self.u_12pca_components = np.load(path+"/4pca_data/12pca_components_u.npy")
+        self.g_12pca_components = np.load(path+"/4pca_data/12pca_components_g.npy")
+        self.r_12pca_components = np.load(path+"/4pca_data/12pca_components_r.npy")
+
+        self.u_12pca_mean = np.load(path+"/4pca_data/12pca_mean_u.npy")
+        self.g_12pca_mean = np.load(path+"/4pca_data/12pca_mean_g.npy")
+        self.r_12pca_mean = np.load(path+"/4pca_data/12pca_mean_r.npy")
+
+        self.z_grid = np.load(path+"/4pca_data/z_grid.npy")
+        self.len_z_grid = self.z_grid.shape[0]
+
     @abstractmethod
     def pz_fn(self, z):
         """Un-normalized n(z) function provided by sub classes"""
@@ -86,87 +98,68 @@ class smail_nz(redshift_distribution):
         a, b, z0 = self.params
         return z**a * np.exp(-((z / z0) ** b))
 
-
 @register_pytree_node_class
 class u_dropout(redshift_distribution):
     """
-    4-component PCA redshift distribution for u dropouts
+    12-component PCA redshift distribution for u dropouts
     -------------------------------------------------------------------
 
     """
 
     def pz_fn(self, z):
-        pca_components, pca_mean = self.u_4pca_components, self.u_4pca_mean
-        v1, v2, v3, v4 = (
-            pca_components[0],
-            pca_components[1],
-            pca_components[2],
-            pca_components[3],
-        )
 
-        nz_params = self.params[0]
-        a, b, c, d = nz_params
+        z = np.atleast_1d(z)
 
-        i = (z * 100).astype(int)
+        pca_components, pca_mean = self.u_12pca_components, self.u_12pca_mean
+        nz_params = np.array(self.params).T #coeffs
 
-        func = (a * v1[i] + b * v2[i] + c * v3[i] + d * v4[i] + pca_mean[i]) ** 2
+        index = np.abs(np.reshape(z, (z.shape[0], 1)) - np.tile(self.z_grid, (z.shape[0], 1))).argmin(axis=1)
 
-        return func
+        vec = np.square(np.add(np.sum(np.multiply(nz_params, pca_components[:, index])), pca_mean[index]))   
 
+        return vec
 
 @register_pytree_node_class
 class g_dropout(redshift_distribution):
     """
-    4-component PCA redshift distribution for g dropouts
+    12-component PCA redshift distribution for u dropouts
     -------------------------------------------------------------------
 
     """
 
     def pz_fn(self, z):
-        pca_components, pca_mean = self.g_4pca_components, self.g_4pca_mean
-        v1, v2, v3, v4 = (
-            pca_components[0],
-            pca_components[1],
-            pca_components[2],
-            pca_components[3],
-        )
 
-        nz_params = self.params[0]
-        a, b, c, d = nz_params
+        z = np.atleast_1d(z)
 
-        i = (z * 100).astype(int)
+        pca_components, pca_mean = self.g_12pca_components, self.g_12pca_mean
+        nz_params = np.array(self.params).T #coeffs
 
-        func = (a * v1[i] + b * v2[i] + c * v3[i] + d * v4[i] + pca_mean[i]) ** 2
+        index = np.abs(np.reshape(z, (z.shape[0], 1)) - np.tile(self.z_grid, (z.shape[0], 1))).argmin(axis=1)
 
-        return func
+        vec = np.square(np.add(np.sum(np.multiply(nz_params, pca_components[:, index])), pca_mean[index]))   
 
-
+        return vec
+    
 @register_pytree_node_class
 class r_dropout(redshift_distribution):
     """
-    4-component PCA redshift distribution for r dropouts
+    12-component PCA redshift distribution for u dropouts
     -------------------------------------------------------------------
 
     """
 
     def pz_fn(self, z):
-        pca_components, pca_mean = self.r_4pca_components, self.r_4pca_mean
-        v1, v2, v3, v4 = (
-            pca_components[0],
-            pca_components[1],
-            pca_components[2],
-            pca_components[3],
-        )
 
-        nz_params = self.params[0]
-        a, b, c, d = nz_params
+        z = np.atleast_1d(z)
 
-        i = (z * 100).astype(int)
+        pca_components, pca_mean = self.r_12pca_components, self.r_12pca_mean
+        nz_params = np.array(self.params).T #coeffs
 
-        func = (a * v1[i] + b * v2[i] + c * v3[i] + d * v4[i] + pca_mean[i]) ** 2
+        index = np.abs(np.reshape(z, (z.shape[0], 1)) - np.tile(self.z_grid, (z.shape[0], 1))).argmin(axis=1)
 
-        return func
+        vec = np.square(np.add(np.sum(np.multiply(nz_params, pca_components[:, index])), pca_mean[index]))   
 
+        return vec
 
 @register_pytree_node_class
 class histogram_nz(redshift_distribution):

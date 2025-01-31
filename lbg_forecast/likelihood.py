@@ -61,13 +61,13 @@ class Likelihood:
         """
         print("Initialising likelihood")
 
-        self._mean_vec_u = jnp.load(path+"/4pca_data/4pca_means_u.npy")
-        self._mean_vec_g = jnp.load(path+"/4pca_data/4pca_means_g.npy")
-        self._mean_vec_r = jnp.load(path+"/4pca_data/4pca_means_r.npy")
+        self._mean_vec_u = jnp.load(path+"/4pca_data/12pca_means_u.npy")
+        self._mean_vec_g = jnp.load(path+"/4pca_data/12pca_means_g.npy")
+        self._mean_vec_r = jnp.load(path+"/4pca_data/12pca_means_r.npy")
 
-        self._cov_u = jnp.load(path+"/4pca_data/4pca_cov_u.npy")
-        self._cov_g = jnp.load(path+"/4pca_data/4pca_cov_g.npy")
-        self._cov_r = jnp.load(path+"/4pca_data/4pca_cov_r.npy")
+        self._cov_u = jnp.load(path+"/4pca_data/12pca_cov_u.npy")
+        self._cov_g = jnp.load(path+"/4pca_data/12pca_cov_g.npy")
+        self._cov_r = jnp.load(path+"/4pca_data/12pca_cov_r.npy")
 
         self._npca = len(self._mean_vec_u)
 

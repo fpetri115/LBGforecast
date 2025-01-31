@@ -70,7 +70,7 @@ def cl_theory(cosmo, nz_params, bias_params, ell):
     spectra, with poisson noise
 
     """
-    n = 4
+    n = 12
     z_cut = 1.5
 
     nz_u = u_dropout(nz_params[:n], gals_per_arcmin2=1)#1
@@ -111,7 +111,7 @@ def cl_theory_CMB(cosmo, nz_params, bias_params, ell):
     spectra, with poisson noise
 
     """
-    n = 4
+    n = 12
     z_cut = 1.5
 
     surface_of_last_scattering = delta_nz(1100., gals_per_arcmin2 = 1e10) 
@@ -157,7 +157,7 @@ def cl_data(cosmo, nz_params, bias_params, ell, f_sky, seed, ncls):
     spectra, with poisson noise, cosmic variance plus contribution from cut sky
 
     """
-    n = 4
+    n = 12
     z_cut = 1.5
 
     nz_u = u_dropout(nz_params[:n], gals_per_arcmin2=1)
@@ -205,7 +205,7 @@ def cl_data_CMB(cosmo, nz_params, bias_params, ell, f_sky, seed, ncls):
     spectra, with poisson noise, cosmic variance plus contribution from cut sky
 
     """
-    n = 4
+    n = 12
     z_cut = 1.5
 
     surface_of_last_scattering = delta_nz(1100., gals_per_arcmin2 = 1e10) 
