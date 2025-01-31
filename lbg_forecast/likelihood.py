@@ -94,6 +94,8 @@ class Likelihood:
         self._b_int_g = 5
         self._b_int_r = 7
 
+        self.b_lbg = 3.585
+
         self._bias_params = jnp.array([self._b_lbg_u,
                                        self._b_lbg_g,
                                        self._b_lbg_r,
@@ -155,11 +157,6 @@ class Likelihood:
             params_ind += 1
             final_index = i
 
-        ####Stuff for W&W
-        #norm_diff = pk(self._cosmo_fid, 1/8, 0)/pk(self._cosmo_fid, 1/8, 2.6)
-        #cosmo_params = cosmo_params.at[0].set(params[0]*jnp.sqrt(norm_diff)) #sigma8 at z=2.6
-        ####
-
         bias_params = combined_params[6:9]
         derived_params = combined_params[9:]
         nz_params = self.nz_params_mean
@@ -188,6 +185,27 @@ class Likelihood:
         s8 = derived_params[1]
         combined_params = combined_params.at[0].set(s8/jnp.sqrt(o_m/0.3))
         combined_params = combined_params.at[1].set(o_m - combined_params[2])
+
+        cosmo = cosmo_params_to_obj(combined_params[:6])
+    
+        return cl_theory_CMB(cosmo, nz_params, bias_params, self._ell)
+    
+    def _mu_vec_ww(self, params, inds):
+        """Reduced theory vector for fisher forecast"""
+
+        combined_params = self._combined_params
+        params_ind = 0
+        for i in inds:
+            combined_params = combined_params.at[i].set(params[params_ind])
+            params_ind += 1
+
+        ####Stuff for W&W
+        norm_diff = pk(self._cosmo_fid, 1/8, 0)/pk(self._cosmo_fid, 1/8, 2.6)
+        cosmo_params = cosmo_params.at[0].set(params[0]*jnp.sqrt(norm_diff)) #sigma8 at z=2.6
+        ####
+
+        bias_params = combined_params[6:9]
+        nz_params = self.nz_params_mean
 
         cosmo = cosmo_params_to_obj(combined_params[:6])
     
@@ -259,6 +277,16 @@ class Likelihood:
 
         inv_cov = jnp.linalg.inv(self.Cm)
         jac_at_mean = jax.jit(jax.jacfwd(self._mu_vec_deriv, argnums=0))
+        dmudp = jac_at_mean(params, inds)
+
+        F = dmudp.T@inv_cov@dmudp
+
+        return F
+    
+    def fisher_ww(self, params, inds):
+
+        inv_cov = jnp.linalg.inv(self.C)
+        jac_at_mean = jax.jit(jax.jacfwd(self._mu_vec_ww, argnums=0))
         dmudp = jac_at_mean(params, inds)
 
         F = dmudp.T@inv_cov@dmudp
