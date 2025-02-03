@@ -3,6 +3,7 @@ from jax.config import config
 config.update("jax_enable_x64", True)
 
 import jax.numpy as jnp
+import jax_cosmo as jc
 from jax_cosmo import Cosmology
 from jax import jacfwd
 
@@ -86,13 +87,13 @@ class Likelihood:
         self._fsky = 0.4
         seed = 100
 
-        self._b_lbg_u = 3
-        self._b_lbg_g = 5
-        self._b_lbg_r = 7
+        self._b_lbg_u = 3.0
+        self._b_lbg_g = 5.0
+        self._b_lbg_r = 7.0
 
-        self._b_int_u = 3
-        self._b_int_g = 5
-        self._b_int_r = 7
+        self._b_int_u = 3.0
+        self._b_int_g = 5.0
+        self._b_int_r = 7.0
 
         self.b_lbg = 3.585
 
@@ -145,71 +146,62 @@ class Likelihood:
 
         print("Initialisation Complete")
 
-
-    def _mu_vec(self, params, inds):
+    def mu_vec_ww(self, params):
         """Reduced theory vector for fisher forecast"""
 
-        combined_params = self._combined_params
-        params_ind = 0
-        final_index = 0
-        for i in inds:
-            combined_params = combined_params.at[i].set(params[params_ind])
-            params_ind += 1
-            final_index = i
-
-        bias_params = combined_params[6:9]
-        derived_params = combined_params[9:]
-        nz_params = self.nz_params_mean
-
-        cosmo = cosmo_params_to_obj(combined_params[:6])
-    
-        return cl_theory_CMB(cosmo, nz_params, bias_params, self._ell)
-    
-    def _mu_vec_deriv(self, params, inds):
-        """Reduced theory vector for fisher forecast"""
-
-        combined_params = self._combined_params
-        params_ind = 0
-        final_index = 0
-        for i in inds:
-            combined_params = combined_params.at[i].set(params[params_ind])
-            params_ind += 1
-            final_index = i
-
-        bias_params = combined_params[6:9]
-        derived_params = combined_params[9:]
-        nz_params = self.nz_params_mean
-
-
-        o_m = derived_params[0]
-        s8 = derived_params[1]
-        combined_params = combined_params.at[0].set(s8/jnp.sqrt(o_m/0.3))
-        combined_params = combined_params.at[1].set(o_m - combined_params[2])
-
-        cosmo = cosmo_params_to_obj(combined_params[:6])
-    
-        return cl_theory_CMB(cosmo, nz_params, bias_params, self._ell)
-    
-    def _mu_vec_ww(self, params, inds):
-        """Reduced theory vector for fisher forecast"""
-
-        combined_params = self._combined_params
-        params_ind = 0
-        for i in inds:
-            combined_params = combined_params.at[i].set(params[params_ind])
-            params_ind += 1
-
-        ####Stuff for W&W
-        norm_diff = pk(self._cosmo_fid, 1/8, 0)/pk(self._cosmo_fid, 1/8, 2.6)
-        cosmo_params = cosmo_params.at[0].set(params[0]*jnp.sqrt(norm_diff)) #sigma8 at z=2.6
+        ####Stuff for W&W (convert z=2.6 sigma8 to z=0.0)
+        norm_diff = pk(self._cosmo_fid, 1/8, 0.0)/pk(self._cosmo_fid, 1/8, 2.6)
         ####
-
-        bias_params = combined_params[6:9]
+        cosmo_obj = jc.Planck15(sigma8=params[0]*jnp.sqrt(norm_diff))
+        bias_params = self._bias_params
+        bias_params = bias_params.at[0].set(params[1])
+        bias_params = bias_params.at[3].set(params[1])
         nz_params = self.nz_params_mean
-
-        cosmo = cosmo_params_to_obj(combined_params[:6])
     
-        return cl_theory_CMB(cosmo, nz_params, bias_params, self._ell)
+        return cl_theory_CMB(cosmo_obj, nz_params, bias_params, self._ell)
+    
+    def mu_vec(self, params):
+        """Reduced theory vector for fisher forecast"""
+
+        cosmo_obj = jc.Planck15(sigma8=params[0],
+                                Omega_c=params[1],
+                                Omega_b=params[2],
+                                h=params[3],
+                                n_s=params[4])
+
+        bias_params = self._bias_params
+        bias_params = bias_params.at[0].set(params[5])
+        bias_params = bias_params.at[3].set(params[5])
+        bias_params = bias_params.at[1].set(params[6])
+        bias_params = bias_params.at[4].set(params[6])
+        bias_params = bias_params.at[2].set(params[7])
+        bias_params = bias_params.at[5].set(params[7])
+        nz_params = self.nz_params_mean
+    
+        return cl_theory_CMB(cosmo_obj, nz_params, bias_params, self._ell)
+    
+    def mu_vec_deriv(self, params):
+        """Reduced theory vector for fisher forecast"""
+
+        o_m = params[0]
+        s8 = params[1]
+
+        cosmo_obj = jc.Planck15(sigma8=s8/jnp.sqrt(o_m/0.3),
+                                Omega_c=o_m-params[2],
+                                Omega_b=params[2],
+                                h=params[3],
+                                n_s=params[4])
+
+        bias_params = self._bias_params
+        bias_params = bias_params.at[0].set(params[5])
+        bias_params = bias_params.at[3].set(params[5])
+        bias_params = bias_params.at[1].set(params[6])
+        bias_params = bias_params.at[4].set(params[6])
+        bias_params = bias_params.at[2].set(params[7])
+        bias_params = bias_params.at[5].set(params[7])
+        nz_params = self.nz_params_mean
+    
+        return cl_theory_CMB(cosmo_obj, nz_params, bias_params, self._ell)
 
     def logL(self, params):
         """marginalised likelihood"""
@@ -243,51 +235,51 @@ class Likelihood:
 
         return gaussian_log_likelihood(c, t, cov, include_logdet=False)
     
-    def fisher(self, params, inds):
+    def fisher(self, params):
 
         inv_cov = jnp.linalg.inv(self.C)
-        jac_at_mean = jax.jit(jax.jacfwd(self._mu_vec, argnums=0))
-        dmudp = jac_at_mean(params, inds)
+        jac_at_mean = jax.jit(jax.jacfwd(self.mu_vec, argnums=0))
+        dmudp = jac_at_mean(params)
 
         F = dmudp.T@inv_cov@dmudp
 
         return F
     
-    def fisher_marg(self, params, inds):
+    def fisher_marg(self, params):
 
         inv_cov = jnp.linalg.inv(self.Cm)
-        jac_at_mean = jax.jit(jax.jacfwd(self._mu_vec, argnums=0))
-        dmudp = jac_at_mean(params, inds)
+        jac_at_mean = jax.jit(jax.jacfwd(self.mu_vec, argnums=0))
+        dmudp = jac_at_mean(params)
 
         F = dmudp.T@inv_cov@dmudp
 
         return F
     
-    def fisher_deriv(self, params, inds):
+    def fisher_deriv(self, params):
 
         inv_cov = jnp.linalg.inv(self.C)
-        jac_at_mean = jax.jit(jax.jacfwd(self._mu_vec_deriv, argnums=0))
-        dmudp = jac_at_mean(params, inds)
+        jac_at_mean = jax.jit(jax.jacfwd(self.mu_vec_deriv, argnums=0))
+        dmudp = jac_at_mean(params)
 
         F = dmudp.T@inv_cov@dmudp
 
         return F
     
-    def fisher_marg_deriv(self, params, inds):
+    def fisher_marg_deriv(self, params):
 
         inv_cov = jnp.linalg.inv(self.Cm)
-        jac_at_mean = jax.jit(jax.jacfwd(self._mu_vec_deriv, argnums=0))
-        dmudp = jac_at_mean(params, inds)
+        jac_at_mean = jax.jit(jax.jacfwd(self.mu_vec_deriv, argnums=0))
+        dmudp = jac_at_mean(params)
 
         F = dmudp.T@inv_cov@dmudp
 
         return F
     
-    def fisher_ww(self, params, inds):
+    def fisher_ww(self, params):
 
         inv_cov = jnp.linalg.inv(self.C)
-        jac_at_mean = jax.jit(jax.jacfwd(self._mu_vec_ww, argnums=0))
-        dmudp = jac_at_mean(params, inds)
+        jac_at_mean = jax.jit(jax.jacfwd(self.mu_vec_ww, argnums=0))
+        dmudp = jac_at_mean(params)
 
         F = dmudp.T@inv_cov@dmudp
 
