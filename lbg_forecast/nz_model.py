@@ -45,7 +45,7 @@ def perform_2pca(bin_vals):
     pca.fit(bin_vals_sqrt)
     bin_pca = pca.transform(bin_vals_sqrt)
 
-    return [bin_pca, pca.components_, pca.mean_]
+    return [bin_pca, pca.components_, pca.mean_, pca.explained_variance_ratio_]
 
 
 def perform_npca(bin_vals, n):
@@ -74,7 +74,7 @@ def perform_npca(bin_vals, n):
     pca.fit(bin_vals_sqrt)
     bin_pca = pca.transform(bin_vals_sqrt)
 
-    return [bin_pca, pca.components_, pca.mean_]
+    return [bin_pca, pca.components_, pca.mean_, pca.explained_variance_ratio_]
 
 
 def gauss_2pca(pca_data, n):
@@ -85,7 +85,7 @@ def gauss_2pca(pca_data, n):
     Paraneters:
     n - number of samples
     """
-    bin_pca, pca_components, pca_mean = pca_data
+    bin_pca, pca_components, pca_mean, pca_explained_var = pca_data
 
     pca_coeff1 = bin_pca[:, 0]
     pca_coeff2 = bin_pca[:, 1]
@@ -118,7 +118,7 @@ def gauss_npca(pca_data, n_s):
     n_s - number of samples
     n - pca components
     """
-    bin_pca, pca_components, pca_mean = pca_data
+    bin_pca, pca_components, pca_mean, pca_explained_var = pca_data
     pca_coeffs = []
 
     # pca_components
@@ -163,7 +163,7 @@ def pca_mean_cov(pca_data):
     Returns means and covariance
     """
 
-    bin_pca, pca_components, pca_mean = pca_data
+    bin_pca, pca_components, pca_mean, pca_explained_var = pca_data
     pca_coeffs = []
 
     # pca_components
@@ -458,61 +458,31 @@ class NzModel:
 
         return np.array(normalised_nzs)
 
-    def save_4pca_data(self, path):
-        """saves 4-Component PCA related data"""
+    def save_npca_data(self, npca, path):
+        """saves n-Component PCA related data"""
 
-        u_pca_data = perform_npca(self.u_data(), 4)
-        g_pca_data = perform_npca(self.g_data(), 4)
-        r_pca_data = perform_npca(self.r_data(), 4)
-
-        u_pca_means, u_pca_cov = pca_mean_cov(u_pca_data)
-        g_pca_means, g_pca_cov = pca_mean_cov(g_pca_data)
-        r_pca_means, r_pca_cov = pca_mean_cov(r_pca_data)
-
-        np.save(path+"/4pca_data/4pca_components_u.npy", u_pca_data[1])
-        np.save(path+"/4pca_data/4pca_components_g.npy", g_pca_data[1])
-        np.save(path+"/4pca_data/4pca_components_r.npy", r_pca_data[1])
-
-        np.save(path+"/4pca_data/4pca_mean_u.npy", u_pca_data[2])
-        np.save(path+"/4pca_data/4pca_mean_g.npy", g_pca_data[2])
-        np.save(path+"/4pca_data/4pca_mean_r.npy", r_pca_data[2])
-
-        np.save(path+"/4pca_data/4pca_means_u.npy", u_pca_means)
-        np.save(path+"/4pca_data/4pca_means_g.npy", g_pca_means)
-        np.save(path+"/4pca_data/4pca_means_r.npy", r_pca_means)
-
-        np.save(path+"/4pca_data/4pca_cov_u.npy", u_pca_cov)
-        np.save(path+"/4pca_data/4pca_cov_g.npy", g_pca_cov)
-        np.save(path+"/4pca_data/4pca_cov_r.npy", r_pca_cov)
-
-        np.save(path+"/4pca_data/z_grid.npy", self._z_space)
-
-
-    def save_12pca_data(self, path):
-        """saves 12-Component PCA related data"""
-
-        u_pca_data = perform_npca(self.u_data(), 12)
-        g_pca_data = perform_npca(self.g_data(), 12)
-        r_pca_data = perform_npca(self.r_data(), 12)
+        u_pca_data = perform_npca(self.u_data(), npca)
+        g_pca_data = perform_npca(self.g_data(), npca)
+        r_pca_data = perform_npca(self.r_data(), npca)
 
         u_pca_means, u_pca_cov = pca_mean_cov(u_pca_data)
         g_pca_means, g_pca_cov = pca_mean_cov(g_pca_data)
         r_pca_means, r_pca_cov = pca_mean_cov(r_pca_data)
 
-        np.save(path+"/4pca_data/12pca_components_u.npy", u_pca_data[1])
-        np.save(path+"/4pca_data/12pca_components_g.npy", g_pca_data[1])
-        np.save(path+"/4pca_data/12pca_components_r.npy", r_pca_data[1])
+        np.save(path+"/4pca_data/npca_components_u.npy", u_pca_data[1])
+        np.save(path+"/4pca_data/npca_components_g.npy", g_pca_data[1])
+        np.save(path+"/4pca_data/npca_components_r.npy", r_pca_data[1])
 
-        np.save(path+"/4pca_data/12pca_mean_u.npy", u_pca_data[2])
-        np.save(path+"/4pca_data/12pca_mean_g.npy", g_pca_data[2])
-        np.save(path+"/4pca_data/12pca_mean_r.npy", r_pca_data[2])
+        np.save(path+"/4pca_data/npca_mean_u.npy", u_pca_data[2])
+        np.save(path+"/4pca_data/npca_mean_g.npy", g_pca_data[2])
+        np.save(path+"/4pca_data/npca_mean_r.npy", r_pca_data[2])
 
-        np.save(path+"/4pca_data/12pca_means_u.npy", u_pca_means)
-        np.save(path+"/4pca_data/12pca_means_g.npy", g_pca_means)
-        np.save(path+"/4pca_data/12pca_means_r.npy", r_pca_means)
+        np.save(path+"/4pca_data/npca_means_u.npy", u_pca_means)
+        np.save(path+"/4pca_data/npca_means_g.npy", g_pca_means)
+        np.save(path+"/4pca_data/npca_means_r.npy", r_pca_means)
 
-        np.save(path+"/4pca_data/12pca_cov_u.npy", u_pca_cov)
-        np.save(path+"/4pca_data/12pca_cov_g.npy", g_pca_cov)
-        np.save(path+"/4pca_data/12pca_cov_r.npy", r_pca_cov)
+        np.save(path+"/4pca_data/npca_cov_u.npy", u_pca_cov)
+        np.save(path+"/4pca_data/npca_cov_g.npy", g_pca_cov)
+        np.save(path+"/4pca_data/npca_cov_r.npy", r_pca_cov)
 
         np.save(path+"/4pca_data/z_grid.npy", self._z_space)

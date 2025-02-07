@@ -21,22 +21,13 @@ class redshift_distribution(container):
         self._gals_per_arcmin2 = gals_per_arcmin2
         super(redshift_distribution, self).__init__(*args, zmax=zmax, **kwargs)
 
-        self.u_4pca_components = np.load(path+"/4pca_data/4pca_components_u.npy")
-        self.g_4pca_components = np.load(path+"/4pca_data/4pca_components_g.npy")
-        self.r_4pca_components = np.load(path+"/4pca_data/4pca_components_r.npy")
+        self.u_npca_components = np.load(path+"/4pca_data/npca_components_u.npy")
+        self.g_npca_components = np.load(path+"/4pca_data/npca_components_g.npy")
+        self.r_npca_components = np.load(path+"/4pca_data/npca_components_r.npy")
 
-        self.u_4pca_mean = np.load(path+"/4pca_data/4pca_mean_u.npy")
-        self.g_4pca_mean = np.load(path+"/4pca_data/4pca_mean_g.npy")
-        self.r_4pca_mean = np.load(path+"/4pca_data/4pca_mean_r.npy")
-
-
-        self.u_12pca_components = np.load(path+"/4pca_data/12pca_components_u.npy")
-        self.g_12pca_components = np.load(path+"/4pca_data/12pca_components_g.npy")
-        self.r_12pca_components = np.load(path+"/4pca_data/12pca_components_r.npy")
-
-        self.u_12pca_mean = np.load(path+"/4pca_data/12pca_mean_u.npy")
-        self.g_12pca_mean = np.load(path+"/4pca_data/12pca_mean_g.npy")
-        self.r_12pca_mean = np.load(path+"/4pca_data/12pca_mean_r.npy")
+        self.u_npca_mean = np.load(path+"/4pca_data/npca_mean_u.npy")
+        self.g_npca_mean = np.load(path+"/4pca_data/npca_mean_g.npy")
+        self.r_npca_mean = np.load(path+"/4pca_data/npca_mean_r.npy")
 
         self.z_grid = np.load(path+"/4pca_data/z_grid.npy")
         self.len_z_grid = self.z_grid.shape[0]
@@ -110,7 +101,7 @@ class u_dropout(redshift_distribution):
 
         z = np.atleast_1d(z)
 
-        pca_components, pca_mean = self.u_12pca_components, self.u_12pca_mean
+        pca_components, pca_mean = self.u_npca_components, self.u_npca_mean
         nz_params = np.array(self.params).T #coeffs
 
         index = np.abs(np.reshape(z, (z.shape[0], 1)) - np.tile(self.z_grid, (z.shape[0], 1))).argmin(axis=1)
@@ -131,7 +122,7 @@ class g_dropout(redshift_distribution):
 
         z = np.atleast_1d(z)
 
-        pca_components, pca_mean = self.g_12pca_components, self.g_12pca_mean
+        pca_components, pca_mean = self.g_npca_components, self.g_npca_mean
         nz_params = np.array(self.params).T #coeffs
 
         index = np.abs(np.reshape(z, (z.shape[0], 1)) - np.tile(self.z_grid, (z.shape[0], 1))).argmin(axis=1)
@@ -152,7 +143,7 @@ class r_dropout(redshift_distribution):
 
         z = np.atleast_1d(z)
 
-        pca_components, pca_mean = self.r_12pca_components, self.r_12pca_mean
+        pca_components, pca_mean = self.r_npca_components, self.r_npca_mean
         nz_params = np.array(self.params).T #coeffs
 
         index = np.abs(np.reshape(z, (z.shape[0], 1)) - np.tile(self.z_grid, (z.shape[0], 1))).argmin(axis=1)
