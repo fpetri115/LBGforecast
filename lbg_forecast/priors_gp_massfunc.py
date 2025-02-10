@@ -152,7 +152,7 @@ class MassFunctionPrior():
         dv = self.volume_element(z, dz)
         return dv/dz
     
-    def logpdf(self, x, sparams, norm, prior_bounds=[0.0,7.0,7.0,13]):
+    def logpdf(self, x, sparams, norm, prior_bounds):
         """log10(P(z, logm))"""
 
         z, logm = x
@@ -184,7 +184,7 @@ class MassFunctionPrior():
         pz = np.random.uniform(1.01, 1.02, (nwalkers, 1))
         plogm = np.random.uniform(9.9, 10.1, (nwalkers, 1))
         p0 = np.hstack((pz, plogm))
-        prior_bounds=[0.0,7.0,7,13]
+        prior_bounds=[0.0,7.0,7.0,13.0]
 
         if(self.mean):
             sparams = self.sample_prior_mean()
@@ -193,8 +193,8 @@ class MassFunctionPrior():
 
         print("Calculating Normalisation ... ")
         norm = self.n_tot(sparams)
-        totn_cut = self.surface_number_density_in_volume(sparams, 0.0, 7.0, 8.0)
-        totn = self.surface_number_density_in_volume(sparams, 0.0, 7.0, 0.0)
+        totn_cut = self.number_of_galaxies_in_volume(sparams, 0.0, 7.0, 8.0)
+        totn = self.number_of_galaxies_in_volume(sparams, 0.0, 7.0, prior_bounds[2])
 
         print("MCMC Sampling ... ")
         sampler = emcee.EnsembleSampler(nwalkers, ndim, self.logpdf, args=[sparams, norm, prior_bounds])
