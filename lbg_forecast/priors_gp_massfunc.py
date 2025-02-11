@@ -193,8 +193,6 @@ class MassFunctionPrior():
 
         print("Calculating Normalisation ... ")
         norm = self.n_tot(sparams)
-        totn_cut = self.number_of_galaxies_in_volume(sparams, 0.0, 7.0, 8.0)
-        totn = self.number_of_galaxies_in_volume(sparams, 0.0, 7.0, prior_bounds[2])
 
         print("MCMC Sampling ... ")
         sampler = emcee.EnsembleSampler(nwalkers, ndim, self.logpdf, args=[sparams, norm, prior_bounds])
@@ -208,7 +206,7 @@ class MassFunctionPrior():
         redshift_samples = samples[:, 0]
         mass_samples = samples[:, 1]
 
-        return redshift_samples[burnin:nsamples+burnin], mass_samples[burnin:nsamples+burnin], totn_cut, totn
+        return redshift_samples[burnin:nsamples+burnin], mass_samples[burnin:nsamples+burnin], np.array(sparams)
 
     def schechter_function(self, logm, logphi, logm_star, alpha):
         return np.log(10)*(10**logphi)*10**((logm-logm_star)*(alpha+1))*np.exp(-10**(logm-logm_star))

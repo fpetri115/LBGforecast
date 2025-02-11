@@ -51,27 +51,23 @@ csfrd_prior = comm.bcast(csfrd_prior, root=0)
 
 #setup memory
 sps_buf = np.zeros((nrealisations, ngals, NSPS_PARAMS))
-totn_cut_buf = np.zeros((nrealisations))
-totn_buf = np.zeros((nrealisations))
+sparams_buf = np.zeros((nrealisations, 3, 100))
 
 if(rank == 0):
     recv_buf = np.zeros((nrealisations * size, ngals, NSPS_PARAMS))
-    recv_totn_cut_buf = np.zeros((size*nrealisations))
-    recv_totn_buf = np.zeros((size*nrealisations))
+    recv_sparams_buf = np.zeros((size*nrealisations, 3, 100))
 else:
     recv_buf = None
-    recv_totn_cut_buf = None
-    recv_totn_buf=  None
+    recv_sparams_buf = None
 
 #sample SPS parameters
 if(rank == 0):
     print("Begin Sampling ... ", flush=True)
 
 for n in range(nrealisations):
-    sps_params, totn_cut, totn = pop.generate_sps_parameters(ngals, mass_function_prior, dust_prior, csfrd_prior, return_totn=True, mean=mean, uniform_redshift_mass=False)
+    sps_params, sparams = pop.generate_sps_parameters(ngals, mass_function_prior, dust_prior, csfrd_prior, return_sparams=True, mean=mean, uniform_redshift_mass=False)
     sps_buf[n, :, :] = sps_params
-    totn_cut_buf[n] = totn_cut
-    totn_buf[n] = totn
+    sparams_buf[n, :, :] = sparams
     if(rank == 0):
         print("Realisation: ", n+1, flush=True)
 
@@ -80,12 +76,10 @@ if(rank == 0):
 
 #gather arrays
 comm.Gather(sps_buf, recv_buf, root=0)
-comm.Gather(totn_cut_buf, recv_totn_cut_buf, root=0)
-comm.Gather(totn_buf, recv_totn_buf, root=0)
+comm.Gather(sparams_buf, recv_sparams_buf, root=0)
 
 if(rank == 0):
     print("Gather Finished ... ", flush=True)
     np.save(path+"sps_parameter_samples/sps_"+run+".npy", recv_buf)
-    np.save(path+"sps_parameter_samples/totn_cut_"+run+".npy", recv_totn_cut_buf)
-    np.save(path+"sps_parameter_samples/totn_"+run+".npy", recv_totn_buf)
+    np.save(path+"sps_parameter_samples/sparams_"+run+".npy", recv_sparams_buf)
     print("Complete.", flush=True)
