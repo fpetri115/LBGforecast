@@ -162,6 +162,9 @@ class MassFunctionPrior():
         
         if(logm < prior_bounds[2] or logm > prior_bounds[3]):
             return -np.inf
+        
+        if(logm < 8 and z > 1):
+            return -np.inf
 
         p_z_logm = self.normalised_mass_function(z, logm, sparams, norm, np.interp(z, self.z_grid, self.dvdzgrid))
 
