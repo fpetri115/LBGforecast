@@ -79,7 +79,7 @@ def generate_sps_parameters(nsamples, mass_function_prior, dust_prior, csfrd_pri
     print("Sampling Dust ...")
 
     recent_sfrs = np.log10(sfh.calculate_recent_sfr(redshift, 10**mass, log_sfr_ratios))
-    dust2, dust_index, dust1 = dust_prior.sample_dust_model(recent_sfrs)
+    dust2, dust_index, dust1 = dust_prior.sample_dust_model_nag(recent_sfrs)
 
     sps_parameters.append(redshift)
     sps_parameters.append(logzsol)

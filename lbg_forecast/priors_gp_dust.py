@@ -107,7 +107,6 @@ class DustPrior():
         mean_dust2 = f_preds_mu.mean.detach().numpy()
         delta_dust2 = mean_dust2_sample - mean_dust2
 
-
         delta = np.interp(self.recent_sfrs, self.dust2_grid, delta_dust2)
 
         sorted_inds = self.recent_sfrs.argsort()[:]
@@ -131,12 +130,13 @@ class DustPrior():
 
         return np.clip(abs(dust2 + delta), 0.0, 4.0)
     
-    def sample_dust2_nag(self, sfrs):
+    def sample_dust2_nag(self, sfrs, debug=False):
         
         f_preds_mu = gp_evaluate_model(self.model_dust2_nag, torch.from_numpy(self.dust2_grid))
         mean_dust2_sample = f_preds_mu.sample().numpy()
         mean_dust2 = f_preds_mu.mean.detach().numpy()
         delta_dust2 = mean_dust2_sample - mean_dust2
+
         delta = np.interp(self.sfr, self.dust2_grid, delta_dust2)
 
         sorted_inds = self.sfr.argsort()[:]
@@ -149,6 +149,13 @@ class DustPrior():
 
         if(self.mean):
             delta=delta*0
+
+        
+        if(debug):
+            plt.plot(self.dust2_grid, mean_dust2_sample, c='purple')
+            plt.plot(self.dust2_grid, mean_dust2, c='k')
+            plt.scatter(sfrs, abs(dust2+delta), c='purple', alpha=0.5)
+            plt.scatter(sfrs, dust2, c='black', alpha=0.5)
 
         return np.clip(abs(dust2 + delta), 0.0, 4.0)
 
