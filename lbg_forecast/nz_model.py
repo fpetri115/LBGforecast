@@ -20,34 +20,6 @@ def load_redshift_distributions(path):
     return z_grid, [nzus, nzgs, nzrs]
 
 
-def perform_2pca(bin_vals):
-    """
-    Given a set of simulated n(z)'s, given by bin_vals, get 2-component PCA.
-    ------------------------------------------------------------------------
-    Parameters:
-    bin_vals - Can be found using u_data(), g_data(), r_data() methods in NzModel.
-    ------------------------------------------------------------------------
-    Returns:
-    bin_pca - bin_pca[:,0] gives 1st PCA component coeffecients,
-    bin_pca[:,1] gives 2nd etc. of data.
-    pca_components_ - List of PCA components (2 of them) (minus pca.mean_)
-    pca.mean_ - mean of components
-    """
-
-    bin_vals_sqrt = np.sqrt(bin_vals)
-
-    scaler = StandardScaler()
-
-    scaler.fit(bin_vals_sqrt)
-    bin_scaled = scaler.transform(bin_vals_sqrt)
-
-    pca = PCA(n_components=2)
-    pca.fit(bin_vals_sqrt)
-    bin_pca = pca.transform(bin_vals_sqrt)
-
-    return [bin_pca, pca.components_, pca.mean_, pca.explained_variance_ratio_]
-
-
 def perform_npca(bin_vals, n):
     """
     Given a set of simulated n(z)'s, given by bin_vals, get n-component PCA.
@@ -75,38 +47,6 @@ def perform_npca(bin_vals, n):
     bin_pca = pca.transform(bin_vals_sqrt)
 
     return [bin_pca, pca.components_, pca.mean_, pca.explained_variance_ratio_]
-
-
-def gauss_2pca(pca_data, n):
-    """
-    Gaussian approximation of 2-component PCA given in perform_2pca().
-    Gives gaussian distributed PCA coeffecients.
-    ---------------------------------------------------------------------
-    Paraneters:
-    n - number of samples
-    """
-    bin_pca, pca_components, pca_mean, pca_explained_var = pca_data
-
-    pca_coeff1 = bin_pca[:, 0]
-    pca_coeff2 = bin_pca[:, 1]
-
-    gauss_pca_coeffs = np.random.multivariate_normal(
-        (np.mean(pca_coeff1), np.mean(pca_coeff2)), np.cov(pca_coeff1, pca_coeff2), n
-    )
-
-    pca_nzs = []
-
-    i = 0
-    while i < n:
-        func = (
-            (pca_components[0]) * gauss_pca_coeffs[i][0]
-            + (pca_components[1]) * gauss_pca_coeffs[i][1]
-            + pca_mean
-        ) ** 2
-        pca_nzs.append(func)
-        i += 1
-
-    return np.array(pca_nzs)
 
 
 def gauss_npca(pca_data, n_s):

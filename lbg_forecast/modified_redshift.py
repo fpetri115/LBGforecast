@@ -92,7 +92,7 @@ class smail_nz(redshift_distribution):
 @register_pytree_node_class
 class u_dropout(redshift_distribution):
     """
-    12-component PCA redshift distribution for u dropouts
+    n-component PCA redshift distribution for u dropouts
     -------------------------------------------------------------------
 
     """
@@ -102,18 +102,22 @@ class u_dropout(redshift_distribution):
         z = np.atleast_1d(z)
 
         pca_components, pca_mean = self.u_npca_components, self.u_npca_mean
-        nz_params = np.array(self.params).T #coeffs
+        nz_params = self.params[0] #coeffs
 
         index = np.abs(np.reshape(z, (z.shape[0], 1)) - np.tile(self.z_grid, (z.shape[0], 1))).argmin(axis=1)
 
-        vec = np.square(np.add(np.sum(np.multiply(nz_params, pca_components[:, index])), pca_mean[index]))   
+        pca_component_i = pca_components[:, index]
+        pca_mean_i = pca_mean[index]
+
+        component_sum = np.sum(nz_params*pca_component_i.T, axis=1)
+        vec = (component_sum + pca_mean_i)**2
 
         return vec
 
 @register_pytree_node_class
 class g_dropout(redshift_distribution):
     """
-    12-component PCA redshift distribution for u dropouts
+    n-component PCA redshift distribution for u dropouts
     -------------------------------------------------------------------
 
     """
@@ -123,18 +127,22 @@ class g_dropout(redshift_distribution):
         z = np.atleast_1d(z)
 
         pca_components, pca_mean = self.g_npca_components, self.g_npca_mean
-        nz_params = np.array(self.params).T #coeffs
+        nz_params = self.params[0] #coeffs
 
         index = np.abs(np.reshape(z, (z.shape[0], 1)) - np.tile(self.z_grid, (z.shape[0], 1))).argmin(axis=1)
 
-        vec = np.square(np.add(np.sum(np.multiply(nz_params, pca_components[:, index])), pca_mean[index]))   
+        pca_component_i = pca_components[:, index]
+        pca_mean_i = pca_mean[index]
 
+        component_sum = np.sum(nz_params*pca_component_i.T, axis=1)
+        vec = (component_sum + pca_mean_i)**2
+        
         return vec
     
 @register_pytree_node_class
 class r_dropout(redshift_distribution):
     """
-    12-component PCA redshift distribution for u dropouts
+    n-component PCA redshift distribution for u dropouts
     -------------------------------------------------------------------
 
     """
@@ -144,12 +152,16 @@ class r_dropout(redshift_distribution):
         z = np.atleast_1d(z)
 
         pca_components, pca_mean = self.r_npca_components, self.r_npca_mean
-        nz_params = np.array(self.params).T #coeffs
+        nz_params = self.params[0] #coeffs
 
         index = np.abs(np.reshape(z, (z.shape[0], 1)) - np.tile(self.z_grid, (z.shape[0], 1))).argmin(axis=1)
 
-        vec = np.square(np.add(np.sum(np.multiply(nz_params, pca_components[:, index])), pca_mean[index]))   
+        pca_component_i = pca_components[:, index]
+        pca_mean_i = pca_mean[index]
 
+        component_sum = np.sum(nz_params*pca_component_i.T, axis=1)
+        vec = (component_sum + pca_mean_i)**2
+        
         return vec
 
 @register_pytree_node_class

@@ -17,37 +17,7 @@ from lbg_forecast.angular_power import pk
 
 from lbg_forecast.modified_likelihood import gaussian_log_likelihood
 from lbg_forecast.modified_likelihood import marginalised_log_likelihood
-
-def get_cosmo_params(cosmo):
-    return jnp.array(
-        [cosmo.sigma8, cosmo.Omega_c, cosmo.Omega_b, cosmo.h, cosmo.n_s, cosmo.w0]
-    )
-
-
-def cosmo_params_to_obj(params):
-    cosmo = Cosmology(
-        sigma8=params[0],
-        Omega_c=params[1],
-        Omega_b=params[2],
-        h=params[3],
-        n_s=params[4],
-        w0=params[5],
-        Omega_k=0.0,
-        wa=0.0,
-    )
-
-    return cosmo
-
-def pack_params(cosmo_params, b_lbg, b_int):
-    return jnp.hstack((cosmo_params, b_lbg, b_int))
-
-
-def unpack_params(params):
-    cosmo_params = params[:6]
-    blbg = params[6]
-    bint = params[7]
-
-    return cosmo_params, blbg, bint
+import lbg_forecast.utils as utils
 
 
 class Likelihood:
@@ -82,32 +52,31 @@ class Likelihood:
         )
         self._inv_P = jnp.linalg.inv(self.P)
 
-        self._z_cut = 1.5
         self._ell = jnp.arange(200, 1000, 1)
-        self._fsky = 0.4
+        self._fsky = 0.35
         seed = 100
 
         self._b_lbg_u = 2.0
         self._b_lbg_g = 4.0
         self._b_lbg_r = 5.0
 
-        self._b_int_u = 2.0
-        self._b_int_g = 4.0
-        self._b_int_r = 5.0
-
         self.b_lbg = 3.585
 
         self._bias_params = jnp.array([self._b_lbg_u,
                                        self._b_lbg_g,
                                        self._b_lbg_r,
-                                       self._b_int_u,
-                                       self._b_int_g,
-                                       self._b_int_r
         ])
 
         self.nz_params_mean = jnp.hstack(
             (self._mean_vec_u, self._mean_vec_g, self._mean_vec_r)
         )
+
+        self.nden_u = 8000/utils.DEG2_TO_ARCMIN2
+        self.nden_g = 14000/utils.DEG2_TO_ARCMIN2
+        self.nden_r = 1000/utils.DEG2_TO_ARCMIN2
+
+        self.ndens = jnp.array([self.nden_u, self.nden_g, self.nden_r])
+
         self._cosmo_fid = define_cosmo()
 
         _o_m = self._cosmo_fid.Omega_c + self._cosmo_fid.Omega_b
@@ -122,6 +91,7 @@ class Likelihood:
             self._bias_params,
             self._ell,
             self._fsky,
+            self.ndens,
             seed,
             ncls = 4,
         )
@@ -134,15 +104,9 @@ class Likelihood:
         # jacobian
         self._jacobian = jax.jit(jacfwd(cl_theory_CMB, argnums=1))
         self.T = self._jacobian(self._cosmo_fid, self.nz_params_mean,
-                                 self._bias_params, self._ell)
+                                 self._bias_params, self._ell, self.ndens)
         
         self.Cm = self.C + self.T @ self.P @ self.T.T
-
-        ####For use with Fisher:
-        cosmo_params = get_cosmo_params(self._cosmo_fid)
-        self._combined_params = jnp.concatenate((cosmo_params, 
-                                                 self._bias_params, 
-                                                 self._derived_params))
 
         print("Initialisation Complete")
 
@@ -158,7 +122,7 @@ class Likelihood:
         bias_params = bias_params.at[3].set(params[1])
         nz_params = self.nz_params_mean
     
-        return cl_theory_CMB(cosmo_obj, nz_params, bias_params, self._ell)
+        return cl_theory_CMB(cosmo_obj, nz_params, bias_params, self._ell, self.ndens)
     
     def mu_vec(self, params):
         """Reduced theory vector for fisher forecast"""
@@ -171,14 +135,11 @@ class Likelihood:
 
         bias_params = self._bias_params
         bias_params = bias_params.at[0].set(params[5])
-        bias_params = bias_params.at[3].set(params[5])
         bias_params = bias_params.at[1].set(params[6])
-        bias_params = bias_params.at[4].set(params[6])
         bias_params = bias_params.at[2].set(params[7])
-        bias_params = bias_params.at[5].set(params[7])
         nz_params = self.nz_params_mean
     
-        return cl_theory_CMB(cosmo_obj, nz_params, bias_params, self._ell)
+        return cl_theory_CMB(cosmo_obj, nz_params, bias_params, self._ell, self.ndens)
     
     def mu_vec_deriv(self, params):
         """Reduced theory vector for fisher forecast"""
@@ -194,20 +155,25 @@ class Likelihood:
 
         bias_params = self._bias_params
         bias_params = bias_params.at[0].set(params[5])
-        bias_params = bias_params.at[3].set(params[5])
         bias_params = bias_params.at[1].set(params[6])
-        bias_params = bias_params.at[4].set(params[6])
         bias_params = bias_params.at[2].set(params[7])
-        bias_params = bias_params.at[5].set(params[7])
         nz_params = self.nz_params_mean
     
-        return cl_theory_CMB(cosmo_obj, nz_params, bias_params, self._ell)
+        return cl_theory_CMB(cosmo_obj, nz_params, bias_params, self._ell, self.ndens)
 
     def logL(self, params):
         """marginalised likelihood"""
 
-        cosmo_params, bias_params = unpack_params(params)
-        cosmo = cosmo_params_to_obj(cosmo_params)
+        cosmo_obj = jc.Planck15(sigma8=params[0],
+                        Omega_c=params[1],
+                        Omega_b=params[2],
+                        h=params[3],
+                        n_s=params[4])
+
+        bias_params = self._bias_params
+        bias_params = bias_params.at[0].set(params[5])
+        bias_params = bias_params.at[1].set(params[6])
+        bias_params = bias_params.at[2].set(params[7])
 
         nz_params = self.nz_params_mean
 
@@ -215,13 +181,13 @@ class Likelihood:
         C = self.C
         P = self.P
 
-        t = cl_theory_CMB(cosmo, nz_params, bias_params, self._ell)
+        t = cl_theory_CMB(cosmo_obj, nz_params, bias_params, self._ell)
         c = self.cl_mean
 
         return marginalised_log_likelihood(c, t, C, P, T)
 
     def logLgauss(self, params):
-        """Gaussian likelihood for n(z) fixed at mean value"""
+        """(NOT WORKING)Gaussian likelihood for n(z) fixed at mean value"""
 
         cosmo_params, bias_params = unpack_params(params)
         cosmo = cosmo_params_to_obj(cosmo_params)
@@ -295,7 +261,7 @@ class Likelihood:
         nz_params = self.nz_params_mean
         cosmo = self._cosmo_fid
         bias_params = self._bias_params
-        theory_cl = cl_theory_CMB(cosmo, nz_params, bias_params, self._ell)
+        theory_cl = cl_theory_CMB(cosmo, nz_params, bias_params, self._ell, self.ndens)
 
         # plot together
-        compare_cls(data_cl, theory_cl, self._ell, figure_size=(15, 10), fontsize=18)
+        compare_cls(data_cl, theory_cl, self._ell, figure_size=(15, 10), fontsize=18, ncls=4)

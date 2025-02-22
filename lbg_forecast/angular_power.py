@@ -17,6 +17,7 @@ from jax_cosmo.utils import z2a
 from lbg_forecast import modified_probes
 from jax_cosmo import probes
 from jax_cosmo.angular_cl import angular_cl
+
 from lbg_forecast.modified_angular_cl import noise_cl
 from lbg_forecast.modified_angular_cl import gaussian_cl_covariance_and_mean
 
@@ -72,7 +73,6 @@ def cl_theory(cosmo, nz_params, bias_params, ell):
 
     """
     n = NPCA
-    z_cut = 1.5
 
     nz_u = u_dropout(nz_params[:n], gals_per_arcmin2=1)#1
     nz_g = g_dropout(nz_params[n : 2 * n], gals_per_arcmin2=1)#1
@@ -81,9 +81,9 @@ def cl_theory(cosmo, nz_params, bias_params, ell):
     redshift_distributions = [nz_u, nz_g, nz_r]
 
     bias = [
-        custom_bias(bias_params[3], bias_params[0], z_cut),
-        custom_bias(bias_params[4], bias_params[1], z_cut),
-        custom_bias(bias_params[5], bias_params[2], z_cut)
+        constant_linear_bias(bias_params[0]),
+        constant_linear_bias(bias_params[1]),
+        constant_linear_bias(bias_params[2]),
     ]
 
     tracers = [probes.NumberCounts(redshift_distributions, bias)]
@@ -95,7 +95,7 @@ def cl_theory(cosmo, nz_params, bias_params, ell):
     return jnp.hstack(total_cl)
 
 @jit
-def cl_theory_CMB(cosmo, nz_params, bias_params, ell):
+def cl_theory_CMB(cosmo, nz_params, bias_params, ell, ndens):
     """
     Calculates theory vector for Likelihood. Computes angular cls
     and cross correlations of u, g, r dropouts with two component bias.
@@ -113,20 +113,19 @@ def cl_theory_CMB(cosmo, nz_params, bias_params, ell):
 
     """
     n = NPCA
-    z_cut = 1.5
 
     surface_of_last_scattering = delta_nz(1100., gals_per_arcmin2 = 1e10) 
 
-    nz_u = u_dropout(nz_params[:n], gals_per_arcmin2=1)#1
-    nz_g = g_dropout(nz_params[n : 2 * n], gals_per_arcmin2=1)#1
-    nz_r = r_dropout(nz_params[2 * n : 3 * n], gals_per_arcmin2=0.1)#0.1
+    nz_u = u_dropout(nz_params[:n], gals_per_arcmin2=ndens[0])#1
+    nz_g = g_dropout(nz_params[n : 2 * n], gals_per_arcmin2=ndens[1])#1
+    nz_r = r_dropout(nz_params[2 * n : 3 * n], gals_per_arcmin2=ndens[2])#0.1
 
     redshift_distributions = [nz_u, nz_g, nz_r]
 
     bias = [
-        custom_bias(bias_params[3], bias_params[0], z_cut),
-        custom_bias(bias_params[4], bias_params[1], z_cut),
-        custom_bias(bias_params[5], bias_params[2], z_cut)
+        constant_linear_bias(bias_params[0]),
+        constant_linear_bias(bias_params[1]),
+        constant_linear_bias(bias_params[2]),
     ]
 
     cosmo_probes = [probes.NumberCounts(redshift_distributions, bias),
@@ -139,7 +138,7 @@ def cl_theory_CMB(cosmo, nz_params, bias_params, ell):
     return jnp.hstack(total_cl)
 
 #@partial(jit, static_argnums=7)
-def cl_data(cosmo, nz_params, bias_params, ell, f_sky, seed, ncls):
+def cl_data(cosmo, nz_params, bias_params, ell, f_sky, ndens, seed, ncls):
     """
     Genrates Mock LBG lustering angular power spectra data. Gives
     u, g, r-dropout clustering plus cross correlations. Gaussian noise
@@ -161,17 +160,21 @@ def cl_data(cosmo, nz_params, bias_params, ell, f_sky, seed, ncls):
     n = NPCA
     z_cut = 1.5
 
-    nz_u = u_dropout(nz_params[:n], gals_per_arcmin2=1)
-    nz_g = g_dropout(nz_params[n : 2 * n], gals_per_arcmin2=1)
-    nz_r = r_dropout(nz_params[2 * n : 3 * n], gals_per_arcmin2=0.1)
+    nz_u = u_dropout(nz_params[:n], gals_per_arcmin2=ndens[0])
+    nz_g = g_dropout(nz_params[n : 2 * n], gals_per_arcmin2=ndens[1])
+    nz_r = r_dropout(nz_params[2 * n : 3 * n], gals_per_arcmin2=ndens[2])
 
     redshift_distributions = [nz_u, nz_g, nz_r]
 
     bias = [
-        custom_bias(bias_params[3], bias_params[0], z_cut),
-        custom_bias(bias_params[4], bias_params[1], z_cut),
-        custom_bias(bias_params[5], bias_params[2], z_cut)
+        constant_linear_bias(bias_params[0]),
+        constant_linear_bias(bias_params[1]),
+        constant_linear_bias(bias_params[2]),
     ]
+  #      custom_bias(bias_params[3], bias_params[0], z_cut),
+ #       custom_bias(bias_params[4], bias_params[1], z_cut),
+#        custom_bias(bias_params[5], bias_params[2], z_cut)
+    #]
 
     tracers = [probes.NumberCounts(redshift_distributions, bias)]
 
@@ -186,8 +189,19 @@ def cl_data(cosmo, nz_params, bias_params, ell, f_sky, seed, ncls):
 
     return total_cl, cov
 
+@jit
+def cl_CMB_auto_theory(cosmo, ell):
+
+    surface_of_last_scattering = delta_nz(1100., gals_per_arcmin2 = 1e10)
+
+    cosmo_probes = [modified_probes.WeakLensing([surface_of_last_scattering])]
+
+    signal = angular_cl(cosmo, ell, cosmo_probes)
+
+    return signal
+
 #@jit
-def cl_data_CMB(cosmo, nz_params, bias_params, ell, f_sky, seed, ncls):
+def cl_data_CMB(cosmo, nz_params, bias_params, ell, f_sky, ndens, seed, ncls):
     """
     Genrates Mock LBG lustering angular power spectra data. Gives
     u, g, r-dropout clustering plus cross correlations. Gaussian noise
@@ -207,20 +221,19 @@ def cl_data_CMB(cosmo, nz_params, bias_params, ell, f_sky, seed, ncls):
 
     """
     n = NPCA
-    z_cut = 1.5
 
-    surface_of_last_scattering = delta_nz(1100., gals_per_arcmin2 = 1e10) 
+    surface_of_last_scattering = delta_nz(1100., gals_per_arcmin2 = 1e20) 
 
-    nz_u = u_dropout(nz_params[:n], gals_per_arcmin2=1)
-    nz_g = g_dropout(nz_params[n : 2 * n], gals_per_arcmin2=1)
-    nz_r = r_dropout(nz_params[2 * n : 3 * n], gals_per_arcmin2=0.1)
+    nz_u = u_dropout(nz_params[:n], gals_per_arcmin2=ndens[0])
+    nz_g = g_dropout(nz_params[n : 2 * n], gals_per_arcmin2=ndens[1])
+    nz_r = r_dropout(nz_params[2 * n : 3 * n], gals_per_arcmin2=ndens[2])
 
     redshift_distributions = [nz_u, nz_g, nz_r]
 
     bias = [
-        custom_bias(bias_params[3], bias_params[0], z_cut),
-        custom_bias(bias_params[4], bias_params[1], z_cut),
-        custom_bias(bias_params[5], bias_params[2], z_cut)
+        constant_linear_bias(bias_params[0]),
+        constant_linear_bias(bias_params[1]),
+        constant_linear_bias(bias_params[2]),
     ]
 
     cosmo_probes = [probes.NumberCounts(redshift_distributions, bias),
@@ -348,7 +361,7 @@ def compare_cls(cl1, cl2, ell, figure_size, fontsize, ncls):
             ax = axes[i][j]
             if i >= j:
                 ax.plot(ell, cl1_list[k])
-                ax.plot(ell, cl2_list[k])
+                ax.plot(ell, cl2_list[k], ls='--')
                 # ax.set_xscale("log")
                 ax.set_yscale("log")
                 k += 1
