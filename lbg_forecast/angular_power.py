@@ -10,7 +10,7 @@ from jax_cosmo import Cosmology
 
 from jax_cosmo.redshift import delta_nz
 
-from jax_cosmo.power import linear_matter_power
+from jax_cosmo.power import nonlinear_matter_power
 
 from jax_cosmo.utils import z2a
 
@@ -392,4 +392,4 @@ def cl_hat(cosmo, bin_heights, bin_edges, ell):
     return signal.flatten()
 
 def pk(cosmo, k, z):
-    return linear_matter_power(cosmo, k, a=z2a(z))
+    return nonlinear_matter_power(cosmo, k, a=z2a(z))
