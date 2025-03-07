@@ -129,7 +129,7 @@ class DustPrior():
             plt.scatter(sfrs, abs(dust2+delta), c='purple', alpha=0.5)
             plt.scatter(sfrs, dust2, c='black', alpha=0.5)
 
-        return np.clip(abs(dust2 + delta), 0.0, 4.0)
+        return np.clip(abs(dust2 + 0.25), 0.0, 4.0)
     
     def sample_dust2_nag(self, sfrs):
         
