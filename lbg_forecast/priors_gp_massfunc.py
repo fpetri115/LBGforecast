@@ -253,7 +253,7 @@ class MassFunctionPrior():
 
         with torch.no_grad():
             # Initialize plot
-            f, ax = plt.subplots(3, 1, figsize=(10, 20), sharex=True)
+            f, ax = plt.subplots(3, 1, figsize=(10, 12), sharex=True)
 
             indx = 0
             for plot in ax:
@@ -282,7 +282,7 @@ class MassFunctionPrior():
                     nc8 = np.where(train_x > 7.0)[0]
 
                     plot.errorbar(train_x[san], train_y[san], train_y_err[san], fmt='d', color=c, capsize=capsize, ms=ms, label='Santini et al. (2021)', elinewidth=elinewidth, capthick=capwidth, ecolor='k')
-                    plot.errorbar(train_x[w], train_y[w], train_y_err[w], fmt='o', color=c, capsize=capsize, ms=ms, label='Weaver et al. (2023)', elinewidth=elinewidth, capthick=capwidth, ecolor='k')
+                    #plot.errorbar(train_x[w], train_y[w], train_y_err[w], fmt='o', color=c, capsize=capsize, ms=ms, label='Weaver et al. (2023)', elinewidth=elinewidth, capthick=capwidth, ecolor='k')
                     plot.errorbar(train_x[nc], train_y[nc], train_y_err[nc], fmt='v', color=c, capsize=capsize, ms=ms, label='Navarro-Carrera et al. (2024)', elinewidth=elinewidth, capthick=capwidth, ecolor='k')
                     plot.errorbar(train_x[nc8], train_y[nc8], train_y_err[nc8], fmt='v', color=c, capsize=capsize, ms=ms, elinewidth=elinewidth, capthick=capwidth, ecolor='k')
 
@@ -296,10 +296,10 @@ class MassFunctionPrior():
 
                 else:
                     plot.errorbar(train_x[san], train_y[san], train_y_err[san], fmt='d', color=c, capsize=capsize, ms=ms, label='Santini et al. (2023)', elinewidth=elinewidth, capthick=capwidth, ecolor='k')
-                    if(indx == 1):
-                        plot.errorbar(train_x[w], train_y[w], train_y_err[w], fmt='o', color=est_error_colour, capsize=capsize, ms=ms, label='Weaver et al. (2023)', elinewidth=elinewidth, capthick=capwidth, ecolor=est_error_colour)
-                    else:
-                        plot.errorbar(train_x[w], train_y[w], train_y_err[w], fmt='o', color=c, capsize=capsize, ms=ms, label='Weaver et al. (2023)', elinewidth=elinewidth, capthick=capwidth, ecolor='k') 
+                    #if(indx == 1):
+                        #plot.errorbar(train_x[w], train_y[w], train_y_err[w], fmt='o', color=est_error_colour, capsize=capsize, ms=ms, label='Weaver et al. (2023)', elinewidth=elinewidth, capthick=capwidth, ecolor=est_error_colour)
+                    #else:
+                        #plot.errorbar(train_x[w], train_y[w], train_y_err[w], fmt='o', color=c, capsize=capsize, ms=ms, label='Weaver et al. (2023)', elinewidth=elinewidth, capthick=capwidth, ecolor='k') 
                     plot.errorbar(train_x[nc], train_y[nc], train_y_err[nc], fmt='v', color=c, capsize=capsize, ms=ms, label='Navarro-Carrera et al. (2023)', elinewidth=elinewidth, capthick=capwidth, ecolor='k')
                     if(indx == 2):
                         plot.errorbar(train_x[nc8], train_y[nc8], train_y_err[nc8], fmt='v', color=est_error_colour, capsize=capsize, ms=ms, elinewidth=elinewidth, capthick=capwidth, ecolor=est_error_colour)
@@ -559,9 +559,9 @@ def get_phi1_data(plotting=False):
     #train_logphi1_errs = torch.from_numpy(np.concatenate((log_nc_err, san_low_mass_norm_log_errs, mo_low_mass_norm_errs, mcleod_low_mass_norm_log_errs)))
     #train_redshift = torch.from_numpy(np.concatenate((nc_redshift, san_redshift_midpoint, mo_redshift_midpoint, mcleod_redshift_midpoint)))
 
-    train_logphi1 = torch.from_numpy(np.concatenate((log_nc_val, log_san_low_mass_norm_val, log_w_val)))
-    train_logphi1_errs = torch.from_numpy(np.concatenate((log_nc_err, san_low_mass_norm_log_errs, log_w_err)))
-    train_redshift = torch.from_numpy(np.concatenate((nc_redshift, san_redshift_midpoint, w_redshift)))
+    train_logphi1 = torch.from_numpy(np.concatenate((log_nc_val, log_san_low_mass_norm_val)))
+    train_logphi1_errs = torch.from_numpy(np.concatenate((log_nc_err, san_low_mass_norm_log_errs)))
+    train_redshift = torch.from_numpy(np.concatenate((nc_redshift, san_redshift_midpoint)))
 
     sorted_redshift_inds = train_redshift.argsort()[:]
     sorted_train_logphi1 = train_logphi1[sorted_redshift_inds]
@@ -676,9 +676,9 @@ def get_alpha1_data(plotting=False):
     #train_alpha1_errs = torch.from_numpy(np.concatenate((nc_alpha_errs, san_alpha_errs, mo_alpha_errs, mcleod_alpha_errs)))
     #train_redshift = torch.from_numpy(np.concatenate((nc_redshift, san_redshift_midpoint, mo_redshift_midpoint, mcleod_redshift_midpoint)))
 
-    train_alpha1 = torch.from_numpy(np.concatenate((nc_alpha_val, san_alpha_val, w_alpha_val)))
-    train_alpha1_errs = torch.from_numpy(np.concatenate((nc_alpha_errs, san_alpha_errs, w_alpha_errs)))
-    train_redshift = torch.from_numpy(np.concatenate((nc_redshift, san_redshift_midpoint, w_redshift)))
+    train_alpha1 = torch.from_numpy(np.concatenate((nc_alpha_val, san_alpha_val)))
+    train_alpha1_errs = torch.from_numpy(np.concatenate((nc_alpha_errs, san_alpha_errs)))
+    train_redshift = torch.from_numpy(np.concatenate((nc_redshift, san_redshift_midpoint)))
 
     sorted_redshift_inds = train_redshift.argsort()[:]
     sorted_train_alpha1 = train_alpha1[sorted_redshift_inds]
@@ -794,9 +794,9 @@ def get_logm_data(plotting=False):
     #train_logm_errs = torch.from_numpy(np.concatenate((nc_logm_errs, san_logm_errs, mo_logm_errs, mcleod_logm_errs)))
     #train_redshift = torch.from_numpy(np.concatenate((nc_redshift, san_redshift_midpoint, mo_redshift_midpoint, mcleod_redshift_midpoint)))
 
-    train_logm = torch.from_numpy(np.concatenate((nc_logm_val, san_logm_val, w_logm_val)))
-    train_logm_errs = torch.from_numpy(np.concatenate((nc_logm_errs, san_logm_errs, w_logm_errs)))
-    train_redshift = torch.from_numpy(np.concatenate((nc_redshift, san_redshift_midpoint, w_redshift)))
+    train_logm = torch.from_numpy(np.concatenate((nc_logm_val, san_logm_val)))
+    train_logm_errs = torch.from_numpy(np.concatenate((nc_logm_errs, san_logm_errs)))
+    train_redshift = torch.from_numpy(np.concatenate((nc_redshift, san_redshift_midpoint)))
 
     sorted_redshift_inds = train_redshift.argsort()[:]
     sorted_train_logm = train_logm[sorted_redshift_inds]
