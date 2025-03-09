@@ -283,3 +283,26 @@ class systematic_shift(redshift_distribution):
     def pz_fn(self, z):
         parent_pz, bias = self.params[:2]
         return parent_pz.pz_fn(np.clip(z - bias, 0))
+
+
+@register_pytree_node_class
+class gauss_nz(redshift_distribution):
+
+    def pz_fn(self, z):
+        mu, sigma = self.params
+        A = 1/(np.sqrt(2*np.pi*sigma**2))
+        return A * np.exp(-0.5 * ( ((z-mu) ** 2)/(sigma ** 2)) )
+
+
+@register_pytree_node_class
+class gauss_mixture(redshift_distribution):
+
+    def pz_fn(self, z):
+    
+        mu1, sig1, mu2, sig2, mu3, sig3 = self.params
+        
+        pzu = (1/(np.sqrt(2*np.pi*sig1 ** 2))) * np.exp(-0.5 * ( ((z-mu1) ** 2)/(sig1 ** 2)) )
+        pzg = (1/(np.sqrt(2*np.pi*sig2 ** 2))) * np.exp(-0.5 * ( ((z-mu2) ** 2)/(sig2 ** 2)) )
+        pzr = (1/(np.sqrt(2*np.pi*sig3 ** 2))) * np.exp(-0.5 * ( ((z-mu3) ** 2)/(sig3 ** 2)) )
+        
+        return (1/2)*pzu + (1/2)*pzg + (1/3)*pzr
