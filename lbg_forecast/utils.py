@@ -1,6 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.patches import Ellipse
+import scipy as sc
 
 LSST_AREA_DEG2 = 18000
 DEG2_TO_ARCMIN2 = 3600
@@ -57,3 +58,28 @@ def plot_contours(fisher, pos, i, j, nstd=2., K=5.991, ax=None, **kwargs):
 
   plt.draw()
   return ellip
+
+def quantile975(x):
+    return np.quantile(x, 0.975)
+
+def quantile025(x):
+    return np.quantile(x, 0.025)
+
+def quantile84(x):
+    return np.quantile(x, 0.84)
+
+def quantile16(x):
+    return np.quantile(x, 0.16)
+
+def process_samples_median(x, y, xl, xh, ngrid=15):
+
+    bin_median, bin_edges, binnumber = sc.stats.binned_statistic(x, y, 'median', np.linspace(xl, xh, ngrid))
+    bin_975, bin_edges, binnumber = sc.stats.binned_statistic(x, y, quantile975, np.linspace(xl, xh, ngrid))
+    bin_025, bin_edges, binnumber = sc.stats.binned_statistic(x, y, quantile025, np.linspace(xl, xh, ngrid))
+    bin_84, bin_edges, binnumber = sc.stats.binned_statistic(x, y, quantile84, np.linspace(xl, xh, ngrid))
+    bin_16, bin_edges, binnumber = sc.stats.binned_statistic(x, y, quantile16, np.linspace(xl, xh, ngrid))
+
+    bin_width = (bin_edges[1] - bin_edges[0])
+    bin_centers = bin_edges[1:] - bin_width/2
+
+    return bin_centers, bin_median, bin_025, bin_975, bin_16, bin_84
