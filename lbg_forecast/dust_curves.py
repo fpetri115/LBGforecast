@@ -32,3 +32,13 @@ def a_to_tau(a):
 def sps_to_tauuv(tau1, tau2, index):
     auv = total_attenuation(1500, tau_to_a(tau1), tau_to_a(tau2), index)
     return a_to_tau(auv)
+
+def sps_to_tauv(tau1, tau2, index):
+    auv = total_attenuation(5500, tau_to_a(tau1), tau_to_a(tau2), index)
+    return a_to_tau(auv)
+
+def uv_slope(tau1, tau2, index):
+    av = total_attenuation(5500, tau_to_a(tau1), tau_to_a(tau2), index)
+    a_fuv = total_attenuation(1500, tau_to_a(tau1), tau_to_a(tau2), index)
+
+    return a_fuv/av
