@@ -81,7 +81,7 @@ class DustPrior():
 
         return [dust2, dust_index, dust1]
     
-    def sample_dust_model(self, sfrs):
+    def sample_dust_model_cosmos(self, sfrs):
 
         dust2 = self.sample_dust2(sfrs)
         dust_index = self.sample_dust_index(dust2)
