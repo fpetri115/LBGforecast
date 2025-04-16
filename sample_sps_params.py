@@ -21,6 +21,7 @@ nrealisations = int(sys.argv[2])
 run = sys.argv[3]
 path = sys.argv[4]
 mean = int(sys.argv[5])
+dust_choice = int(sys.argv[6])
 
 #load prior information
 if(rank == 0):
@@ -65,7 +66,7 @@ if(rank == 0):
     print("Begin Sampling ... ", flush=True)
 
 for n in range(nrealisations):
-    sps_params, sparams = pop.generate_sps_parameters(ngals, mass_function_prior, dust_prior, csfrd_prior, return_sparams=True, mean=mean, uniform_redshift_mass=False)
+    sps_params, sparams = pop.generate_sps_parameters(ngals, mass_function_prior, dust_prior, csfrd_prior, return_sparams=True, mean=mean, dust_choice=dust_choice, uniform_redshift_mass=False)
     sps_buf[n, :, :] = sps_params
     sparams_buf[n, :, :] = sparams
     if(rank == 0):

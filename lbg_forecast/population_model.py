@@ -12,7 +12,7 @@ from scipy.stats import t
 import lbg_forecast.modified_prospector_beta as mpb
 
 
-def generate_sps_parameters(nsamples, mass_function_prior, dust_prior, csfrd_prior, mean, return_sparams=False, uniform_redshift_mass=False, uniform_logf=False):
+def generate_sps_parameters(nsamples, mass_function_prior, dust_prior, csfrd_prior, mean, dust_choice, return_sparams=False, uniform_redshift_mass=False, uniform_logf=False):
     """Sample sps parameters given some prior parameters.
     """
 
@@ -80,9 +80,13 @@ def generate_sps_parameters(nsamples, mass_function_prior, dust_prior, csfrd_pri
     print("Sampling Dust ...")
 
     recent_sfrs = np.log10(sfh.calculate_recent_sfr(redshift, 10**mass, log_sfr_ratios))
-    #dust2, dust_index, dust1 = dust_prior.sample_dust_model_irac(recent_sfrs)
-    #dust2, dust_index, dust1 = dust_prior.sample_dust_model_nag(recent_sfrs)
-    dust2, dust_index, dust1 = dust_prior.sample_dust_model_cosmos(recent_sfrs)
+
+    if(dust_choice==0):
+        dust2, dust_index, dust1 = dust_prior.sample_dust_model_cosmos(recent_sfrs)
+    if(dust_choice==1):
+        dust2, dust_index, dust1 = dust_prior.sample_dust_model_irac(recent_sfrs)
+    if(dust_choice==2):
+        dust2, dust_index, dust1 = dust_prior.sample_dust_model_nag(recent_sfrs)
 
     sps_parameters.append(redshift)
     sps_parameters.append(logzsol)
