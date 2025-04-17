@@ -2,6 +2,7 @@ import numpy as np
 from astropy.cosmology import WMAP9 as cosmo
 from prospect.models import priors_beta as pb
 from prospect.models import transforms as ts
+import lbg_forecast.dust_curves as dc
 import lbg_forecast.gaussian_priors as gpr
 import lbg_forecast.sfh as sfh
 import math
@@ -11,7 +12,7 @@ from scipy.stats import t
 import lbg_forecast.modified_prospector_beta as mpb
 
 
-def generate_sps_parameters(nsamples, mass_function_prior, dust_prior, csfrd_prior, mean, return_sparams=False, uniform_redshift_mass=False, uniform_logf=False):
+def generate_sps_parameters(nsamples, mass_function_prior, dust_prior, csfrd_prior, mean, dust_choice, return_sparams=False, uniform_redshift_mass=False, uniform_logf=False):
     """Sample sps parameters given some prior parameters.
     """
 
@@ -79,7 +80,13 @@ def generate_sps_parameters(nsamples, mass_function_prior, dust_prior, csfrd_pri
     print("Sampling Dust ...")
 
     recent_sfrs = np.log10(sfh.calculate_recent_sfr(redshift, 10**mass, log_sfr_ratios))
-    dust2, dust_index, dust1 = dust_prior.sample_dust_model(recent_sfrs)
+
+    if(dust_choice==0):
+        dust2, dust_index, dust1 = dust_prior.sample_dust_model_cosmos(recent_sfrs)
+    if(dust_choice==1):
+        dust2, dust_index, dust1 = dust_prior.sample_dust_model_irac(recent_sfrs)
+    if(dust_choice==2):
+        dust2, dust_index, dust1 = dust_prior.sample_dust_model_nag(recent_sfrs)
 
     sps_parameters.append(redshift)
     sps_parameters.append(logzsol)
@@ -259,3 +266,29 @@ def plot_galaxy_population(sps_parameters, rows=5, nbins=20):
     while(i < no_empty_plots):
         axes1[rows - i - 1, columns - 1].set_axis_off()
         i+=1
+
+def get_dust_params_from_pop(spsp, cut=99999999):
+    tau1 = spsp[:cut, 2]
+    tau2 = spsp[:cut, 3]
+    index = spsp[:cut, 4]
+
+    tau_uv = dc.sps_to_tauuv(tau1, tau2, index)
+    tau_v = dc.sps_to_tauv(tau1, tau2, index)
+
+    return tau1, tau2, index, tau_uv, tau_v
+
+def get_sfr_params_from_pop(spsp, cut=999999999):
+
+    redshift  = spsp[:cut, 0]
+    logmass  = np.log10(spsp[:cut, -1])
+    sfrsratios = spsp[:, 10:-1]
+
+    recent_sfrs = np.log10(sfh.calculate_recent_sfr(redshift, 10**logmass, sfrsratios))
+
+    return recent_sfrs
+
+def get_redshift_from_pop(spsp, cut=999999999):
+
+    redshift  = spsp[:cut, 0]
+
+    return redshift

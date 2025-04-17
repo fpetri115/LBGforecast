@@ -29,6 +29,8 @@ class DustPrior():
         print("Loading Models")
         self.preloaded_popcosmos_samples = np.load(self.path+"/dust_data/popcosmos_parameters_rmag_lt_25_2.npy")
         self.preloaded_recent_sfrs = np.load(self.path+"/dust_data/popcosmos_recent_sfrs.npy")
+        self.irac_z, self.irac_logm, self.irac_logsfr, self.irac_tau2, self.irac_index, self.irac_dustfrac = np.split(np.loadtxt(self.path+"/dust_data/irac.txt"), 6, axis=1)
+        self.irac_tau1 = self.irac_dustfrac*self.irac_tau2
         self.n, self.tau, self.tau1, self.ne, self.taue, self.tau1e, self.sfr = self.get_nagaraj22_samples()
         self.recent_sfrs, self.dust2, self.dust_index, self.dust1 = self.get_pop_cosmos_samples(nsamples=500000)
         print("Loading Complete")
@@ -79,11 +81,19 @@ class DustPrior():
 
         return [dust2, dust_index, dust1]
     
-    def sample_dust_model(self, sfrs):
+    def sample_dust_model_cosmos(self, sfrs):
 
         dust2 = self.sample_dust2(sfrs)
         dust_index = self.sample_dust_index(dust2)
         dust1 = self.sample_dust1(dust2)
+
+        return [dust2, dust_index, dust1]
+    
+    def sample_dust_model_irac(self, sfrs):
+
+        dust2 = self.sample_dust2_irac(sfrs)
+        dust_index = self.sample_dust_index_irac(dust2)
+        dust1 = self.sample_dust1_irac(dust2)
 
         return [dust2, dust_index, dust1]
     
@@ -106,7 +116,6 @@ class DustPrior():
         mean_dust2_sample = f_preds_mu.sample().numpy()
         mean_dust2 = f_preds_mu.mean.detach().numpy()
         delta_dust2 = mean_dust2_sample - mean_dust2
-
 
         delta = np.interp(self.recent_sfrs, self.dust2_grid, delta_dust2)
 
@@ -132,25 +141,24 @@ class DustPrior():
         return np.clip(abs(dust2 + delta), 0.0, 4.0)
     
     def sample_dust2_nag(self, sfrs):
-        
-        f_preds_mu = gp_evaluate_model(self.model_dust2_nag, torch.from_numpy(self.dust2_grid))
-        mean_dust2_sample = f_preds_mu.sample().numpy()
-        mean_dust2 = f_preds_mu.mean.detach().numpy()
-        delta_dust2 = mean_dust2_sample - mean_dust2
-        delta = np.interp(self.sfr, self.dust2_grid, delta_dust2)
 
-        sorted_inds = self.sfr.argsort()[:]
-        sorted_sfrs = self.sfr[sorted_inds]
-        sorted_dust2 = self.tau[sorted_inds]
-        sorted_delta = delta[sorted_inds]
+        sorted_inds = np.squeeze(self.sfr).argsort()[:]
+        sorted_sfrs = np.squeeze(self.sfr)[sorted_inds]
+        sorted_dust2 = np.squeeze(self.tau)[sorted_inds]
 
         dust2 = np.interp(sfrs, sorted_sfrs, sorted_dust2)
-        delta = np.interp(sfrs, sorted_sfrs, sorted_delta)
 
-        if(self.mean):
-            delta=delta*0
+        return dust2
 
-        return np.clip(abs(dust2 + delta), 0.0, 4.0)
+    def sample_dust2_irac(self, sfrs):
+
+        sorted_inds = np.squeeze(self.irac_logsfr).argsort()[:]
+        sorted_sfrs = np.squeeze(self.irac_logsfr)[sorted_inds]
+        sorted_dust2 = np.squeeze(self.irac_tau2)[sorted_inds]
+
+        dust2 = np.interp(sfrs, sorted_sfrs, sorted_dust2)
+
+        return dust2
 
     def sample_dust_index(self, dust2s, debug=False):
 
@@ -182,26 +190,25 @@ class DustPrior():
 
         return np.clip(dust_index + delta, -2.2, 0.4)
     
-    def sample_dust_index_nag(self, dust2s):
+    def sample_dust_index_nag(self, tau2):
 
-        f_preds_mu = gp_evaluate_model(self.model_dust_index_nag, torch.from_numpy(self.dust_index_grid))
-        mean_dust_index_sample = f_preds_mu.sample().numpy()
-        mean_dust_index = f_preds_mu.mean.detach().numpy()
-        delta_dust_index = mean_dust_index_sample - mean_dust_index
-        delta = np.interp(self.tau, self.dust_index_grid, delta_dust_index)
+        sorted_inds = np.squeeze(self.tau).argsort()[:]
+        sorted_tau2 = np.squeeze(self.tau)[sorted_inds]
+        sorted_index = np.squeeze(self.n)[sorted_inds]
 
-        sorted_inds = self.tau.argsort()[:]
-        sorted_dust2 = self.tau[sorted_inds]
-        sorted_dust_index = self.n[sorted_inds]
-        sorted_delta = delta[sorted_inds]
+        index = np.interp(tau2, sorted_tau2, sorted_index)
 
-        dust_index = np.interp(dust2s, sorted_dust2, sorted_dust_index)
-        delta = np.interp(dust2s, sorted_dust2, sorted_delta)
+        return index
+    
+    def sample_dust_index_irac(self, tau2):
 
-        if(self.mean):
-            delta=delta*0
+        sorted_inds = np.squeeze(self.irac_tau2).argsort()[:]
+        sorted_tau2 = np.squeeze(self.irac_tau2)[sorted_inds]
+        sorted_index = np.squeeze(self.irac_index)[sorted_inds]
 
-        return np.clip(dust_index + delta, -2.2, 0.4)
+        index = np.interp(tau2, sorted_tau2, sorted_index)
+
+        return index
     
     def sample_dust1(self, dust2s, debug=False):
 
@@ -231,27 +238,26 @@ class DustPrior():
             plt.scatter(dust2s, dust1, c='black', alpha=0.5)
 
         return np.clip(dust1 + delta, 0.0, 4.0)
-    
-    def sample_dust1_nag(self, dust2s):
 
-        f_preds_mu = gp_evaluate_model(self.model_dust1_nag, torch.from_numpy(self.dust1_grid))
-        mean_dust1_sample = f_preds_mu.sample().numpy()
-        mean_dust1 = f_preds_mu.mean.detach().numpy()
-        delta_dust1 = mean_dust1_sample - mean_dust1
-        delta = np.interp(self.tau, self.dust1_grid, delta_dust1)
+    def sample_dust1_nag(self, tau2):
 
-        sorted_inds = self.tau.argsort()[:]
-        sorted_dust2 = self.tau[sorted_inds]
-        sorted_dust1 = self.tau1[sorted_inds]
-        sorted_delta = delta[sorted_inds]
+        sorted_inds = np.squeeze(self.tau).argsort()[:]
+        sorted_tau2 = np.squeeze(self.tau)[sorted_inds]
+        sorted_tau1 = np.squeeze(self.tau1)[sorted_inds]
 
-        dust1 = np.interp(dust2s, sorted_dust2, sorted_dust1)
-        delta = np.interp(dust2s, sorted_dust2, sorted_delta)
+        tau1 = np.interp(tau2, sorted_tau2, sorted_tau1)
 
-        if(self.mean):
-            delta=delta*0
+        return tau1
 
-        return np.clip(dust1 + delta, 0.0, 4.0)
+    def sample_dust1_irac(self, tau2):
+
+        sorted_inds = np.squeeze(self.irac_tau2).argsort()[:]
+        sorted_tau2 = np.squeeze(self.irac_tau2)[sorted_inds]
+        sorted_tau1 = np.squeeze(self.irac_tau1)[sorted_inds]
+
+        tau1 = np.interp(tau2, sorted_tau2, sorted_tau1)
+
+        return tau1
     
     def process_training_data_dust2(self):
 
