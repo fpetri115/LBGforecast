@@ -56,7 +56,7 @@ class Likelihood:
         self._fsky = 0.35
         seed = 100
 
-        self._b_lbg_u = 2.0
+        self._b_lbg_u = 3.0
         self._b_lbg_g = 4.0
         self._b_lbg_r = 5.0
 
@@ -73,7 +73,7 @@ class Likelihood:
 
         self.nden_u = 8000/utils.DEG2_TO_ARCMIN2
         self.nden_g = 14000/utils.DEG2_TO_ARCMIN2
-        self.nden_r = 1000/utils.DEG2_TO_ARCMIN2
+        self.nden_r = 1100/utils.DEG2_TO_ARCMIN2
 
         self.ndens = jnp.array([self.nden_u, self.nden_g, self.nden_r])
 
