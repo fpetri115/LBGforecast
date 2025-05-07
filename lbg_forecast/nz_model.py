@@ -46,7 +46,7 @@ def perform_npca(bin_vals, n):
     pca.fit(bin_vals_sqrt)
     bin_pca = pca.transform(bin_vals_sqrt)
 
-    return [bin_pca, pca.components_, pca.mean_, pca.explained_variance_ratio_]
+    return [bin_pca, pca.components_, pca.mean_, pca.explained_variance_ratio_, pca.explained_variance_]
 
 
 def gauss_npca(pca_data, n_s):
@@ -58,7 +58,7 @@ def gauss_npca(pca_data, n_s):
     n_s - number of samples
     n - pca components
     """
-    bin_pca, pca_components, pca_mean, pca_explained_var = pca_data
+    bin_pca, pca_components, pca_mean, pca_explained_var_ratio, pca_explained_var = pca_data
     pca_coeffs = []
 
     # pca_components
@@ -77,7 +77,13 @@ def gauss_npca(pca_data, n_s):
         pca_means.append(np.mean(pca_coeffs[i]))
         i += 1
 
-    gauss_pca_coeffs = np.random.multivariate_normal(pca_means, np.cov(pca_coeffs), n_s)
+    print(np.diag(np.cov(pca_coeffs)))
+    print(pca_explained_var)
+
+    #gauss_pca_coeffs = np.random.multivariate_normal(pca_means, np.cov(pca_coeffs), n_s)
+    gauss_pca_coeffs = np.random.multivariate_normal(pca_means, np.diag(pca_explained_var), n_s)
+
+
 
     pca_nzs = []
 
@@ -103,7 +109,7 @@ def pca_mean_cov(pca_data):
     Returns means and covariance
     """
 
-    bin_pca, pca_components, pca_mean, pca_explained_var = pca_data
+    bin_pca, pca_components, pca_mean, pca_explained_var_ratio, pca_explained_var = pca_data
     pca_coeffs = []
 
     # pca_components
@@ -123,7 +129,7 @@ def pca_mean_cov(pca_data):
         i += 1
 
     pca_means = np.array(pca_means)
-    pca_cov = np.cov(pca_coeffs)
+    pca_cov = np.diag(pca_explained_var)  #np.cov(pca_coeffs)
 
     return pca_means, pca_cov
 
@@ -153,6 +159,9 @@ class NzModel:
         self._z_length = self._nzus.shape[1]
 
         self._z_space = z_grid
+        self._factor = 100
+        self._plotting_zspace = np.linspace(self._z_space[0], self._z_space[-1], len(self._z_space)*self._factor)
+
 
         # used for splitting nzs into interloper and lbg component
         self._z_cut = 1.5
@@ -241,29 +250,29 @@ class NzModel:
         p2=97.5
         p3=84
 
-        u_mean = np.mean(u_nzs, axis=0)
-        u_percentile = np.percentile(u_nzs, [100-p1, 100-p2, 100-p3, 50, p3, p2, p1], axis=0)
+        u_mean = np.repeat(np.mean(u_nzs, axis=0), self._factor)
+        u_percentile = np.repeat(np.percentile(u_nzs, [100-p1, 100-p2, 100-p3, 50, p3, p2, p1], axis=0), self._factor, axis=1)
 
-        plt.plot(self._z_space, u_mean, color='blue', ls='--')
-        plt.fill_between(self._z_space, u_percentile[0, :], u_percentile[-1, :], alpha=0.1, color='blue')
-        plt.fill_between(self._z_space, u_percentile[1, :], u_percentile[-2, :], alpha=0.2, color='blue')
-        plt.fill_between(self._z_space, u_percentile[2, :], u_percentile[-3, :], alpha=0.3, color='blue')
+        plt.plot(self._plotting_zspace, u_mean, color='blue', ls='--')
+        plt.fill_between(self._plotting_zspace, u_percentile[0, :], u_percentile[-1, :], alpha=0.1, color='blue')
+        plt.fill_between(self._plotting_zspace, u_percentile[1, :], u_percentile[-2, :], alpha=0.2, color='blue')
+        plt.fill_between(self._plotting_zspace, u_percentile[2, :], u_percentile[-3, :], alpha=0.3, color='blue')
 
-        g_mean = np.mean(g_nzs, axis=0)
-        g_percentile = np.percentile(g_nzs, [100-p1, 100-p2, 100-p3, 50, p3, p2, p1], axis=0)
+        g_mean = np.repeat(np.mean(g_nzs, axis=0), self._factor)
+        g_percentile = np.repeat(np.percentile(g_nzs, [100-p1, 100-p2, 100-p3, 50, p3, p2, p1], axis=0), self._factor, axis=1) 
 
-        plt.plot(self._z_space, g_mean, color='green', ls='-.')
-        plt.fill_between(self._z_space, g_percentile[0, :], g_percentile[-1, :], alpha=0.1, color='green')
-        plt.fill_between(self._z_space, g_percentile[1, :], g_percentile[-2, :], alpha=0.2, color='green')
-        plt.fill_between(self._z_space, g_percentile[2, :], g_percentile[-3, :], alpha=0.3, color='green')
+        plt.plot(self._plotting_zspace, g_mean, color='green', ls='-.')
+        plt.fill_between(self._plotting_zspace, g_percentile[0, :], g_percentile[-1, :], alpha=0.1, color='green')
+        plt.fill_between(self._plotting_zspace, g_percentile[1, :], g_percentile[-2, :], alpha=0.2, color='green')
+        plt.fill_between(self._plotting_zspace, g_percentile[2, :], g_percentile[-3, :], alpha=0.3, color='green')
 
-        r_mean = np.mean(r_nzs, axis=0)
-        r_percentile = np.percentile(r_nzs, [100-p1, 100-p2, 100-p3, 50, p3, p2, p1], axis=0)
+        r_mean = np.repeat(np.mean(r_nzs, axis=0), self._factor)
+        r_percentile = np.repeat(np.percentile(r_nzs, [100-p1, 100-p2, 100-p3, 50, p3, p2, p1], axis=0), self._factor, axis=1)
 
-        plt.plot(self._z_space, r_mean, color='red', ls='-')
-        plt.fill_between(self._z_space, r_percentile[0, :], r_percentile[-1, :], alpha=0.1, color='red')
-        plt.fill_between(self._z_space, r_percentile[1, :], r_percentile[-2, :], alpha=0.2, color='red')
-        plt.fill_between(self._z_space, r_percentile[2, :], r_percentile[-3, :], alpha=0.3, color='red')
+        plt.plot(self._plotting_zspace, r_mean, color='red', ls='-')
+        plt.fill_between(self._plotting_zspace, r_percentile[0, :], r_percentile[-1, :], alpha=0.1, color='red')
+        plt.fill_between(self._plotting_zspace, r_percentile[1, :], r_percentile[-2, :], alpha=0.2, color='red')
+        plt.fill_between(self._plotting_zspace, r_percentile[2, :], r_percentile[-3, :], alpha=0.3, color='red')
 
         plt.xlabel("$z$", fontsize=22)
         plt.xticks(fontsize=22)
@@ -311,29 +320,29 @@ class NzModel:
         p2=97.5
         p3=84
 
-        u_mean = np.mean(u_nzs, axis=0)
-        u_percentile = np.percentile(u_nzs, [100-p1, 100-p2, 100-p3, 50, p3, p2, p1], axis=0)
+        u_mean = np.repeat(np.mean(u_nzs, axis=0), self._factor)
+        u_percentile = np.repeat(np.percentile(u_nzs, [100-p1, 100-p2, 100-p3, 50, p3, p2, p1], axis=0), self._factor, axis=1)
 
-        plt.plot(self._z_space, u_mean, color='blue', ls='--')
-        plt.fill_between(self._z_space, u_percentile[0, :], u_percentile[-1, :], alpha=0.1, color='blue')
-        plt.fill_between(self._z_space, u_percentile[1, :], u_percentile[-2, :], alpha=0.2, color='blue')
-        plt.fill_between(self._z_space, u_percentile[2, :], u_percentile[-3, :], alpha=0.3, color='blue')
+        plt.plot(self._plotting_zspace, u_mean, color='blue', ls='--')
+        plt.fill_between(self._plotting_zspace, u_percentile[0, :], u_percentile[-1, :], alpha=0.1, color='blue')
+        plt.fill_between(self._plotting_zspace, u_percentile[1, :], u_percentile[-2, :], alpha=0.2, color='blue')
+        plt.fill_between(self._plotting_zspace, u_percentile[2, :], u_percentile[-3, :], alpha=0.3, color='blue')
 
-        g_mean = np.mean(g_nzs, axis=0)
-        g_percentile = np.percentile(g_nzs, [100-p1, 100-p2, 100-p3, 50, p3, p2, p1], axis=0)
+        g_mean = np.repeat(np.mean(g_nzs, axis=0), self._factor)
+        g_percentile = np.repeat(np.percentile(g_nzs, [100-p1, 100-p2, 100-p3, 50, p3, p2, p1], axis=0), self._factor, axis=1) 
 
-        plt.plot(self._z_space, g_mean, color='green', ls='-.')
-        plt.fill_between(self._z_space, g_percentile[0, :], g_percentile[-1, :], alpha=0.1, color='green')
-        plt.fill_between(self._z_space, g_percentile[1, :], g_percentile[-2, :], alpha=0.2, color='green')
-        plt.fill_between(self._z_space, g_percentile[2, :], g_percentile[-3, :], alpha=0.3, color='green')
+        plt.plot(self._plotting_zspace, g_mean, color='green', ls='-.')
+        plt.fill_between(self._plotting_zspace, g_percentile[0, :], g_percentile[-1, :], alpha=0.1, color='green')
+        plt.fill_between(self._plotting_zspace, g_percentile[1, :], g_percentile[-2, :], alpha=0.2, color='green')
+        plt.fill_between(self._plotting_zspace, g_percentile[2, :], g_percentile[-3, :], alpha=0.3, color='green')
 
-        r_mean = np.mean(r_nzs, axis=0)
-        r_percentile = np.percentile(r_nzs, [100-p1, 100-p2, 100-p3, 50, p3, p2, p1], axis=0)
+        r_mean = np.repeat(np.mean(r_nzs, axis=0), self._factor)
+        r_percentile = np.repeat(np.percentile(r_nzs, [100-p1, 100-p2, 100-p3, 50, p3, p2, p1], axis=0), self._factor, axis=1)
 
-        plt.plot(self._z_space, r_mean, color='red', ls='-')
-        plt.fill_between(self._z_space, r_percentile[0, :], r_percentile[-1, :], alpha=0.1, color='red')
-        plt.fill_between(self._z_space, r_percentile[1, :], r_percentile[-2, :], alpha=0.2, color='red')
-        plt.fill_between(self._z_space, r_percentile[2, :], r_percentile[-3, :], alpha=0.3, color='red')
+        plt.plot(self._plotting_zspace, r_mean, color='red', ls='-')
+        plt.fill_between(self._plotting_zspace, r_percentile[0, :], r_percentile[-1, :], alpha=0.1, color='red')
+        plt.fill_between(self._plotting_zspace, r_percentile[1, :], r_percentile[-2, :], alpha=0.2, color='red')
+        plt.fill_between(self._plotting_zspace, r_percentile[2, :], r_percentile[-3, :], alpha=0.3, color='red')
 
         plt.xlabel("$z$", fontsize=22)
         plt.xticks(fontsize=22)

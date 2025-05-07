@@ -36,7 +36,7 @@ from functools import partial
 
 import matplotlib.pyplot as plt
 
-NPCA=30
+NPCA=50
 
 def define_cosmo():
     """
