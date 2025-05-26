@@ -90,7 +90,7 @@ class CSFRDPrior():
 
             f, ax = plt.subplots(1, 1, figsize=(17, 15))
 
-            ax.errorbar(train_x, train_log_csfrd, yerr=train_log_csfrd_errors, fmt='o', mfc='k', ecolor='k', mec='k', alpha=1.0, elinewidth=3, capsize=5, ms=15, lw=3, label="Observed CSFRD (Behroozi et al. 2019)", zorder=-1)
+            ax.errorbar(train_x, train_log_csfrd, yerr=train_log_csfrd_errors, fmt='o', mfc='k', ecolor='k', mec='k', alpha=1.0, elinewidth=3, capsize=5, ms=15, lw=3, label="Compilation of CSFRD Measurements (Behroozi et al. 2019)", zorder=-1)
             
             ax.plot(self.test_redshift.numpy(), self.get_prior_mean(), lw=4, zorder=1200, c="grey", label="Gaussian Process Mean")
             lower, upper = self.get_prior_confidence_region()
