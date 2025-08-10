@@ -43,8 +43,8 @@ def plot_xsl_colour_diagram():
     umg = colours[:, 0]
     gmr = colours[:, 1]
     plt.scatter(umg, gmr)
-    plt.xlabel("$u - g$", fontsize=20)
-    plt.ylabel("$g - r$", fontsize=20)
+    plt.ylabel("$u - g$", fontsize=20)
+    plt.xlabel("$g - r$", fontsize=20)
 
 def select_approriate_xsl_files():
     """extract xsl spectra filenames
