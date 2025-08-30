@@ -14,6 +14,7 @@ from lbg_forecast.angular_power import cl_data_CMB
 from lbg_forecast.angular_power import compare_cls
 from lbg_forecast.angular_power import define_cosmo
 from lbg_forecast.angular_power import pk
+from lbg_forecast.angular_power import pk_lin
 
 from lbg_forecast.modified_likelihood import gaussian_log_likelihood
 from lbg_forecast.modified_likelihood import marginalised_log_likelihood
@@ -114,7 +115,21 @@ class Likelihood:
         """Reduced theory vector for fisher forecast"""
 
         ####Stuff for W&W (convert z=2.6 sigma8 to z=0.0)
-        norm_diff = pk(self._cosmo_fid, 1/8, 0.0)/pk(self._cosmo_fid, 1/8, 2.6)
+        norm_diff = pk_lin(self._cosmo_fid, 1/8, 0.0)/pk_lin(self._cosmo_fid, 1/8, 2.6)
+        ####
+        cosmo_obj = jc.Planck15(sigma8=params[0]*jnp.sqrt(norm_diff))
+        bias_params = self._bias_params
+        bias_params = bias_params.at[0].set(params[1])
+        bias_params = bias_params.at[3].set(params[1])
+        nz_params = self.nz_params_mean
+    
+        return cl_theory_CMB(cosmo_obj, nz_params, bias_params, self._ell, self.ndens)
+    
+    def mu_vec_sig(self, params):
+        """Reduced theory vector for fisher forecast"""
+
+        ####Stuff for W&W (convert z=2.6 sigma8 to z=0.0)
+        norm_diff = pk_lin(self._cosmo_fid, 1/8, 0.0)/pk_lin(self._cosmo_fid, 1/8, 2.6)
         ####
         cosmo_obj = jc.Planck15(sigma8=params[0]*jnp.sqrt(norm_diff))
         bias_params = self._bias_params
@@ -242,6 +257,16 @@ class Likelihood:
         return F
     
     def fisher_ww(self, params):
+
+        inv_cov = jnp.linalg.inv(self.C)
+        jac_at_mean = jax.jit(jax.jacfwd(self.mu_vec_ww, argnums=0))
+        dmudp = jac_at_mean(params)
+
+        F = dmudp.T@inv_cov@dmudp
+
+        return F
+    
+    def fisher_sig(self, params):
 
         inv_cov = jnp.linalg.inv(self.C)
         jac_at_mean = jax.jit(jax.jacfwd(self.mu_vec_ww, argnums=0))
