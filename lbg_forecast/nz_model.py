@@ -3,6 +3,49 @@ import matplotlib.pyplot as plt
 from sklearn.decomposition import PCA
 from sklearn.preprocessing import StandardScaler
 
+def plot_nzs(axes, nzs, mean, density, a, p, **kwargs):
+
+    ndropouts = 3
+
+    percentile=p
+
+    bin_step = 0.1
+    bin_start = 0
+    bin_end = 7
+
+    bins = np.arange(bin_start, bin_end, bin_step)
+    colours = ['purple', 'black', 'red']
+    labels = ['$u$-dropouts', "$g$-dropouts", "$r$-dropouts"]
+    lss=['--', '-.', '-']
+
+
+    samples=100
+    grid = np.arange(bin_start, bin_end-bin_step, bin_step/samples)
+
+    for drop in range(ndropouts):
+
+        values = []
+        for ind in range(nzs.shape[0]):
+            hist = np.histogram(nzs[ind][drop], density=density, bins=bins)
+            oversampled_values = np.repeat(hist[0], samples)
+            values.append(oversampled_values)
+
+        values = np.vstack((np.array(values)))
+        mean_at_grid_point = np.mean(values, axis=0)
+        percentile_at_point = np.percentile(values, [100-percentile, 50, percentile], axis=0)
+        if(mean):
+            axes.plot(grid, mean_at_grid_point, c=colours[drop], **kwargs, label=labels[drop], ls=lss[drop], lw=2)
+        axes.fill_between(grid, percentile_at_point[0, :], percentile_at_point[2, :], alpha=a, color=colours[drop], lw=0)
+
+    axes.legend(fontsize=18, ncol=3, loc='upper left')
+    axes.set_xlabel("Redshift $z$", fontsize=24)
+    axes.set_ylabel("$p$($z$|Dropout Selection, SPS Model)", fontsize=24)
+    axes.set_xticks(np.arange(0, 7, 0.5))
+    axes.tick_params('x', labelsize=24)
+    axes.tick_params('y', labelsize=24)
+    axes.grid(alpha=0.2)
+    axes.set_xlim(0, 6)
+    axes.set_ylim(0, 1.8)
 
 def load_redshift_distributions(path):
     """
@@ -253,18 +296,18 @@ class NzModel:
         u_mean = np.repeat(np.mean(u_nzs, axis=0), self._factor)
         u_percentile = np.repeat(np.percentile(u_nzs, [100-p1, 100-p2, 100-p3, 50, p3, p2, p1], axis=0), self._factor, axis=1)
 
-        plt.plot(self._plotting_zspace, u_mean, color='blue', ls='--')
-        plt.fill_between(self._plotting_zspace, u_percentile[0, :], u_percentile[-1, :], alpha=0.1, color='blue')
-        plt.fill_between(self._plotting_zspace, u_percentile[1, :], u_percentile[-2, :], alpha=0.2, color='blue')
-        plt.fill_between(self._plotting_zspace, u_percentile[2, :], u_percentile[-3, :], alpha=0.3, color='blue')
+        plt.plot(self._plotting_zspace, u_mean, color='purple', ls='--')
+        plt.fill_between(self._plotting_zspace, u_percentile[0, :], u_percentile[-1, :], alpha=0.1, color='purple')
+        plt.fill_between(self._plotting_zspace, u_percentile[1, :], u_percentile[-2, :], alpha=0.2, color='purple')
+        plt.fill_between(self._plotting_zspace, u_percentile[2, :], u_percentile[-3, :], alpha=0.3, color='purple')
 
         g_mean = np.repeat(np.mean(g_nzs, axis=0), self._factor)
         g_percentile = np.repeat(np.percentile(g_nzs, [100-p1, 100-p2, 100-p3, 50, p3, p2, p1], axis=0), self._factor, axis=1) 
 
-        plt.plot(self._plotting_zspace, g_mean, color='green', ls='-.')
-        plt.fill_between(self._plotting_zspace, g_percentile[0, :], g_percentile[-1, :], alpha=0.1, color='green')
-        plt.fill_between(self._plotting_zspace, g_percentile[1, :], g_percentile[-2, :], alpha=0.2, color='green')
-        plt.fill_between(self._plotting_zspace, g_percentile[2, :], g_percentile[-3, :], alpha=0.3, color='green')
+        plt.plot(self._plotting_zspace, g_mean, color='black', ls='-.')
+        plt.fill_between(self._plotting_zspace, g_percentile[0, :], g_percentile[-1, :], alpha=0.1, color='black')
+        plt.fill_between(self._plotting_zspace, g_percentile[1, :], g_percentile[-2, :], alpha=0.2, color='black')
+        plt.fill_between(self._plotting_zspace, g_percentile[2, :], g_percentile[-3, :], alpha=0.3, color='black')
 
         r_mean = np.repeat(np.mean(r_nzs, axis=0), self._factor)
         r_percentile = np.repeat(np.percentile(r_nzs, [100-p1, 100-p2, 100-p3, 50, p3, p2, p1], axis=0), self._factor, axis=1)
@@ -309,8 +352,9 @@ class NzModel:
         None
 
         """
+        
+        fig1, axes = plt.subplots(1, 1, figsize=(15,8), sharex=False, sharey=False)
 
-        fig = plt.subplots(1, 1, figsize=(20, 10))
 
         u_nzs = self.u_pca(n, n_s)
         g_nzs = self.g_pca(n, n_s)
@@ -323,33 +367,27 @@ class NzModel:
         u_mean = np.repeat(np.mean(u_nzs, axis=0), self._factor)
         u_percentile = np.repeat(np.percentile(u_nzs, [100-p1, 100-p2, 100-p3, 50, p3, p2, p1], axis=0), self._factor, axis=1)
 
-        plt.plot(self._plotting_zspace, u_mean, color='blue', ls='--')
-        plt.fill_between(self._plotting_zspace, u_percentile[0, :], u_percentile[-1, :], alpha=0.1, color='blue')
-        plt.fill_between(self._plotting_zspace, u_percentile[1, :], u_percentile[-2, :], alpha=0.2, color='blue')
-        plt.fill_between(self._plotting_zspace, u_percentile[2, :], u_percentile[-3, :], alpha=0.3, color='blue')
+        axes.plot(self._plotting_zspace, u_mean, color='purple', ls='--', label='$u$-dropouts')
+        axes.fill_between(self._plotting_zspace, u_percentile[0, :], u_percentile[-1, :], alpha=0.1, color='purple')
+        axes.fill_between(self._plotting_zspace, u_percentile[1, :], u_percentile[-2, :], alpha=0.2, color='purple')
+        axes.fill_between(self._plotting_zspace, u_percentile[2, :], u_percentile[-3, :], alpha=0.3, color='purple')
 
         g_mean = np.repeat(np.mean(g_nzs, axis=0), self._factor)
         g_percentile = np.repeat(np.percentile(g_nzs, [100-p1, 100-p2, 100-p3, 50, p3, p2, p1], axis=0), self._factor, axis=1) 
 
-        plt.plot(self._plotting_zspace, g_mean, color='green', ls='-.')
-        plt.fill_between(self._plotting_zspace, g_percentile[0, :], g_percentile[-1, :], alpha=0.1, color='green')
-        plt.fill_between(self._plotting_zspace, g_percentile[1, :], g_percentile[-2, :], alpha=0.2, color='green')
-        plt.fill_between(self._plotting_zspace, g_percentile[2, :], g_percentile[-3, :], alpha=0.3, color='green')
+        axes.plot(self._plotting_zspace, g_mean, color='black', ls='-.', label='$g$-dropouts')
+        axes.fill_between(self._plotting_zspace, g_percentile[0, :], g_percentile[-1, :], alpha=0.1, color='black')
+        axes.fill_between(self._plotting_zspace, g_percentile[1, :], g_percentile[-2, :], alpha=0.2, color='black')
+        axes.fill_between(self._plotting_zspace, g_percentile[2, :], g_percentile[-3, :], alpha=0.3, color='black')
 
         r_mean = np.repeat(np.mean(r_nzs, axis=0), self._factor)
         r_percentile = np.repeat(np.percentile(r_nzs, [100-p1, 100-p2, 100-p3, 50, p3, p2, p1], axis=0), self._factor, axis=1)
 
-        plt.plot(self._plotting_zspace, r_mean, color='red', ls='-')
-        plt.fill_between(self._plotting_zspace, r_percentile[0, :], r_percentile[-1, :], alpha=0.1, color='red')
-        plt.fill_between(self._plotting_zspace, r_percentile[1, :], r_percentile[-2, :], alpha=0.2, color='red')
-        plt.fill_between(self._plotting_zspace, r_percentile[2, :], r_percentile[-3, :], alpha=0.3, color='red')
-
-        plt.xlabel("$z$", fontsize=22)
-        plt.xticks(fontsize=22)
-
-        plt.ylabel("$p(z)$", fontsize=22)
-        plt.yticks(fontsize=22)
-
+        axes.plot(self._plotting_zspace, r_mean, color='red', ls='-', label='$r$-dropouts')
+        axes.fill_between(self._plotting_zspace, r_percentile[0, :], r_percentile[-1, :], alpha=0.1, color='red')
+        axes.fill_between(self._plotting_zspace, r_percentile[1, :], r_percentile[-2, :], alpha=0.2, color='red')
+        axes.fill_between(self._plotting_zspace, r_percentile[2, :], r_percentile[-3, :], alpha=0.3, color='red')
+        '''
         ax = plt.gca()
         plt.setp(ax.spines.values(), linewidth=3)
         ax.xaxis.set_tick_params(width=3)
@@ -366,6 +404,18 @@ class NzModel:
         ax3.tick_params(axis="x", direction="in", length=8, labeltop=False)
         plt.setp(ax3.spines.values(), linewidth=3)
         ax3.xaxis.set_tick_params(width=3)
+        '''
+
+        axes.legend(fontsize=18, ncol=3, loc='upper left')
+        axes.set_xlabel("Redshift $z$", fontsize=24)
+        axes.set_ylabel("$p$($z$|Dropout Selection, SPS Model)", fontsize=24)
+        axes.set_xticks(np.arange(0, 7, 0.5))
+        axes.tick_params('x', labelsize=24)
+        axes.tick_params('y', labelsize=24)
+        axes.grid(alpha=0.2)
+        axes.set_xlim(0, 6)
+        axes.set_ylim(0, 1.8)
+            
 
     def normalisation(self, nz):
         """

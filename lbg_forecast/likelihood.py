@@ -22,7 +22,7 @@ import lbg_forecast.utils as utils
 
 
 class Likelihood:
-    def __init__(self, path):
+    def __init__(self, path, noint=None, fixint=None, n_override=None):
         """
         P - N(z) covariance of PCA parameters
         C - Data covariance (includes cosmic variance + cut sky)
@@ -40,6 +40,24 @@ class Likelihood:
         self._cov_u = jnp.load(path+"/4pca_data/npca_cov_u.npy")
         self._cov_g = jnp.load(path+"/4pca_data/npca_cov_g.npy")
         self._cov_r = jnp.load(path+"/4pca_data/npca_cov_r.npy")
+
+        if(noint is not None):
+            self._mean_vec_u = jnp.load(path+"/4pca_data/npca_noint_means_u.npy")
+            self._mean_vec_g = jnp.load(path+"/4pca_data/npca_noint_means_g.npy")
+            self._mean_vec_r = jnp.load(path+"/4pca_data/npca_noint_means_r.npy")
+
+            self._cov_u = jnp.load(path+"/4pca_data/npca_noint_cov_u.npy")
+            self._cov_g = jnp.load(path+"/4pca_data/npca_noint_cov_g.npy")
+            self._cov_r = jnp.load(path+"/4pca_data/npca_noint_cov_r.npy")
+
+        if(fixint is not None):
+            self._mean_vec_u = jnp.load(path+"/4pca_data/npca_intfix_means_u.npy")
+            self._mean_vec_g = jnp.load(path+"/4pca_data/npca_intfix_means_g.npy")
+            self._mean_vec_r = jnp.load(path+"/4pca_data/npca_intfix_means_r.npy")
+
+            self._cov_u = jnp.load(path+"/4pca_data/npca_intfix_cov_u.npy")
+            self._cov_g = jnp.load(path+"/4pca_data/npca_intfix_cov_g.npy")
+            self._cov_r = jnp.load(path+"/4pca_data/npca_intfix_cov_r.npy")
 
         self._npca = len(self._mean_vec_u)
 
@@ -75,6 +93,17 @@ class Likelihood:
         self.nden_u = 8000/utils.DEG2_TO_ARCMIN2
         self.nden_g = 14000/utils.DEG2_TO_ARCMIN2
         self.nden_r = 1100/utils.DEG2_TO_ARCMIN2
+
+        if n_override is not None:
+            if n_override == 'max':
+                self.nden_u = 10000/utils.DEG2_TO_ARCMIN2
+                self.nden_g = 18000/utils.DEG2_TO_ARCMIN2
+                self.nden_r = 1900/utils.DEG2_TO_ARCMIN2
+
+            if n_override == 'min':
+                self.nden_u = 6000/utils.DEG2_TO_ARCMIN2
+                self.nden_g = 10000/utils.DEG2_TO_ARCMIN2
+                self.nden_r = 300/utils.DEG2_TO_ARCMIN2
 
         self.ndens = jnp.array([self.nden_u, self.nden_g, self.nden_r])
 
