@@ -22,7 +22,7 @@ import lbg_forecast.utils as utils
 
 
 class Likelihood:
-    def __init__(self, path, noint=None, fixint=None, n_override=None):
+    def __init__(self, path, noint=None, fixint=None, mismatch_int=None, n_override=None):
         """
         P - N(z) covariance of PCA parameters
         C - Data covariance (includes cosmic variance + cut sky)
@@ -49,6 +49,29 @@ class Likelihood:
             self._cov_u = jnp.load(path+"/4pca_data/npca_noint_cov_u.npy")
             self._cov_g = jnp.load(path+"/4pca_data/npca_noint_cov_g.npy")
             self._cov_r = jnp.load(path+"/4pca_data/npca_noint_cov_r.npy")
+
+        if(mismatch_int is not None):
+            '''Data has interlopers, theory does not'''
+            self._mean_vec_u_noint = jnp.load(path+"/4pca_data/npca_noint_means_u.npy")
+            self._mean_vec_g_noint = jnp.load(path+"/4pca_data/npca_noint_means_g.npy")
+            self._mean_vec_r_noint = jnp.load(path+"/4pca_data/npca_noint_means_r.npy")
+
+            self._cov_u_noint = jnp.load(path+"/4pca_data/npca_noint_cov_u.npy")
+            self._cov_g_noint = jnp.load(path+"/4pca_data/npca_noint_cov_g.npy")
+            self._cov_r_noint = jnp.load(path+"/4pca_data/npca_noint_cov_r.npy")
+
+            self.nz_params_mean_noint = jnp.hstack(
+                (self._mean_vec_u_noint, self._mean_vec_g_noint, self._mean_vec_r_noint)
+            )
+
+            self._mean_vec_u = jnp.load(path+"/4pca_data/npca_means_u.npy")
+            self._mean_vec_g = jnp.load(path+"/4pca_data/npca_means_g.npy")
+            self._mean_vec_r = jnp.load(path+"/4pca_data/npca_means_r.npy")
+
+            self._cov_u = jnp.load(path+"/4pca_data/npca_cov_u.npy")
+            self._cov_g = jnp.load(path+"/4pca_data/npca_cov_g.npy")
+            self._cov_r = jnp.load(path+"/4pca_data/npca_cov_r.npy")
+
 
         if(fixint is not None):
             self._mean_vec_u = jnp.load(path+"/4pca_data/npca_intfix_means_u.npy")
@@ -182,6 +205,24 @@ class Likelihood:
         bias_params = bias_params.at[1].set(params[6])
         bias_params = bias_params.at[2].set(params[7])
         nz_params = self.nz_params_mean
+    
+        return cl_theory_CMB(cosmo_obj, nz_params, bias_params, self._ell, self.ndens)
+    
+    def mu_vec_noint(self, params):
+        """Reduced theory vector for fisher forecast
+        USE ONLY WITH mismatch_int=True"""
+
+        cosmo_obj = jc.Planck15(sigma8=params[0],
+                                Omega_c=params[1],
+                                Omega_b=params[2],
+                                h=params[3],
+                                n_s=params[4])
+
+        bias_params = self._bias_params
+        bias_params = bias_params.at[0].set(params[5])
+        bias_params = bias_params.at[1].set(params[6])
+        bias_params = bias_params.at[2].set(params[7])
+        nz_params = self.nz_params_mean_noint
     
         return cl_theory_CMB(cosmo_obj, nz_params, bias_params, self._ell, self.ndens)
     
