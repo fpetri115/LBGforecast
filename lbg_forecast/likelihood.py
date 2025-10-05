@@ -6,11 +6,12 @@ import jax.numpy as jnp
 import jax_cosmo as jc
 from jax_cosmo import Cosmology
 from jax import jacfwd
+from functools import partial
 
-from lbg_forecast.angular_power import cl_theory
+
 from lbg_forecast.angular_power import cl_theory_CMB
-from lbg_forecast.angular_power import cl_data
 from lbg_forecast.angular_power import cl_data_CMB
+from lbg_forecast.angular_power import cl_data_CMB_nagaraj
 from lbg_forecast.angular_power import compare_cls
 from lbg_forecast.angular_power import define_cosmo
 from lbg_forecast.angular_power import pk
@@ -22,7 +23,7 @@ import lbg_forecast.utils as utils
 
 
 class Likelihood:
-    def __init__(self, path, noint=None, fixint=None, mismatch_int=None, n_override=None):
+    def __init__(self, path, n_override=None, mismatch_nag=None):
         """
         P - N(z) covariance of PCA parameters
         C - Data covariance (includes cosmic variance + cut sky)
@@ -41,46 +42,27 @@ class Likelihood:
         self._cov_g = jnp.load(path+"/4pca_data/npca_cov_g.npy")
         self._cov_r = jnp.load(path+"/4pca_data/npca_cov_r.npy")
 
-        if(noint is not None):
-            self._mean_vec_u = jnp.load(path+"/4pca_data/npca_noint_means_u.npy")
-            self._mean_vec_g = jnp.load(path+"/4pca_data/npca_noint_means_g.npy")
-            self._mean_vec_r = jnp.load(path+"/4pca_data/npca_noint_means_r.npy")
+        if(mismatch_nag is not None):
+            '''Data has nag dust, theory has popcosmos dust'''
+            self._mean_vec_u_pop = jnp.load(path+"/4pca_data/npca_means_u.npy")
+            self._mean_vec_g_pop = jnp.load(path+"/4pca_data/npca_means_g.npy")
+            self._mean_vec_r_pop = jnp.load(path+"/4pca_data/npca_means_r.npy")
 
-            self._cov_u = jnp.load(path+"/4pca_data/npca_noint_cov_u.npy")
-            self._cov_g = jnp.load(path+"/4pca_data/npca_noint_cov_g.npy")
-            self._cov_r = jnp.load(path+"/4pca_data/npca_noint_cov_r.npy")
+            self._cov_u_pop = jnp.load(path+"/4pca_data/npca_cov_u.npy")
+            self._cov_g_pop = jnp.load(path+"/4pca_data/npca_cov_g.npy")
+            self._cov_r_pop = jnp.load(path+"/4pca_data/npca_cov_r.npy")
 
-        if(mismatch_int is not None):
-            '''Data has interlopers, theory does not'''
-            self._mean_vec_u_noint = jnp.load(path+"/4pca_data/npca_noint_means_u.npy")
-            self._mean_vec_g_noint = jnp.load(path+"/4pca_data/npca_noint_means_g.npy")
-            self._mean_vec_r_noint = jnp.load(path+"/4pca_data/npca_noint_means_r.npy")
-
-            self._cov_u_noint = jnp.load(path+"/4pca_data/npca_noint_cov_u.npy")
-            self._cov_g_noint = jnp.load(path+"/4pca_data/npca_noint_cov_g.npy")
-            self._cov_r_noint = jnp.load(path+"/4pca_data/npca_noint_cov_r.npy")
-
-            self.nz_params_mean_noint = jnp.hstack(
-                (self._mean_vec_u_noint, self._mean_vec_g_noint, self._mean_vec_r_noint)
+            self.nz_params_mean_pop = jnp.hstack(
+                (self._mean_vec_u_pop, self._mean_vec_g_pop, self._mean_vec_r_pop)
             )
 
-            self._mean_vec_u = jnp.load(path+"/4pca_data/npca_means_u.npy")
-            self._mean_vec_g = jnp.load(path+"/4pca_data/npca_means_g.npy")
-            self._mean_vec_r = jnp.load(path+"/4pca_data/npca_means_r.npy")
+            self._mean_vec_u = jnp.load(path+"/4pca_data/npca_means_u_nag.npy")
+            self._mean_vec_g = jnp.load(path+"/4pca_data/npca_means_g_nag.npy")
+            self._mean_vec_r = jnp.load(path+"/4pca_data/npca_means_r_nag.npy")
 
-            self._cov_u = jnp.load(path+"/4pca_data/npca_cov_u.npy")
-            self._cov_g = jnp.load(path+"/4pca_data/npca_cov_g.npy")
-            self._cov_r = jnp.load(path+"/4pca_data/npca_cov_r.npy")
-
-
-        if(fixint is not None):
-            self._mean_vec_u = jnp.load(path+"/4pca_data/npca_intfix_means_u.npy")
-            self._mean_vec_g = jnp.load(path+"/4pca_data/npca_intfix_means_g.npy")
-            self._mean_vec_r = jnp.load(path+"/4pca_data/npca_intfix_means_r.npy")
-
-            self._cov_u = jnp.load(path+"/4pca_data/npca_intfix_cov_u.npy")
-            self._cov_g = jnp.load(path+"/4pca_data/npca_intfix_cov_g.npy")
-            self._cov_r = jnp.load(path+"/4pca_data/npca_intfix_cov_r.npy")
+            self._cov_u = jnp.load(path+"/4pca_data/npca_cov_u_nag.npy")
+            self._cov_g = jnp.load(path+"/4pca_data/npca_cov_g_nag.npy")
+            self._cov_r = jnp.load(path+"/4pca_data/npca_cov_r_nag.npy")
 
         self._npca = len(self._mean_vec_u)
 
@@ -138,26 +120,37 @@ class Likelihood:
         self._derived_params = jnp.array([_o_m, _s8])
 
         # Generate mock data
-        mean_cl, covmat = cl_data_CMB(
+        if(mismatch_nag is not None):
+            mean_cl, covmat = cl_data_CMB_nagaraj(
+                self._cosmo_fid,
+                self.nz_params_mean,
+                self._bias_params,
+                self._ell,
+                self._fsky,
+                self.ndens,
+                seed
+            )
+        else:
+            mean_cl, covmat = cl_data_CMB(
             self._cosmo_fid,
             self.nz_params_mean,
             self._bias_params,
             self._ell,
             self._fsky,
             self.ndens,
-            seed,
-            ncls = 4,
-        )
+            seed
+            )
+
         self.cl_mean = mean_cl
 
         # data covariance
         self.C = covmat
         self._inv_C = jnp.linalg.inv(self.C)
 
-        # jacobian
+        # jacobian #need to change if you want uncertanties with nagaraj
         self._jacobian = jax.jit(jacfwd(cl_theory_CMB, argnums=1))
         self.T = self._jacobian(self._cosmo_fid, self.nz_params_mean,
-                                 self._bias_params, self._ell, self.ndens)
+                                 self._bias_params, self._ell, self.ndens, 1.0)
         
         self.Cm = self.C + self.T @ self.P @ self.T.T
 
@@ -175,7 +168,7 @@ class Likelihood:
         bias_params = bias_params.at[3].set(params[1])
         nz_params = self.nz_params_mean
     
-        return cl_theory_CMB(cosmo_obj, nz_params, bias_params, self._ell, self.ndens)
+        return cl_theory_CMB(cosmo_obj, nz_params, bias_params, self._ell, self.ndens, red=1.0)
     
     def mu_vec_sig(self, params):
         """Reduced theory vector for fisher forecast"""
@@ -189,9 +182,9 @@ class Likelihood:
         bias_params = bias_params.at[3].set(params[1])
         nz_params = self.nz_params_mean
     
-        return cl_theory_CMB(cosmo_obj, nz_params, bias_params, self._ell, self.ndens)
+        return cl_theory_CMB(cosmo_obj, nz_params, bias_params, self._ell, self.ndens, red=1.0)
     
-    def mu_vec(self, params):
+    def mu_vec(self, params, red=1.0):
         """Reduced theory vector for fisher forecast"""
 
         cosmo_obj = jc.Planck15(sigma8=params[0],
@@ -206,11 +199,11 @@ class Likelihood:
         bias_params = bias_params.at[2].set(params[7])
         nz_params = self.nz_params_mean
     
-        return cl_theory_CMB(cosmo_obj, nz_params, bias_params, self._ell, self.ndens)
+        return cl_theory_CMB(cosmo_obj, nz_params, bias_params, self._ell, self.ndens, red=red)
     
-    def mu_vec_noint(self, params):
+    def mu_vec_nag(self, params):
         """Reduced theory vector for fisher forecast
-        USE ONLY WITH mismatch_int=True"""
+        USE ONLY WITH mismatch_nag=True"""
 
         cosmo_obj = jc.Planck15(sigma8=params[0],
                                 Omega_c=params[1],
@@ -222,11 +215,11 @@ class Likelihood:
         bias_params = bias_params.at[0].set(params[5])
         bias_params = bias_params.at[1].set(params[6])
         bias_params = bias_params.at[2].set(params[7])
-        nz_params = self.nz_params_mean_noint
+        nz_params = self.nz_params_mean_pop
     
-        return cl_theory_CMB(cosmo_obj, nz_params, bias_params, self._ell, self.ndens)
+        return cl_theory_CMB(cosmo_obj, nz_params, bias_params, self._ell, self.ndens, red=1.0)
     
-    def mu_vec_deriv(self, params):
+    def mu_vec_deriv(self, params, red=1.0):
         """Reduced theory vector for fisher forecast"""
 
         o_m = params[0]
@@ -244,7 +237,7 @@ class Likelihood:
         bias_params = bias_params.at[2].set(params[7])
         nz_params = self.nz_params_mean
     
-        return cl_theory_CMB(cosmo_obj, nz_params, bias_params, self._ell, self.ndens)
+        return cl_theory_CMB(cosmo_obj, nz_params, bias_params, self._ell, self.ndens, red=red)
 
     def logL(self, params):
         """marginalised likelihood"""
@@ -271,55 +264,45 @@ class Likelihood:
 
         return marginalised_log_likelihood(c, t, C, P, T)
 
-    def logLgauss(self, params):
-        """(NOT WORKING)Gaussian likelihood for n(z) fixed at mean value"""
-
-        cosmo_params, bias_params = unpack_params(params)
-        cosmo = cosmo_params_to_obj(cosmo_params)
-
-        nz_params = self.nz_params_mean
-
-        cov = self.C
-
-        t = cl_theory_CMB(cosmo, nz_params, bias_params, self._ell)
-        c = self.cl_mean
-
-        return gaussian_log_likelihood(c, t, cov, include_logdet=False)
     
-    def fisher(self, params):
+    def fisher(self, params, red=1.0):
 
         inv_cov = jnp.linalg.inv(self.C)
-        jac_at_mean = jax.jit(jax.jacfwd(self.mu_vec, argnums=0))
+        mu_vec_fixed = partial(self.mu_vec, red=red)
+        jac_at_mean = jax.jit(jax.jacfwd(mu_vec_fixed, argnums=0))
         dmudp = jac_at_mean(params)
 
         F = dmudp.T@inv_cov@dmudp
 
         return F
     
-    def fisher_marg(self, params):
+    def fisher_marg(self, params, red=1.0):
 
         inv_cov = jnp.linalg.inv(self.Cm)
-        jac_at_mean = jax.jit(jax.jacfwd(self.mu_vec, argnums=0))
+        mu_vec_fixed = partial(self.mu_vec, red=red)
+        jac_at_mean = jax.jit(jax.jacfwd(mu_vec_fixed, argnums=0))
         dmudp = jac_at_mean(params)
 
         F = dmudp.T@inv_cov@dmudp
 
         return F
     
-    def fisher_deriv(self, params):
+    def fisher_deriv(self, params, red=1.0):
 
         inv_cov = jnp.linalg.inv(self.C)
-        jac_at_mean = jax.jit(jax.jacfwd(self.mu_vec_deriv, argnums=0))
+        mu_vec_fixed = partial(self.mu_vec_deriv, red=red)
+        jac_at_mean = jax.jit(jax.jacfwd(mu_vec_fixed, argnums=0))
         dmudp = jac_at_mean(params)
 
         F = dmudp.T@inv_cov@dmudp
 
         return F
     
-    def fisher_marg_deriv(self, params):
+    def fisher_marg_deriv(self, params, red=1.0):
 
         inv_cov = jnp.linalg.inv(self.Cm)
-        jac_at_mean = jax.jit(jax.jacfwd(self.mu_vec_deriv, argnums=0))
+        mu_vec_fixed = partial(self.mu_vec_deriv, red=red)
+        jac_at_mean = jax.jit(jax.jacfwd(mu_vec_fixed, argnums=0))
         dmudp = jac_at_mean(params)
 
         F = dmudp.T@inv_cov@dmudp

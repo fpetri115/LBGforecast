@@ -29,6 +29,10 @@ from lbg_forecast.modified_redshift import u_dropout
 from lbg_forecast.modified_redshift import g_dropout
 from lbg_forecast.modified_redshift import r_dropout
 
+from lbg_forecast.modified_redshift import u_dropout_nagaraj
+from lbg_forecast.modified_redshift import g_dropout_nagaraj
+from lbg_forecast.modified_redshift import r_dropout_nagaraj
+
 from lbg_forecast.modified_redshift import histogram_nz
 from lbg_forecast.modified_angular_cl import angular_cl as new_cl
 
@@ -56,47 +60,7 @@ def z_space():
 
 
 @jit
-def cl_theory(cosmo, nz_params, bias_params, ell):
-    """
-    Calculates theory vector for Likelihood. Computes angular cls
-    and cross correlations of u, g, r dropouts with two component bias.
-    --------------------------------------------------------------------
-    Parameters:
-    cosmo - JAX-COSMO cosmology object containing cosmological parameters
-    nz_params -
-    b_int - Interloper bias (linear)
-    b_lbg - LBG bias (linear)
-    ell - Spherical harmonic scale list. Gives range of ells to plot cls over
-    ----------------------------------------------------------------------
-    Returns:
-    Concatenated angular power spectra of length 6*len(ell) giving auto+cross
-    spectra, with poisson noise
-
-    """
-    n = NPCA
-
-    nz_u = u_dropout(nz_params[:n], gals_per_arcmin2=1)#1
-    nz_g = g_dropout(nz_params[n : 2 * n], gals_per_arcmin2=1)#1
-    nz_r = r_dropout(nz_params[2 * n : 3 * n], gals_per_arcmin2=0.1)#0.1
-
-    redshift_distributions = [nz_u, nz_g, nz_r]
-
-    bias = [
-        constant_linear_bias(bias_params[0]),
-        constant_linear_bias(bias_params[1]),
-        constant_linear_bias(bias_params[2]),
-    ]
-
-    tracers = [probes.NumberCounts(redshift_distributions, bias)]
-
-    signal = new_cl(cosmo, ell, tracers)
-    noise = noise_cl(ell, tracers)
-    total_cl = signal + noise
-
-    return jnp.hstack(total_cl)
-
-@jit
-def cl_theory_CMB(cosmo, nz_params, bias_params, ell, ndens):
+def cl_theory_CMB(cosmo, nz_params, bias_params, ell, ndens, red):
     """
     Calculates theory vector for Likelihood. Computes angular cls
     and cross correlations of u, g, r dropouts with two component bias.
@@ -116,10 +80,10 @@ def cl_theory_CMB(cosmo, nz_params, bias_params, ell, ndens):
     n = NPCA
 
     surface_of_last_scattering = delta_nz(1100., gals_per_arcmin2 = 1e10) 
-
-    nz_u = u_dropout(nz_params[:n], gals_per_arcmin2=ndens[0])#1
-    nz_g = g_dropout(nz_params[n : 2 * n], gals_per_arcmin2=ndens[1])#1
-    nz_r = r_dropout(nz_params[2 * n : 3 * n], gals_per_arcmin2=ndens[2])#0.1
+    red = jnp.array([red])
+    nz_u = u_dropout(nz_params[:n], gals_per_arcmin2=ndens[0], red=red)#1
+    nz_g = g_dropout(nz_params[n : 2 * n], gals_per_arcmin2=ndens[1], red=red)#1
+    nz_r = r_dropout(nz_params[2 * n : 3 * n], gals_per_arcmin2=ndens[2], red=red)#0.1
 
     redshift_distributions = [nz_u, nz_g, nz_r]
 
@@ -138,71 +102,8 @@ def cl_theory_CMB(cosmo, nz_params, bias_params, ell, ndens):
 
     return jnp.hstack(total_cl)
 
-#@partial(jit, static_argnums=7)
-def cl_data(cosmo, nz_params, bias_params, ell, f_sky, ndens, seed, ncls):
-    """
-    Genrates Mock LBG lustering angular power spectra data. Gives
-    u, g, r-dropout clustering plus cross correlations. Gaussian noise
-    is added to simulate cosmic variance, which is also scaled by
-    sky fraction.
-    --------------------------------------------------------------------
-    Parameters:
-    cosmo - JAX-COSMO cosmology object containing cosmological parameters
-    nz_params -
-    b_int - Interloper bias (linear)
-    b_lbg - LBG bias (linear)
-    ell - Spherical harmonic scale list. Gives range of ells to plot cls over
-    ----------------------------------------------------------------------
-    Returns:
-    Concatenated angular power spectra of length 6*len(ell) giving auto+cross
-    spectra, with poisson noise, cosmic variance plus contribution from cut sky
-
-    """
-    n = NPCA
-    z_cut = 1.5
-
-    nz_u = u_dropout(nz_params[:n], gals_per_arcmin2=ndens[0])
-    nz_g = g_dropout(nz_params[n : 2 * n], gals_per_arcmin2=ndens[1])
-    nz_r = r_dropout(nz_params[2 * n : 3 * n], gals_per_arcmin2=ndens[2])
-
-    redshift_distributions = [nz_u, nz_g, nz_r]
-
-    bias = [
-        constant_linear_bias(bias_params[0]),
-        constant_linear_bias(bias_params[1]),
-        constant_linear_bias(bias_params[2]),
-    ]
-  #      custom_bias(bias_params[3], bias_params[0], z_cut),
- #       custom_bias(bias_params[4], bias_params[1], z_cut),
-#        custom_bias(bias_params[5], bias_params[2], z_cut)
-    #]
-
-    tracers = [probes.NumberCounts(redshift_distributions, bias)]
-
-    signal, cov = gaussian_cl_covariance_and_mean(
-        cosmo, ell, tracers, f_sky=f_sky, sparse=False
-    )
-
-    noise = jnp.hstack(noise_cl(ell, tracers))
-    total_cl = signal + noise
-
-    total_cl = add_noise(total_cl, cov, seed, len(ell), ncls)
-
-    return total_cl, cov
-
 @jit
-def cl_CMB_auto_theory(cosmo, ell):
-
-    surface_of_last_scattering = delta_nz(1100., gals_per_arcmin2 = 1e10)
-
-    cosmo_probes = [modified_probes.WeakLensing([surface_of_last_scattering])]
-
-    signal = angular_cl(cosmo, ell, cosmo_probes)
-
-    return signal
-
-#@jit
-def cl_data_CMB(cosmo, nz_params, bias_params, ell, f_sky, ndens, seed, ncls):
+def cl_data_CMB(cosmo, nz_params, bias_params, ell, f_sky, ndens, seed, red=1.0):
     """
     Genrates Mock LBG lustering angular power spectra data. Gives
     u, g, r-dropout clustering plus cross correlations. Gaussian noise
@@ -225,9 +126,9 @@ def cl_data_CMB(cosmo, nz_params, bias_params, ell, f_sky, ndens, seed, ncls):
 
     surface_of_last_scattering = delta_nz(1100., gals_per_arcmin2 = 1e20) 
 
-    nz_u = u_dropout(nz_params[:n], gals_per_arcmin2=ndens[0])
-    nz_g = g_dropout(nz_params[n : 2 * n], gals_per_arcmin2=ndens[1])
-    nz_r = r_dropout(nz_params[2 * n : 3 * n], gals_per_arcmin2=ndens[2])
+    nz_u = u_dropout(nz_params[:n], gals_per_arcmin2=ndens[0], red=red)
+    nz_g = g_dropout(nz_params[n : 2 * n], gals_per_arcmin2=ndens[1], red=red)
+    nz_r = r_dropout(nz_params[2 * n : 3 * n], gals_per_arcmin2=ndens[2], red=red)
 
     redshift_distributions = [nz_u, nz_g, nz_r]
 
@@ -245,53 +146,68 @@ def cl_data_CMB(cosmo, nz_params, bias_params, ell, f_sky, ndens, seed, ncls):
     )
 
     noise = jnp.hstack(noise_cl(ell, cosmo_probes))
+
     total_cl = signal + noise
-
-    total_cl = add_noise(total_cl, cov, seed, len(ell), ncls)
-
+    
+    key = jax.random.PRNGKey(seed)
+    key, subkey = jax.random.split(key)
+    total_cl = total_cl*jax.random.chisquare(key=subkey, df=(2*f_sky*jnp.repeat(ell, repeats=10)+1))/(2*jnp.repeat(ell, repeats=10)*f_sky+1)
+    #total_cl = jax.random.multivariate_normal(key=subkey, mean=total_cl, cov=cov)
     return total_cl, cov
 
-def generate_uncorr_normal(seed, ell_length, ncls):
+#@jit
+def cl_data_CMB_nagaraj(cosmo, nz_params, bias_params, ell, f_sky, ndens, seed, red=1.0):
     """
-    Generate uncorrelated gaussian random numbers
+    Genrates Mock LBG lustering angular power spectra data. Gives
+    u, g, r-dropout clustering plus cross correlations. Gaussian noise
+    is added to simulate cosmic variance, which is also scaled by
+    sky fraction.
+    --------------------------------------------------------------------
+    Parameters:
+    cosmo - JAX-COSMO cosmology object containing cosmological parameters
+    nz_params -
+    b_int - Interloper bias (linear)
+    b_lbg - LBG bias (linear)
+    ell - Spherical harmonic scale list. Gives range of ells to plot cls over
+    ----------------------------------------------------------------------
+    Returns:
+    Concatenated angular power spectra of length 6*len(ell) giving auto+cross
+    spectra, with poisson noise, cosmic variance plus contribution from cut sky
+
     """
-    tot_plots = ncls*ncls - sum(jnp.arange(0, ncls, 1))
+    n = NPCA
+
+    surface_of_last_scattering = delta_nz(1100., gals_per_arcmin2 = 1e20) 
+
+    nz_u = u_dropout_nagaraj(nz_params[:n], gals_per_arcmin2=ndens[0], red=red)
+    nz_g = g_dropout_nagaraj(nz_params[n : 2 * n], gals_per_arcmin2=ndens[1], red=red)
+    nz_r = r_dropout_nagaraj(nz_params[2 * n : 3 * n], gals_per_arcmin2=ndens[2], red=red)
+
+    redshift_distributions = [nz_u, nz_g, nz_r]
+
+    bias = [
+        constant_linear_bias(bias_params[0]),
+        constant_linear_bias(bias_params[1]),
+        constant_linear_bias(bias_params[2]),
+    ]
+
+    cosmo_probes = [probes.NumberCounts(redshift_distributions, bias),
+                    modified_probes.WeakLensing([surface_of_last_scattering])]
+
+    signal, cov = gaussian_cl_covariance_and_mean(
+        cosmo, ell, cosmo_probes, f_sky=f_sky, sparse=False
+    )
+
+    noise = jnp.hstack(noise_cl(ell, cosmo_probes))
+
+    total_cl = signal + noise
 
     key = jax.random.PRNGKey(seed)
     key, subkey = jax.random.split(key)
-    return jax.random.normal(subkey, shape=(1, ell_length * tot_plots))[0]
+    total_cl = total_cl*jax.random.chisquare(key=subkey, df=(2*f_sky*jnp.repeat(ell, repeats=10)+1))/(2*jnp.repeat(ell, repeats=10)*f_sky+1)
+    #total_cl = jax.random.multivariate_normal(key=subkey, mean=total_cl, cov=cov)
 
-
-def generate_corr_num(cov, seed, ell_length, ncls):
-    """
-    Performs Cholesky Decomposition to generate correlated random
-    numbers using an array of gaussian distributed, uncorrelated
-    random numbers in generate_uncorr_normal() and a desired
-    covariance matrix
-    -------------------------------------------------------------
-    Parameters:
-    cov - Desired covariance matrix of generated random numbers
-    seed - Random number seed
-    ell_length - Spherical harmonic ell range
-    ------------------------------------------------------------
-    Returns correlated random numbers with covariance = cov
-    """
-    L = jnp.linalg.cholesky(cov)
-    a = generate_uncorr_normal(seed, ell_length, ncls)
-    x = L @ a
-
-    return x
-
-
-def add_noise(cl, cov, seed, ell_length, ncls):
-    """
-    Adds noise from generate_corr_num() to angular
-    power specturm
-
-    """
-    x = generate_corr_num(cov, seed, ell_length, ncls)
-    return cl + x
-
+    return total_cl, cov
 
 def plot_ncls(cls_theory, ell, figure_size, fontsize, ncls):
     """

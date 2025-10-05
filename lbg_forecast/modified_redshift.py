@@ -3,22 +3,24 @@ from abc import ABC
 from abc import abstractmethod
 
 import jax.numpy as np
+import jax
 from jax.tree_util import register_pytree_node_class
 
 from jax_cosmo.jax_utils import container
 from jax_cosmo.scipy.integrate import simps
 
 steradian_to_arcmin2 = 11818102.86004228
-path = "./"
+path = "."
 
 __all__ = ["smail_nz", "kde_nz", "delta_nz"]
 
 
 class redshift_distribution(container):
-    def __init__(self, *args, gals_per_arcmin2=1.0, zmax=10.0, **kwargs):
+    def __init__(self, *args, red=1.0, gals_per_arcmin2=1.0, zmax=10.0, **kwargs):
         """Initialize the parameters of the redshift distribution"""
         self._norm = None
         self._gals_per_arcmin2 = gals_per_arcmin2
+        self._red = red
         super(redshift_distribution, self).__init__(*args, zmax=zmax, **kwargs)
 
         self.u_npca_components = np.load(path+"/4pca_data/npca_components_u.npy")
@@ -28,6 +30,14 @@ class redshift_distribution(container):
         self.u_npca_mean = np.load(path+"/4pca_data/npca_mean_u.npy")
         self.g_npca_mean = np.load(path+"/4pca_data/npca_mean_g.npy")
         self.r_npca_mean = np.load(path+"/4pca_data/npca_mean_r.npy")
+
+        self.u_npca_components_nag = np.load(path+"/4pca_data/npca_components_u_nag.npy")
+        self.g_npca_components_nag = np.load(path+"/4pca_data/npca_components_g_nag.npy")
+        self.r_npca_components_nag = np.load(path+"/4pca_data/npca_components_r_nag.npy")
+
+        self.u_npca_mean_nag = np.load(path+"/4pca_data/npca_mean_u_nag.npy")
+        self.g_npca_mean_nag = np.load(path+"/4pca_data/npca_mean_g_nag.npy")
+        self.r_npca_mean_nag = np.load(path+"/4pca_data/npca_mean_r_nag.npy")
 
         self.z_grid = np.load(path+"/4pca_data/z_grid.npy")
         self.len_z_grid = self.z_grid.shape[0]
@@ -53,6 +63,13 @@ class redshift_distribution(container):
         TODO: find a better name
         """
         return self._gals_per_arcmin2
+    
+    @property
+    def red(self):
+        """Returns the number density of galaxies in gals/sq arcmin
+        TODO: find a better name
+        """
+        return self._red
 
     @property
     def gals_per_steradian(self):
@@ -61,14 +78,14 @@ class redshift_distribution(container):
 
     # Operations for flattening/unflattening representation
     def tree_flatten(self):
-        children = (self.params, self._gals_per_arcmin2)
+        children = (self.params, self._gals_per_arcmin2, self.red)
         aux_data = self.config
         return (children, aux_data)
 
     @classmethod
     def tree_unflatten(cls, aux_data, children):
-        args, gals_per_arcmin2 = children
-        return cls(*args, gals_per_arcmin2=gals_per_arcmin2, **aux_data)
+        args, gals_per_arcmin2, red = children
+        return cls(*args, gals_per_arcmin2=gals_per_arcmin2, red=red, **aux_data)
 
 
 @register_pytree_node_class
@@ -96,7 +113,6 @@ class u_dropout(redshift_distribution):
     -------------------------------------------------------------------
 
     """
-
     def pz_fn(self, z):
 
         z = np.atleast_1d(z)
@@ -111,7 +127,7 @@ class u_dropout(redshift_distribution):
 
         component_sum = np.sum(nz_params*pca_component_i.T, axis=1)
         vec = (component_sum + pca_mean_i)**2
-
+        vec = vec.at[:15].set(vec[:15]*self._red)
         return vec
 
 @register_pytree_node_class
@@ -136,7 +152,7 @@ class g_dropout(redshift_distribution):
 
         component_sum = np.sum(nz_params*pca_component_i.T, axis=1)
         vec = (component_sum + pca_mean_i)**2
-        
+        vec = vec.at[:15].set(vec[:15]*self._red)
         return vec
     
 @register_pytree_node_class
@@ -161,6 +177,84 @@ class r_dropout(redshift_distribution):
 
         component_sum = np.sum(nz_params*pca_component_i.T, axis=1)
         vec = (component_sum + pca_mean_i)**2
+        vec = vec.at[:15].set(vec[:15]*self._red)
+        return vec
+
+@register_pytree_node_class
+class u_dropout_nagaraj(redshift_distribution):
+    """
+    n-component PCA redshift distribution for u dropouts
+    -------------------------------------------------------------------
+
+    """
+
+    def pz_fn(self, z):
+
+        z = np.atleast_1d(z)
+
+        pca_components, pca_mean = self.u_npca_components_nag, self.u_npca_mean_nag
+        nz_params = self.params[0] #coeffs
+
+        index = np.abs(np.reshape(z, (z.shape[0], 1)) - np.tile(self.z_grid, (z.shape[0], 1))).argmin(axis=1)
+
+        pca_component_i = pca_components[:, index]
+        pca_mean_i = pca_mean[index]
+
+        component_sum = np.sum(nz_params*pca_component_i.T, axis=1)
+        vec = (component_sum + pca_mean_i)**2
+        vec = vec.at[:15].set(vec[:15]*self._red)
+
+        return vec
+
+@register_pytree_node_class
+class g_dropout_nagaraj(redshift_distribution):
+    """
+    n-component PCA redshift distribution for u dropouts
+    -------------------------------------------------------------------
+
+    """
+
+    def pz_fn(self, z):
+
+        z = np.atleast_1d(z)
+
+        pca_components, pca_mean = self.g_npca_components_nag, self.g_npca_mean_nag
+        nz_params = self.params[0] #coeffs
+
+        index = np.abs(np.reshape(z, (z.shape[0], 1)) - np.tile(self.z_grid, (z.shape[0], 1))).argmin(axis=1)
+
+        pca_component_i = pca_components[:, index]
+        pca_mean_i = pca_mean[index]
+
+        component_sum = np.sum(nz_params*pca_component_i.T, axis=1)
+        vec = (component_sum + pca_mean_i)**2
+        vec = vec.at[:15].set(vec[:15]*self._red)
+        
+        return vec
+    
+@register_pytree_node_class
+class r_dropout_nagaraj(redshift_distribution):
+    """
+    n-component PCA redshift distribution for u dropouts
+    -------------------------------------------------------------------
+
+    """
+
+    def pz_fn(self, z):
+
+        z = np.atleast_1d(z)
+
+        pca_components, pca_mean = self.r_npca_components_nag, self.r_npca_mean_nag
+        nz_params = self.params[0] #coeffs
+
+        index = np.abs(np.reshape(z, (z.shape[0], 1)) - np.tile(self.z_grid, (z.shape[0], 1))).argmin(axis=1)
+
+        pca_component_i = pca_components[:, index]
+        pca_mean_i = pca_mean[index]
+
+        component_sum = np.sum(nz_params*pca_component_i.T, axis=1)
+        vec = (component_sum + pca_mean_i)**2
+        vec = vec.at[:15].set(vec[:15]*self._red)
         
         return vec
 

@@ -47,18 +47,24 @@ def plot_nzs(axes, nzs, mean, density, a, p, **kwargs):
     axes.set_xlim(0, 6)
     axes.set_ylim(0, 1.8)
 
-def load_redshift_distributions(path):
+def load_redshift_distributions(path, nag):
     """
     Loads simulated u, g, r dropouts and returns them as a list of numpy arrays.
     Each element of returned list is an array of redshift distributions, where
     every row contains a seperate distribution.
 
     """
-
-    nzus = np.load(path+"/redshifts/nzus.npy")
-    nzgs = np.load(path+"/redshifts/nzgs.npy")
-    nzrs = np.load(path+"/redshifts/nzrs.npy")
+    if(nag):
+        nzus = np.load(path+"/redshifts/nzus_nag.npy")
+        nzgs = np.load(path+"/redshifts/nzgs_nag.npy")
+        nzrs = np.load(path+"/redshifts/nzrs_nag.npy")
+    else:
+        nzus = np.load(path+"/redshifts/nzus.npy")
+        nzgs = np.load(path+"/redshifts/nzgs.npy")
+        nzrs = np.load(path+"/redshifts/nzrs.npy")
+    
     z_grid = np.load(path+"redshifts/z_grid.npy")
+
 
     return z_grid, [nzus, nzgs, nzrs]
 
@@ -184,8 +190,8 @@ class NzModel:
 
     """
 
-    def __init__(self, path):
-        z_grid, nzs = load_redshift_distributions(path)
+    def __init__(self, path, nag):
+        z_grid, nzs = load_redshift_distributions(path, nag)
 
         if (
             nzs[0].shape != nzs[1].shape
@@ -194,6 +200,7 @@ class NzModel:
         ):
             raise Exception("All data must have the same dimensions")
 
+        self.is_nag = nag
         self._nzus = nzs[0]
         self._nzgs = nzs[1]
         self._nzrs = nzs[2]
@@ -468,20 +475,37 @@ class NzModel:
         g_pca_means, g_pca_cov = pca_mean_cov(g_pca_data)
         r_pca_means, r_pca_cov = pca_mean_cov(r_pca_data)
 
-        np.save(path+"/4pca_data/npca_components_u.npy", u_pca_data[1])
-        np.save(path+"/4pca_data/npca_components_g.npy", g_pca_data[1])
-        np.save(path+"/4pca_data/npca_components_r.npy", r_pca_data[1])
+        if(self.is_nag):
+            np.save(path+"/4pca_data/npca_components_u_nag.npy", u_pca_data[1])
+            np.save(path+"/4pca_data/npca_components_g_nag.npy", g_pca_data[1])
+            np.save(path+"/4pca_data/npca_components_r_nag.npy", r_pca_data[1])
 
-        np.save(path+"/4pca_data/npca_mean_u.npy", u_pca_data[2])
-        np.save(path+"/4pca_data/npca_mean_g.npy", g_pca_data[2])
-        np.save(path+"/4pca_data/npca_mean_r.npy", r_pca_data[2])
+            np.save(path+"/4pca_data/npca_mean_u_nag.npy", u_pca_data[2])
+            np.save(path+"/4pca_data/npca_mean_g_nag.npy", g_pca_data[2])
+            np.save(path+"/4pca_data/npca_mean_r_nag.npy", r_pca_data[2])
 
-        np.save(path+"/4pca_data/npca_means_u.npy", u_pca_means)
-        np.save(path+"/4pca_data/npca_means_g.npy", g_pca_means)
-        np.save(path+"/4pca_data/npca_means_r.npy", r_pca_means)
+            np.save(path+"/4pca_data/npca_means_u_nag.npy", u_pca_means)
+            np.save(path+"/4pca_data/npca_means_g_nag.npy", g_pca_means)
+            np.save(path+"/4pca_data/npca_means_r_nag.npy", r_pca_means)
 
-        np.save(path+"/4pca_data/npca_cov_u.npy", u_pca_cov)
-        np.save(path+"/4pca_data/npca_cov_g.npy", g_pca_cov)
-        np.save(path+"/4pca_data/npca_cov_r.npy", r_pca_cov)
+            np.save(path+"/4pca_data/npca_cov_u_nag.npy", u_pca_cov)
+            np.save(path+"/4pca_data/npca_cov_g_nag.npy", g_pca_cov)
+            np.save(path+"/4pca_data/npca_cov_r_nag.npy", r_pca_cov)
+        else:
+            np.save(path+"/4pca_data/npca_components_u.npy", u_pca_data[1])
+            np.save(path+"/4pca_data/npca_components_g.npy", g_pca_data[1])
+            np.save(path+"/4pca_data/npca_components_r.npy", r_pca_data[1])
+
+            np.save(path+"/4pca_data/npca_mean_u.npy", u_pca_data[2])
+            np.save(path+"/4pca_data/npca_mean_g.npy", g_pca_data[2])
+            np.save(path+"/4pca_data/npca_mean_r.npy", r_pca_data[2])
+
+            np.save(path+"/4pca_data/npca_means_u.npy", u_pca_means)
+            np.save(path+"/4pca_data/npca_means_g.npy", g_pca_means)
+            np.save(path+"/4pca_data/npca_means_r.npy", r_pca_means)
+
+            np.save(path+"/4pca_data/npca_cov_u.npy", u_pca_cov)
+            np.save(path+"/4pca_data/npca_cov_g.npy", g_pca_cov)
+            np.save(path+"/4pca_data/npca_cov_r.npy", r_pca_cov)
 
         np.save(path+"/4pca_data/z_grid.npy", self._z_space)
