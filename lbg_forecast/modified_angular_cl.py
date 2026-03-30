@@ -96,7 +96,7 @@ def angular_cl(
             # We transpose the result just to make sure that na is first
             return result.T
 
-        return simps(integrand, z2a(zmax), 1.0, 2048) / const.c**2
+        return simps(integrand, z2a(zmax), 1.0, 1024) / const.c**2
 
     return cl(ell)
 

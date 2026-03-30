@@ -23,7 +23,7 @@ import lbg_forecast.utils as utils
 
 
 class Likelihood:
-    def __init__(self, path, n_override=None, mismatch_nag=None):
+    def __init__(self, path, n_override=None, mismatch_nag=None, override_seed=None, no_noise=False):
         """
         P - N(z) covariance of PCA parameters
         C - Data covariance (includes cosmic variance + cut sky)
@@ -79,12 +79,14 @@ class Likelihood:
         self._ell = jnp.arange(200, 1000, 1)
         self._fsky = 0.35
         seed = 100
+        if(override_seed is not None):
+            seed = override_seed
 
-        self._b_lbg_u = 3.0
-        self._b_lbg_g = 4.0
-        self._b_lbg_r = 5.0
+        self._b_lbg_u = 3.0#/(1+3)
+        self._b_lbg_g = 4.0#/(1+4)
+        self._b_lbg_r = 5.0#/(1+5)
 
-        self.b_lbg = 3.585
+        self.b_lbg = 3.585/(1+3.585)
 
         self._bias_params = jnp.array([self._b_lbg_u,
                                        self._b_lbg_g,
@@ -142,10 +144,13 @@ class Likelihood:
             )
 
         self.cl_mean = mean_cl
+        if(no_noise==True):
+            self.cl_mean = cl_theory_CMB(self._cosmo_fid, self.nz_params_mean, self._bias_params, self._ell, self.ndens, red=1.0)
 
         # data covariance
         self.C = covmat
         self._inv_C = jnp.linalg.inv(self.C)
+        self.det_C = jnp.linalg.det(self.C)
 
         # jacobian #need to change if you want uncertanties with nagaraj
         self._jacobian = jax.jit(jacfwd(cl_theory_CMB, argnums=1))
@@ -156,7 +161,7 @@ class Likelihood:
 
         print("Initialisation Complete")
 
-    def mu_vec_ww(self, params):
+    def mu_vec_ww(self, params, red=1.0):
         """Reduced theory vector for fisher forecast"""
 
         ####Stuff for W&W (convert z=2.6 sigma8 to z=0.0)
@@ -168,7 +173,7 @@ class Likelihood:
         bias_params = bias_params.at[3].set(params[1])
         nz_params = self.nz_params_mean
     
-        return cl_theory_CMB(cosmo_obj, nz_params, bias_params, self._ell, self.ndens, red=1.0)
+        return cl_theory_CMB(cosmo_obj, nz_params, bias_params, self._ell, self.ndens, red=red)
     
     def mu_vec_sig(self, params):
         """Reduced theory vector for fisher forecast"""
@@ -309,10 +314,11 @@ class Likelihood:
 
         return F
     
-    def fisher_ww(self, params):
+    def fisher_ww(self, params, red=1.0):
 
         inv_cov = jnp.linalg.inv(self.C)
-        jac_at_mean = jax.jit(jax.jacfwd(self.mu_vec_ww, argnums=0))
+        mu_vec_fixed = partial(self.mu_vec_ww, red=red)
+        jac_at_mean = jax.jit(jax.jacfwd(mu_vec_fixed, argnums=0))
         dmudp = jac_at_mean(params)
 
         F = dmudp.T@inv_cov@dmudp

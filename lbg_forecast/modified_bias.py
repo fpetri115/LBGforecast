@@ -19,11 +19,22 @@ class custom_bias(container):
     """
 
     def __call__(self, cosmo, z):
-        b_int = self.params[0]
-        b_lbg = self.params[1]
-        z_cut = self.params[2]
+        b = self.params[0]
+        return np.where(z < 1.5, np.ones_like(z) * 1.0, np.ones_like(z) * b)
+    
+@register_pytree_node_class
+class increasing_bias(container):
+    """
+    Class representing a linear bias
 
-        return np.where(z < z_cut, np.ones_like(z) * b_int, np.ones_like(z) * b_lbg)
+    Parameters:
+    -----------
+    b: redshift independent bias value
+    """
+
+    def __call__(self, cosmo, z):
+        b = self.params[0]
+        return b*(1+z) #np.where(z < 1.5, np.ones_like(z) * 1.0, np.ones_like(z) * b)
 
 
 @register_pytree_node_class

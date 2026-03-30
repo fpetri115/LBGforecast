@@ -16,7 +16,7 @@ __all__ = ["smail_nz", "kde_nz", "delta_nz"]
 
 
 class redshift_distribution(container):
-    def __init__(self, *args, red=1.0, gals_per_arcmin2=1.0, zmax=10.0, **kwargs):
+    def __init__(self, *args, red=1.0, gals_per_arcmin2=1.0, zmax=6.0, **kwargs):
         """Initialize the parameters of the redshift distribution"""
         self._norm = None
         self._gals_per_arcmin2 = gals_per_arcmin2
@@ -50,7 +50,7 @@ class redshift_distribution(container):
     def __call__(self, z):
         """Computes the normalized n(z)"""
         if self._norm is None:
-            self._norm = simps(lambda t: self.pz_fn(t), 0.0, self.config["zmax"], 256)
+            self._norm = simps(lambda t: self.pz_fn(t), 0.0, self.config["zmax"], 1024)
         return self.pz_fn(z) / self._norm
 
     @property
@@ -126,8 +126,9 @@ class u_dropout(redshift_distribution):
         pca_mean_i = pca_mean[index]
 
         component_sum = np.sum(nz_params*pca_component_i.T, axis=1)
-        vec = (component_sum + pca_mean_i)**2
-        vec = vec.at[:15].set(vec[:15]*self._red)
+        vec = (component_sum + pca_mean_i)**2.0
+        vec = np.where(z < 1.5, vec*self._red, vec)
+        #vec = vec.at[:15].set(vec[:15]*self._red)
         return vec
 
 @register_pytree_node_class
@@ -151,8 +152,9 @@ class g_dropout(redshift_distribution):
         pca_mean_i = pca_mean[index]
 
         component_sum = np.sum(nz_params*pca_component_i.T, axis=1)
-        vec = (component_sum + pca_mean_i)**2
-        vec = vec.at[:15].set(vec[:15]*self._red)
+        vec = (component_sum + pca_mean_i)**2.0
+        vec = np.where(z < 1.5, vec*self._red, vec)
+        #vec = vec.at[:15].set(vec[:15]*self._red)
         return vec
     
 @register_pytree_node_class
@@ -176,8 +178,9 @@ class r_dropout(redshift_distribution):
         pca_mean_i = pca_mean[index]
 
         component_sum = np.sum(nz_params*pca_component_i.T, axis=1)
-        vec = (component_sum + pca_mean_i)**2
-        vec = vec.at[:15].set(vec[:15]*self._red)
+        vec = (component_sum + pca_mean_i)**2.0
+        vec = np.where(z < 1.5, vec*self._red, vec)
+        #vec = vec.at[:15].set(vec[:15]*self._red)
         return vec
 
 @register_pytree_node_class
