@@ -79,7 +79,7 @@ def cl_theory_CMB(cosmo, nz_params, bias_params, ell, ndens, red):
     """
     n = NPCA
 
-    surface_of_last_scattering = delta_nz(1100., gals_per_arcmin2 = 1e20, zmax=2000.) 
+    surface_of_last_scattering = delta_nz(1100., gals_per_arcmin2 = 1e10) 
     red = jnp.array([red])
     nz_u = u_dropout(nz_params[:n], gals_per_arcmin2=ndens[0], red=red)#1
     nz_g = g_dropout(nz_params[n : 2 * n], gals_per_arcmin2=ndens[1], red=red)#1
@@ -130,7 +130,7 @@ def cl_data_CMB(cosmo, nz_params, bias_params, ell, f_sky, ndens, seed, red=1.0)
     """
     n = NPCA
 
-    surface_of_last_scattering = delta_nz(1100., gals_per_arcmin2 = 1e20, zmax=2000.)
+    surface_of_last_scattering = delta_nz(1100., gals_per_arcmin2 = 1e10)
 
     nz_u = u_dropout(nz_params[:n], gals_per_arcmin2=ndens[0], red=red)
     nz_g = g_dropout(nz_params[n : 2 * n], gals_per_arcmin2=ndens[1], red=red)
@@ -189,7 +189,7 @@ def cl_data_CMB_nagaraj(cosmo, nz_params, bias_params, ell, f_sky, ndens, seed, 
     """
     n = NPCA
 
-    surface_of_last_scattering = delta_nz(1100., gals_per_arcmin2 = 1e20) 
+    surface_of_last_scattering = delta_nz(1100., gals_per_arcmin2 = 1e10) 
 
     nz_u = u_dropout_nagaraj(nz_params[:n], gals_per_arcmin2=ndens[0], red=red)
     nz_g = g_dropout_nagaraj(nz_params[n : 2 * n], gals_per_arcmin2=ndens[1], red=red)
